@@ -99,6 +99,8 @@ const VIAGENS = [
       "Ritmo tranquilo, com paradas para snorkel se o mar estiver calmo.",
     info: "Aluguel de caiaque e colete no local (cada um paga o seu). Levar água, lanche leve e roupa que pode molhar. " +
       "Com mar agitado, a saída é cancelada.",
+    fotos: ["database/fotos-exemplo/arraial-1.jpg", "database/fotos-exemplo/arraial-2.jpg"],
+    alt: "Praia de água verde-clara em Arraial do Cabo, vista do alto",
   },
   {
     chave: "lencois", criador: "larissa", categoria: "expedicao", dias: 50, hora: "06:00", vagas: 6,
