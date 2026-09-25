@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="<%= locals.htmlLang || 'pt-BR' %>">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <meta name="csrf-token" content="<%= csrfToken %>">
+  <title><%= t('perfil_social.meu_titulo') %> | AquaTrip</title>
+  <link rel="stylesheet" href="/css/comunidade.css">
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+<%- include('../partials/header') %>
+<main id="main-content" class="wrap pf-page">
+  <section class="pf-hero" aria-labelledby="pfNome">
+    <div class="pf-avatar-wrap">
+      <% if (perfil.avatar) { %>
+        <img class="pf-avatar" id="pfAvatar" src="<%= perfil.avatar %>" alt="<%= t('perfil_social.sua_foto') %>" width="120" height="120">
+      <% } else { %>
+        <span class="pf-avatar pf-avatar-ini" id="pfAvatar" aria-hidden="true"><%= perfil.nome.charAt(0).toUpperCase() %></span>
+      <% } %>
+      <label class="pf-avatar-edit" for="pfAvatarInput" title="<%= t('perfil_social.trocar_foto') %>">
+        <i data-lucide="camera"></i><span class="sr-only"><%= t('perfil_social.trocar_foto') %></span>
+      </label>
+      <input type="file" id="pfAvatarInput" accept="image/jpeg,image/png,image/webp" class="sr-only">
+    </div>
+    <div class="pf-id">
+      <p class="kicker"><%= t('perfil_social.meu_kicker') %></p>
+      <h1 id="pfNome" class="display h-m"><%= perfil.nome %></h1>
+      <p class="pf-sub"><%= t('perfil_social.publico_como', { nome: perfil.nome_publico }) %> · <%= t('perfil_social.membro_desde', { data: fmt.dataCurta(perfil.membro_desde) }) %></p>
+      <% if (perfil.avatar_status === 'PENDING') { %>
+        <p class="cx-badge cx-badge-pending pf-pend"><%= t('perfil_social.foto_pendente') %></p>
+      <% } %>
+      <p class="form-status" id="pfAvatarStatus" role="status" aria-live="polite"></p>
+    </div>
+    <div class="pf-actions">
+      <a class="btn-ghost btn-sm" href="/usuarios/<%= encodeURIComponent(perfil.id) %>"><i data-lucide="eye"></i> <%= t('perfil_social.ver_publico') %></a>
+      <a class="btn-primary btn-sm" href="/criar_experiencia"><i data-lucide="circle-plus"></i> <%= t('comunidade.criar') %></a>
+    </div>
+  </section>
+
+  <dl class="pf-stats">
+    <div><dt><%= t('perfil_social.seguidores') %></dt><dd><button type="button" class="pf-stat-btn num" data-lista="seguidores" data-user="<%= perfil.id %>"><%= fmt.num(perfil.seguidores) %></button></dd></div>
+    <div><dt><%= t('perfil_social.seguindo') %></dt><dd><button type="button" class="pf-stat-btn num" data-lista="seguindo" data-user="<%= perfil.id %>"><%= fmt.num(perfil.seguindo) %></button></dd></div>
+    <div><dt><%= t('perfil_social.curtidas_recebidas') %></dt><dd class="num"><%= fmt.num(perfil.curtidas_recebidas) %></dd></div>
+    <div><dt><%= t('perfil_social.comentarios_recebidos') %></dt><dd class="num"><%= fmt.num(perfil.comentarios_recebidos) %></dd></div>
+    <div><dt><%= t('perfil_social.experiencias') %></dt><dd class="num"><%= fmt.num(minhas.length) %></dd></div>
+  </dl>
+
+  <form class="form-card pf-bio" id="pfBioForm" novalidate data-fk-busy="off">
+    <div class="field">
+      <label for="pfBio"><%= t('perfil_social.bio') %> <span class="opt"><%= t('criar.opcional') %></span></label>
+      <textarea id="pfBio" rows="2" maxlength="280" data-counter placeholder="<%= t('perfil_social.bio_ph') %>" aria-describedby="pfBioErr"><%= perfil.bio || '' %></textarea>
+      <span class="field-error" id="pfBioErr" aria-live="polite"></span>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn-primary btn-sm" id="pfBioSalvar"><span><%= t('perfil_social.salvar_bio') %></span></button>
+      <p class="form-status" id="pfBioStatus" role="status" aria-live="polite"></p>
+    </div>
+  </form>
+
+  <nav class="pf-tabs" aria-label="<%= t('perfil_social.secoes') %>">
+    <a href="?aba=experiencias"<%- aba === 'experiencias' ? ' aria-current="page"' : '' %>><%= t('perfil_social.aba_experiencias') %> <span class="num"><%= minhas.length %></span></a>
+    <a href="?aba=comentarios"<%- aba === 'comentarios' ? ' aria-current="page"' : '' %>><%= t('perfil_social.aba_comentarios') %> <span class="num"><%= perfil.comentarios_recebidos %></span></a>
+  </nav>
+
+  <% if (aba === 'experiencias') { %>
+    <% if (!minhas.length) { %>
+      <section class="empty-state">
+        <i data-lucide="map" aria-hidden="true"></i>
+        <h2><%= t('perfil_social.sem_experiencias') %></h2>
+        <p><%= t('perfil_social.sem_experiencias_txt') %></p>
+        <a class="btn-primary" href="/criar_experiencia"><%= t('comunidade.criar_primeira') %></a>
+      </section>
+    <% } else { %>
+      <ul class="pf-list">
+        <% minhas.forEach(function (e) { const c = capaDe(e); %>
+          <li class="pf-item">
+            <img src="<%= c.src %>" alt="" loading="lazy" width="96" height="72">
+            <div class="pf-item-main">
+              <p class="pf-item-status">
+                <% if (e.moderation_status !== 'ACTIVE') { %><span class="cx-badge cx-badge-rejected"><%= t('perfil_social.status_moderada') %></span>
+                <% } else if (e.aguardando_recebimento) { %><span class="cx-badge cx-badge-pending"><%= t('perfil_social.status_recebimento') %></span>
+                <% } else if (!e.active) { %><span class="cx-badge"><%= t('perfil_social.status_pausada') %></span>
+                <% } else { %><span class="cx-badge cx-badge-approved"><%= t('perfil_social.status_publicada') %></span><% } %>
+                <% if (e.starts_at) { %><span><%= fmt.diaCurto(e.starts_at) %> · <%= fmt.hora(e.starts_at) %></span><% } %>
+              </p>
+              <h3><a href="/reservar/<%= encodeURIComponent(e.slug) %>"><%= e.title %></a></h3>
+              <p class="pf-item-meta">
+                <span title="<%= t('perfil_social.curtidas') %>"><i data-lucide="heart"></i> <%= e.curtidas %></span>
+                <span title="<%= t('perfil_social.comentarios') %>"><i data-lucide="message-circle"></i> <%= e.comentarios %></span>
+                <span title="<%= t('perfil_social.participantes') %>"><i data-lucide="users"></i> <%= e.participantes %>/<%= e.capacity || 0 %></span>
+                <span title="<%= t('perfil_social.interessados') %>"><i data-lucide="hand"></i> <%= e.interessados %></span>
+              </p>
+              <% if (e.moderation_status !== 'ACTIVE' && e.moderation_reason) { %><p class="field-help"><%= t('perfil_social.motivo', { motivo: e.moderation_reason }) %></p><% } %>
+            </div>
+            <a class="btn-ghost btn-sm" href="/criar_experiencia?editar=<%= encodeURIComponent(e.id) %>"><i data-lucide="settings-2"></i> <%= t('social.gerenciar') %></a>
+          </li>
+        <% }) %>
+      </ul>
+    <% } %>
+  <% } else { %>
+    <% if (!perfil.comentarios_recebidos_lista.length) { %>
+      <section class="empty-state"><i data-lucide="message-circle" aria-hidden="true"></i><h2><%= t('perfil_social.sem_comentarios') %></h2></section>
+    <% } else { %>
+      <ul class="sx-comment-list pf-comments">
+        <% perfil.comentarios_recebidos_lista.forEach(function (c) { %>
+          <li class="sx-comment">
+            <a class="sx-c-avatar" href="/usuarios/<%= encodeURIComponent(c.autor.id) %>" aria-hidden="true" tabindex="-1">
+              <% if (c.autor.avatar) { %><img src="<%= c.autor.avatar %>" alt="" width="36" height="36" loading="lazy"><% } else { %><span class="sx-avatar"><%= c.autor.nome.charAt(0).toUpperCase() %></span><% } %>
+            </a>
+            <div>
+              <p class="sx-c-head"><a href="/usuarios/<%= encodeURIComponent(c.autor.id) %>"><strong><%= c.autor.nome %></strong></a>
+                <%= t('perfil_social.comentou_em') %> <a href="/reservar/<%= encodeURIComponent(c.slug) %>#comentarios"><%= c.experiencia %></a>
+                <time datetime="<%= new Date(c.criado_em).toISOString() %>"><%= fmt.dataHora(c.criado_em) %></time></p>
+              <p class="sx-pre"><%= c.texto %></p>
+            </div>
+          </li>
+        <% }) %>
+      </ul>
+    <% } %>
+  <% } %>
+</main>
+
+<dialog class="cx-dialog" id="pfLista" aria-labelledby="pfListaTitulo">
+  <div class="cx-dialog-body">
+    <h2 id="pfListaTitulo"></h2>
+    <ul class="pf-people" id="pfListaItens"></ul>
+    <div class="form-actions"><button type="button" class="btn-ghost" id="pfListaFechar"><%= t('social.fechar') %></button></div>
+  </div>
+</dialog>
+<%- include('../partials/footer') %>
+<script src="/js/perfil-social.js" defer></script>
+</body>
+</html>

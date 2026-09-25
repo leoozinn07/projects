@@ -21,7 +21,8 @@
     qtd.max = max;
     var n = Math.max(1, Math.min(max, parseInt(qtd.value, 10) || 1));
     if (String(n) !== qtd.value) qtd.value = n;
-    total.textContent = brl(preco * n);
+    // Gratuita: mantém o rótulo "Gratuita" que o servidor já escreveu.
+    if (preco > 0) total.textContent = brl(preco * n);
   }
   form.addEventListener("click", function (e) {
     var b = e.target.closest("[data-q]");

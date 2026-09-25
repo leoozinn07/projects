@@ -402,6 +402,100 @@ legend { font-size: var(--text-sm); font-weight: 600; margin-bottom: var(--sp-2)
 .field-help { font-size: var(--text-xs); color: var(--ink-2); }
 .field-error { font-size: var(--text-xs); color: var(--danger); }
 
+/* ---- Formulários 2.0 ----------------------------------------
+   Camada comum a TODOS os formulários (login, cadastro, contato,
+   criar experiência, avaliação, comentários, admin). Estados:
+   repouso -> hover (só ponteiro fino) -> foco (anel do acento)
+   -> erro (anel vermelho + mensagem com ícone) -> válido (borda
+   verde) -> enviando (botão com spinner, sem duplo envio).
+   Animações só em transform/opacity e respeitam "reduzir movimento". */
+@media (hover: hover) and (pointer: fine) {
+  input:not(:focus):not(:disabled):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):hover,
+  select:not(:focus):not(:disabled):hover, textarea:not(:focus):not(:disabled):hover { border-color: var(--ink-3); }
+}
+input.is-invalid, select.is-invalid, textarea.is-invalid,
+input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="true"] {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger) 14%, transparent);
+}
+input.is-valid, select.is-valid, textarea.is-valid { border-color: var(--success); }
+input.is-valid:focus, textarea.is-valid:focus { box-shadow: 0 0 0 4px color-mix(in srgb, var(--success) 16%, transparent); }
+.field-error:not(:empty):not(.span-required), .span-required.is-on {
+  display: flex; align-items: flex-start; gap: 6px; font-weight: 500;
+  animation: campo-erro 180ms var(--ease-out);
+}
+.field-error:not(:empty):not(.span-required)::before, .span-required.is-on::before {
+  content: ""; flex: 0 0 14px; height: 14px; margin-top: 1px; background: currentColor;
+  -webkit-mask: var(--icone-alerta) center / contain no-repeat;
+  mask: var(--icone-alerta) center / contain no-repeat;
+}
+:root { --icone-alerta: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 7v6M12 17h.01'/%3E%3C/svg%3E"); }
+@keyframes campo-erro { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+.field-row { display: grid; gap: var(--sp-4); }
+@media (min-width: 640px) { .field-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.field-counter { font-family: var(--mono); font-size: var(--text-xs); color: var(--ink-3); text-align: right; margin-top: -2px; }
+.field-counter.is-near { color: var(--warning); }
+.field-counter.is-over { color: var(--danger); }
+.req { color: var(--danger); font-weight: 700; margin-left: 2px; }
+.opt { color: var(--ink-3); font-weight: 500; font-size: var(--text-xs); margin-left: 6px; }
+
+/* Campo com botão embutido (mostrar senha) */
+.input-wrap { position: relative; display: block; }
+.input-wrap > input { padding-right: 3.2rem; }
+.input-toggle {
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+  width: 42px; height: 42px; display: grid; place-items: center;
+  border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--ink-2); cursor: pointer;
+  transition: color 160ms ease, transform 160ms var(--ease-out);
+}
+.input-toggle:active { transform: translateY(-50%) scale(0.94); }
+.input-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.input-toggle svg { width: 19px; height: 19px; }
+
+/* Grupo de opções em "pílula" (tipo, nota, filtros) */
+.choice-group { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.choice { position: relative; }
+.choice input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.choice span {
+  display: inline-flex; align-items: center; gap: 6px; min-height: var(--tap-min); padding: 0 1rem;
+  border: 1px solid var(--line-strong); border-radius: var(--radius-pill); background: var(--surface);
+  font-size: var(--text-sm); font-weight: 600; color: var(--ink-2);
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease, transform 160ms var(--ease-out);
+}
+.choice span svg { width: 17px; height: 17px; }
+.choice input:checked + span { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.choice input:focus-visible + span { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
+.choice:active span { transform: scale(0.97); }
+
+/* Botão enviando: spinner no lugar do texto, sem mudar a largura */
+.btn[aria-busy="true"], .btn-primary[aria-busy="true"], .btn-ghost[aria-busy="true"], .btn-secondary[aria-busy="true"], .btn-danger[aria-busy="true"] {
+  position: relative; color: transparent !important; pointer-events: none;
+}
+.btn[aria-busy="true"] > *, .btn-primary[aria-busy="true"] > *, .btn-ghost[aria-busy="true"] > *, .btn-secondary[aria-busy="true"] > *, .btn-danger[aria-busy="true"] > * { opacity: 0; }
+.btn[aria-busy="true"]::after, .btn-primary[aria-busy="true"]::after, .btn-ghost[aria-busy="true"]::after, .btn-secondary[aria-busy="true"]::after, .btn-danger[aria-busy="true"]::after {
+  content: ""; position: absolute; inset: 0; margin: auto; width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid var(--on-accent); border-right-color: transparent; animation: gira 600ms linear infinite;
+}
+.btn-ghost[aria-busy="true"]::after, .btn-secondary[aria-busy="true"]::after { border-color: var(--ink); border-right-color: transparent; }
+@keyframes gira { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .field-error:not(:empty):not(.span-required), .span-required.is-on { animation: none; }
+  [aria-busy="true"]::after { animation-duration: 1.6s; }
+}
+
+/* Cartão de formulário: superfície única, respiro generoso */
+.form-card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg);
+  padding: clamp(18px, 4vw, 32px); display: grid; gap: var(--sp-5);
+}
+.form-card > h2, .form-card > header h2 { font-size: var(--text-xl); letter-spacing: -0.03em; }
+.form-actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); align-items: center; }
+.form-actions .btn-primary { flex: 1 1 auto; }
+@media (min-width: 640px) { .form-actions .btn-primary { flex: 0 0 auto; } }
+.form-status { font-size: var(--text-sm); min-height: 1.2em; }
+.form-status.is-error { color: var(--danger); }
+.form-status.is-success { color: var(--success); }
+
 /* ==============================================================
    LAYOUT
    ============================================================== */

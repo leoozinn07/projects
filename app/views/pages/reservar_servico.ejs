@@ -6,7 +6,9 @@
   <meta name="theme-color" content="#eef6f8" />
   <title><%= seo.titulo %></title>
   <%- include('../partials/seo') %>
+  <meta name="csrf-token" content="<%= csrfToken %>">
   <link rel="stylesheet" href="/css/experiencia.css" />
+  <link rel="stylesheet" href="/css/comunidade.css" />
   <script src="/js/theme.js"></script>
 </head>
 <body>
@@ -16,7 +18,10 @@
 <%
   const c = capaDe(service);
   const sc = aquaScore(service.slug);
-  const precoFmt = (service.price_cents / 100).toFixed(2).replace('.', ',');
+  const gratuita = !service.price_cents;
+  const precoFmt = gratuita ? t('comunidade.gratuita') : 'R$ ' + (service.price_cents / 100).toFixed(2).replace('.', ',');
+  const comunidade = social && social.comunidade;
+  const eDono = social && social.eDoViewer;
   const rotas = { praia: '/praias', mergulho: '/mergulho', caiaque: '/caiaque', pesca: '/pesca', expedicao: '/expedicoes', aquario: '/aquarios' };
   const logado = typeof user !== 'undefined' && user;
 %>
@@ -42,8 +47,31 @@
           <span><i data-lucide="map-pin"></i> <%= service.location || t('home.brasil') %></span>
           <span><i data-lucide="waves"></i> <%= categoriaRotulo(service.category) %></span>
           <%# Quem presta o serviço (CDC, art. 31): parceiro ou o próprio AquaTrip. %>
-          <span class="service-operador"><i data-lucide="badge-check"></i> <%= t('exp.operado_por') %> <strong><%= service.operador || 'AquaTrip' %></strong></span>
+          <% if (comunidade) { %>
+            <span class="service-operador"><i data-lucide="user-round"></i> <%= t('social.organizado_por') %> <a href="/usuarios/<%= encodeURIComponent(social.criador.id) %>"><strong><%= social.criador.nome %></strong></a></span>
+          <% } else { %>
+            <span class="service-operador"><i data-lucide="badge-check"></i> <%= t('exp.operado_por') %> <strong><%= service.operador || 'AquaTrip' %></strong></span>
+          <% } %>
         </p>
+
+        <div class="sx-bar" data-servico="<%= service.id %>">
+          <button type="button" class="sx-btn<%= social.meu.curtiu ? ' is-on' : '' %>" data-curtir="<%= service.id %>" aria-pressed="<%= social.meu.curtiu %>" <%= logado ? '' : 'data-login' %>>
+            <i data-lucide="heart"></i> <span><%= t('social.curtir') %></span> <span class="num sx-n" data-contagem><%= social.curtidas %></span>
+          </button>
+          <% if (comunidade && !eDono) { %>
+            <button type="button" class="sx-btn<%= social.meu.interesse ? ' is-on' : '' %>" data-interesse="<%= service.id %>" aria-pressed="<%= social.meu.interesse %>" <%= logado ? '' : 'data-login' %>>
+              <i data-lucide="hand"></i> <span><%= t('social.tenho_interesse') %></span> <span class="num sx-n" data-contagem><%= social.interessados %></span>
+            </button>
+          <% } %>
+          <a class="sx-btn" href="#comentarios"><i data-lucide="message-circle"></i> <span><%= t('social.comentarios') %></span> <span class="num sx-n" id="sxNComentarios"><%= comentarios.length %></span></a>
+          <% if (eDono) { %>
+            <a class="sx-btn sx-btn-primary" href="/criar_experiencia?editar=<%= encodeURIComponent(service.id) %>"><i data-lucide="settings-2"></i> <span><%= t('social.gerenciar') %></span></a>
+          <% } else if (comunidade) { %>
+            <button type="button" class="sx-btn sx-btn-quiet" id="sxDenunciar" <%= logado ? '' : 'data-login' %> <%= social.meu.denunciou ? 'disabled' : '' %>>
+              <i data-lucide="flag"></i> <span><%= social.meu.denunciou ? t('social.denunciado') : t('social.denunciar') %></span>
+            </button>
+          <% } %>
+        </div>
 
         <% if (service.description) { %>
           <p class="xp-desc service-desc"><%= service.description %></p>
@@ -51,8 +79,23 @@
           <p class="xp-desc is-empty"><%= t('exp.sem_descricao') %></p>
         <% } %>
 
+        <% if (social && social.trip_info) { %>
+          <section class="xp-section sx-info" aria-labelledby="t-info">
+            <h2 id="t-info"><%= t('social.info_viagem') %></h2>
+            <p class="sx-pre"><%= social.trip_info %></p>
+          </section>
+        <% } %>
+
+        <% if (galeria && galeria.length > 1) { %>
+          <ul class="sx-gallery" aria-label="<%= t('social.galeria') %>">
+            <% galeria.forEach(function (url, i) { %>
+              <li><a href="<%= url %>" target="_blank" rel="noopener"><img src="<%= url %>" alt="<%= t('social.foto_n', { n: i + 1 }) %>" loading="lazy"></a></li>
+            <% }) %>
+          </ul>
+        <% } %>
+
         <dl class="xp-facts">
-          <div><dt><%= t('exp.preco') %></dt><dd>R$ <%= precoFmt %> <%= t('home.por_pessoa') %></dd></div>
+          <div><dt><%= t('exp.preco') %></dt><dd><%= precoFmt %><%= gratuita ? '' : ' ' + t('home.por_pessoa') %></dd></div>
           <div><dt><%= t('exp.horarios_com_vaga') %></dt><dd><%= slots.length ? t('exp.n_horarios', { n: slots.length }) : t('exp.nenhum_no_momento') %></dd></div>
           <div><dt><%= t('exp.pagamento') %></dt><dd><%= t('exp.pix_ou_cartao') %></dd></div>
           <div><dt><%= t('exp.reserva') %></dt><dd><%= t('exp.vaga_segura', { min: holdMinutes }) %></dd></div>
@@ -118,13 +161,82 @@
 
         <section class="xp-section" aria-labelledby="t-quem">
           <h2 id="t-quem"><%= t('exp.quem_organiza') %></h2>
-          <p><%= service.operador ? t('exp.operador_parceiro', { operador: service.operador }) : t('exp.operador_aquatrip') %></p>
+          <% if (comunidade) { const cr = social.criador; %>
+            <div class="sx-creator">
+              <a href="/usuarios/<%= encodeURIComponent(cr.id) %>" class="sx-creator-id">
+                <% if (cr.avatar) { %><img src="<%= cr.avatar %>" alt="" width="56" height="56"><% } else { %><span class="sx-avatar" aria-hidden="true"><%= cr.nome.charAt(0).toUpperCase() %></span><% } %>
+                <span><strong><%= cr.nome %></strong><small><%= t('social.membro_desde', { data: fmt.dataCurta(cr.desde) }) %> · <span data-seguidores><%= t(cr.seguidores === 1 ? 'social.seguidor_um' : 'social.seguidores_n', { n: cr.seguidores }) %></span></small></span>
+              </a>
+              <% if (!eDono) { %>
+                <button type="button" class="<%= social.meu.segue ? 'btn-ghost' : 'btn-primary' %> btn-sm" data-seguir="<%= cr.id %>" aria-pressed="<%= social.meu.segue %>" <%= logado ? '' : 'data-login' %>>
+                  <%= social.meu.segue ? t('social.seguindo') : t('social.seguir') %>
+                </button>
+              <% } %>
+            </div>
+            <p class="note"><%= service.price_cents > 0 ? t('social.nota_paga', { operador: service.operador || cr.nome }) : t('social.nota_gratuita') %></p>
+          <% } else { %>
+            <p><%= service.operador ? t('exp.operador_parceiro', { operador: service.operador }) : t('exp.operador_aquatrip') %></p>
+          <% } %>
         </section>
+
+        <section class="xp-section sx-comments" id="comentarios" aria-labelledby="t-coment">
+          <h2 id="t-coment"><%= t('social.comentarios') %></h2>
+          <% if (logado) { %>
+            <form class="sx-comment-form" id="sxComentar" data-servico="<%= service.id %>" novalidate data-fk-busy="off">
+              <label for="sxTexto" class="sr-only"><%= t('social.comentar_rotulo') %></label>
+              <textarea id="sxTexto" name="texto" rows="2" minlength="2" maxlength="600" data-counter required
+                        placeholder="<%= eDono ? t('social.comentar_ph_dono') : t('social.comentar_ph') %>" aria-describedby="sxTextoErr"></textarea>
+              <span class="field-error" id="sxTextoErr" aria-live="polite"></span>
+              <div class="form-actions"><button type="submit" class="btn-primary btn-sm" id="sxEnviar"><span><%= t('social.publicar_comentario') %></span></button></div>
+            </form>
+          <% } else { %>
+            <p class="booking-sub"><a href="/login?redirect=<%= encodeURIComponent('/reservar/' + service.slug + '#comentarios') %>"><%= t('social.entre_comentar') %></a></p>
+          <% } %>
+          <ul class="sx-comment-list" id="sxLista">
+            <% comentarios.forEach(function (c) { %>
+              <li class="sx-comment" data-id="<%= c.id %>">
+                <a class="sx-c-avatar" href="/usuarios/<%= encodeURIComponent(c.autor.id) %>" aria-hidden="true" tabindex="-1">
+                  <% if (c.autor.avatar) { %><img src="<%= c.autor.avatar %>" alt="" width="36" height="36" loading="lazy"><% } else { %><span class="sx-avatar"><%= c.autor.nome.charAt(0).toUpperCase() %></span><% } %>
+                </a>
+                <div>
+                  <p class="sx-c-head"><a href="/usuarios/<%= encodeURIComponent(c.autor.id) %>"><strong><%= c.autor.nome %></strong></a> <time datetime="<%= new Date(c.criado_em).toISOString() %>"><%= fmt.dataHora(c.criado_em) %></time></p>
+                  <p class="sx-pre"><%= c.texto %></p>
+                  <% if (c.pode_apagar) { %><button type="button" class="sx-c-del" data-apagar="<%= c.id %>"><%= t('social.apagar') %></button><% } %>
+                </div>
+              </li>
+            <% }) %>
+          </ul>
+          <p class="booking-sub" id="sxVazio"<%- comentarios.length ? ' hidden' : '' %>><%= t('social.sem_comentarios') %></p>
+        </section>
+
+        <% if (comunidade && !eDono && logado && !social.meu.denunciou) { %>
+          <dialog class="cx-dialog" id="sxDenuncia" aria-labelledby="sxDenTitulo">
+            <form class="cx-dialog-body" id="sxDenForm" data-servico="<%= service.id %>" novalidate data-fk-busy="off">
+              <h2 id="sxDenTitulo"><%= t('social.denunciar_titulo') %></h2>
+              <p class="field-help"><%= t('social.denunciar_texto') %></p>
+              <div class="field">
+                <label for="sxMotivo"><%= t('social.motivo') %></label>
+                <select id="sxMotivo" name="motivo" required>
+                  <% Object.keys(motivosDenuncia).forEach(function (k) { %><option value="<%= k %>"><%= t('social.motivo_' + k.toLowerCase()) %></option><% }) %>
+                </select>
+              </div>
+              <div class="field">
+                <label for="sxDetalhes"><%= t('social.detalhes') %> <span class="opt"><%= t('criar.opcional') %></span></label>
+                <textarea id="sxDetalhes" name="detalhes" rows="3" maxlength="500" data-counter></textarea>
+              </div>
+              <p class="form-status" id="sxDenStatus" role="status"></p>
+              <div class="form-actions">
+                <button type="button" class="btn-ghost" id="sxDenCancelar"><%= t('social.cancelar') %></button>
+                <button type="submit" class="btn-danger btn" id="sxDenEnviar"><span><%= t('social.enviar_denuncia') %></span></button>
+              </div>
+            </form>
+          </dialog>
+        <% } %>
       </div>
 
       <aside class="book" id="reservar" aria-labelledby="t-book">
         <h2 class="sr-only" id="t-book"><%= t('exp.reservar') %></h2>
-        <p class="book-price"><strong>R$ <%= precoFmt %></strong><span><%= t('home.por_pessoa') %></span></p>
+        <p class="book-price"><strong><%= precoFmt %></strong><% if (!gratuita) { %><span><%= t('home.por_pessoa') %></span><% } %></p>
 
         <% if (error) { %>
           <p class="form-alert form-alert-error" role="alert"><%= error %></p>
@@ -160,15 +272,15 @@
                 <button type="button" data-q="1" aria-label="<%= t('exp.mais_uma') %>"><i data-lucide="plus"></i></button>
               </div>
             </div>
-            <p class="book-total"><span><%= t('exp.total') %></span><span id="bookTotal">R$ <%= precoFmt %></span></p>
+            <p class="book-total"><span><%= t('exp.total') %></span><span id="bookTotal"><%= precoFmt %></span></p>
             <% if (logado) { %>
-              <button type="submit" class="btn-primary btn-lg btn-block"><%= t('exp.continuar_pagamento') %></button>
+              <button type="submit" class="btn-primary btn-lg btn-block"><%= gratuita ? t('social.confirmar_participacao') : t('exp.continuar_pagamento') %></button>
             <% } else { %>
               <%# Visitante vê tudo; para reservar, entra e volta para esta mesma página. %>
               <a class="btn-primary btn-lg btn-block" href="/login?redirect=<%= encodeURIComponent('/reservar/' + service.slug) %>"><%= t('exp.entrar_reservar') %></a>
               <p class="book-note"><%- t('exp.sem_conta_html') %></p>
             <% } %>
-            <p class="book-note"><%= t('exp.vaga_reservada_min', { min: holdMinutes }) %></p>
+            <p class="book-note"><%= gratuita ? t('social.gratuita_nota') : t('exp.vaga_reservada_min', { min: holdMinutes }) %></p>
           </form>
         <% } %>
       </aside>
@@ -177,7 +289,7 @@
 
   <% if (slots.length) { %>
     <div class="book-bar" aria-hidden="true">
-      <p><strong>R$ <%= precoFmt %></strong><small><%= t('home.por_pessoa') %></small></p>
+      <p><strong><%= precoFmt %></strong><% if (!gratuita) { %><small><%= t('home.por_pessoa') %></small><% } %></p>
       <a class="btn-primary" href="#reservar" tabindex="-1"><%= t('exp.escolher_data') %></a>
     </div>
   <% } %>
@@ -186,5 +298,6 @@
 <%- include('../partials/footer') %>
 <script src="/js/barras.js" defer></script>
 <script src="/js/experiencia.js" defer></script>
+<script src="/js/social.js" defer></script>
 </body>
 </html>

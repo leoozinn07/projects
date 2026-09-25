@@ -1,0 +1,44 @@
+<%#
+  Cartão de experiência da comunidade. Parâmetros:
+    e        item do feed (communityService.feed) ou do perfil
+    criador  mostra quem organiza (feed)
+  O título é o link (estendido ao cartão todo por CSS); o coração é
+  um botão separado, para não aninhar controles dentro de um link.
+%>
+<%
+  const c = capaDe(e);
+  const logado = !!locals.user;
+  const gratuita = !e.price_cents;
+%>
+<article class="cc-card">
+  <figure class="cc-media">
+    <img src="<%= c.src %>" alt="<%= c.alt %>" loading="lazy" decoding="async">
+    <span class="cc-price"><%= gratuita ? t('comunidade.gratuita') : fmt.brl(e.price_cents / 100, e.price_cents % 100 !== 0) %></span>
+    <% if (c.ilustrativa) { %><span class="cc-tag"><%= categoriaRotulo(e.category) %></span><% } %>
+  </figure>
+  <div class="cc-body">
+    <% if (locals.criador && e.criador) { %>
+      <a class="cc-author" href="/usuarios/<%= encodeURIComponent(e.criador.id) %>">
+        <% if (e.criador.avatar) { %><img src="<%= e.criador.avatar %>" alt="" width="28" height="28" loading="lazy"><% } else { %><span class="avatar-mini" aria-hidden="true"><%= e.criador.nome.charAt(0).toUpperCase() %></span><% } %>
+        <span><%= e.criador.nome %></span>
+      </a>
+    <% } %>
+    <p class="cc-loc"><i data-lucide="map-pin"></i> <%= e.location %></p>
+    <h3 class="cc-title"><a href="/reservar/<%= encodeURIComponent(e.slug) %>"><%= e.title %></a></h3>
+    <p class="cc-meta">
+      <% if (e.starts_at) { %><span><i data-lucide="calendar"></i> <%= fmt.diaCurto(e.starts_at) %> · <%= fmt.hora(e.starts_at) %></span><% } %>
+      <% if (e.vagas_restantes != null) { %>
+        <span class="<%= e.vagas_restantes === 0 ? 'is-off' : '' %>"><i data-lucide="users"></i>
+          <%= e.vagas_restantes === 0 ? t('comunidade.esgotada') : t(e.vagas_restantes === 1 ? 'comunidade.vaga_uma' : 'comunidade.vagas_n', { n: e.vagas_restantes }) %></span>
+      <% } %>
+    </p>
+    <div class="cc-foot">
+      <button type="button" class="cc-like<%= e.curtida_por_mim ? ' is-on' : '' %>" data-curtir="<%= e.id %>"
+              aria-pressed="<%= e.curtida_por_mim ? 'true' : 'false' %>" <%= logado ? '' : 'data-login' %>
+              aria-label="<%= t('comunidade.curtir_aria', { titulo: e.title }) %>">
+        <i data-lucide="heart"></i> <span class="num" data-contagem><%= e.curtidas %></span>
+      </button>
+      <span class="cc-count" aria-label="<%= t('comunidade.comentarios_aria', { n: e.comentarios }) %>"><i data-lucide="message-circle"></i> <span class="num"><%= e.comentarios %></span></span>
+    </div>
+  </div>
+</article>

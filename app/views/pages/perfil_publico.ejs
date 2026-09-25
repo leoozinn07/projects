@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="<%= locals.htmlLang || 'pt-BR' %>">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="csrf-token" content="<%= csrfToken %>">
+  <title><%= seo.titulo %></title>
+  <%- include('../partials/seo') %>
+  <link rel="stylesheet" href="/css/comunidade.css">
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+<%- include('../partials/header') %>
+<main id="main-content" class="wrap pf-page">
+  <section class="pf-hero" aria-labelledby="pfNome">
+    <div class="pf-avatar-wrap">
+      <% if (perfil.avatar) { %>
+        <img class="pf-avatar" src="<%= perfil.avatar %>" alt="" width="120" height="120">
+      <% } else { %>
+        <span class="pf-avatar pf-avatar-ini" aria-hidden="true"><%= perfil.nome.charAt(0).toUpperCase() %></span>
+      <% } %>
+    </div>
+    <div class="pf-id">
+      <p class="kicker"><%= t('perfil_social.publico_kicker') %></p>
+      <h1 id="pfNome" class="display h-m"><%= perfil.nome %></h1>
+      <p class="pf-sub"><%= t('perfil_social.membro_desde', { data: fmt.dataCurta(perfil.membro_desde) }) %></p>
+      <% if (perfil.bio) { %><p class="pf-bio-txt"><%= perfil.bio %></p><% } %>
+    </div>
+    <div class="pf-actions">
+      <button type="button" class="<%= perfil.segue ? 'btn-ghost' : 'btn-primary' %> btn-sm" data-seguir="<%= perfil.id %>" aria-pressed="<%= perfil.segue %>" <%= user ? '' : 'data-login' %>>
+        <%= perfil.segue ? t('social.seguindo') : t('social.seguir') %>
+      </button>
+    </div>
+  </section>
+
+  <dl class="pf-stats">
+    <div><dt><%= t('perfil_social.seguidores') %></dt><dd><button type="button" class="pf-stat-btn num" data-lista="seguidores" data-user="<%= perfil.id %>" data-seguidores-num><%= perfil.seguidores %></button></dd></div>
+    <div><dt><%= t('perfil_social.seguindo') %></dt><dd><button type="button" class="pf-stat-btn num" data-lista="seguindo" data-user="<%= perfil.id %>"><%= perfil.seguindo %></button></dd></div>
+    <div><dt><%= t('perfil_social.curtidas_recebidas') %></dt><dd class="num"><%= fmt.num(perfil.curtidas_recebidas) %></dd></div>
+    <div><dt><%= t('perfil_social.experiencias') %></dt><dd class="num"><%= perfil.experiencias.length %></dd></div>
+  </dl>
+
+  <h2 class="h-m pf-section-title"><%= t('perfil_social.experiencias_de', { nome: perfil.nome }) %></h2>
+  <% if (!perfil.experiencias.length) { %>
+    <section class="empty-state"><i data-lucide="map" aria-hidden="true"></i><h2><%= t('perfil_social.publico_sem_exp') %></h2></section>
+  <% } else { %>
+    <ul class="cc-grid">
+      <% perfil.experiencias.forEach(function (e) { %>
+        <li><%- include('../partials/cc-card', { e: e, criador: false }) %></li>
+      <% }) %>
+    </ul>
+  <% } %>
+</main>
+
+<dialog class="cx-dialog" id="pfLista" aria-labelledby="pfListaTitulo">
+  <div class="cx-dialog-body">
+    <h2 id="pfListaTitulo"></h2>
+    <ul class="pf-people" id="pfListaItens"></ul>
+    <div class="form-actions"><button type="button" class="btn-ghost" id="pfListaFechar"><%= t('social.fechar') %></button></div>
+  </div>
+</dialog>
+<%- include('../partials/footer') %>
+<script src="/js/social.js" defer></script>
+<script src="/js/perfil-social.js" defer></script>
+</body>
+</html>
