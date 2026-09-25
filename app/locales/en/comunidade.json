@@ -36,7 +36,8 @@
     "como2_t": "People join",
     "como2": "Interested people like, comment, follow and confirm their spot through AquaTrip.",
     "como3_t": "Everything on record",
-    "como3": "Participants, comments and payments stay organized on your profile."
+    "como3": "Participants, comments and payments stay organized on your profile.",
+    "exemplo": "Sample"
   },
   "criar": {
     "titulo": "Create experience",
@@ -131,7 +132,10 @@
     "enviar_denuncia": "Send report",
     "fechar": "Close",
     "confirmar_participacao": "Confirm participation",
-    "gratuita_nota": "Free: your spot is confirmed right away."
+    "gratuita_nota": "Free: your spot is confirmed right away.",
+    "aviso_exemplo": "Demo content: this trip and its profiles, comments and reviews were created to test the site and are not real.",
+    "avaliacao_exemplo_uma": "{n} sample review",
+    "avaliacao_exemplo_varias": "{n} sample reviews"
   },
   "perfil_social": {
     "meu_titulo": "My profile",
@@ -169,7 +173,8 @@
     "comentou_em": "commented on",
     "experiencias_de": "Experiences by {nome}",
     "publico_sem_exp": "No published experiences at the moment.",
-    "seo_desc": "{nome}'s profile in the AquaTrip community."
+    "seo_desc": "{nome}'s profile in the AquaTrip community.",
+    "perfil_exemplo": "Demo profile created to test the site. Not a real person."
   },
   "feedback": {
     "titulo": "Complaints and suggestions",

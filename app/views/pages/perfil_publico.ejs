@@ -23,6 +23,7 @@
     <div class="pf-id">
       <p class="kicker"><%= t('perfil_social.publico_kicker') %></p>
       <h1 id="pfNome" class="display h-m"><%= perfil.nome %></h1>
+      <% if (perfil.exemplo) { %><p class="aviso-exemplo" role="note"><span class="tag-exemplo"><%= t('comunidade.exemplo') %></span> <%= t('perfil_social.perfil_exemplo') %></p><% } %>
       <p class="pf-sub"><%= t('perfil_social.membro_desde', { data: fmt.dataCurta(perfil.membro_desde) }) %></p>
       <% if (perfil.bio) { %><p class="pf-bio-txt"><%= perfil.bio %></p><% } %>
     </div>

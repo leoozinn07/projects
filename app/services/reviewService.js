@@ -112,7 +112,7 @@ async function publicas(serviceId, limite = 20) {
       [serviceId]
     ),
     db.query(
-      `SELECT r.id, r.rating, r.title, r.body, r.created_at, u.name
+      `SELECT r.id, r.rating, r.title, r.body, r.created_at, u.name, u.is_demo
        FROM reviews r JOIN users u ON u.id = r.user_id
        WHERE r.service_id = ? AND r.status = 'VISIBLE'
        ORDER BY r.created_at DESC
@@ -138,9 +138,10 @@ async function publicas(serviceId, limite = 20) {
       n5: Number(r0.n5), n4: Number(r0.n4), n3: Number(r0.n3), n2: Number(r0.n2), n1: Number(r0.n1),
     },
     // O nome completo nunca sai daqui: vira "Lia S." no servidor.
-    avaliacoes: lista.rows.map(({ name, ...r }) => ({
+    avaliacoes: lista.rows.map(({ name, is_demo, ...r }) => ({
       ...r,
       autor: nomeExibido(name),
+      exemplo: !!Number(is_demo),
       // Só APROVADAS: pendente e recusada nunca chegam à página pública.
       fotos: fotos.filter((f) => f.review_id === r.id).map((f) => `/media/${f.storage_key}`),
     })),

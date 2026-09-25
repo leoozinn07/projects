@@ -21,7 +21,9 @@
     "db:verificar-restore": "bash scripts/verificar-restore.sh",
     "pagamentos:reconciliar": "node scripts/reconciliar-pagamentos.js",
     "2fa:redefinir": "node scripts/redefinir-2fa.js",
-    "db:seed:demo": "node database/seed_demo.js"
+    "db:seed:demo": "node database/seed_demo.js",
+    "db:seed:comunidade": "node database/seed_comunidade.js",
+    "db:seed:comunidade:limpar": "node database/seed_comunidade.js --limpar"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",

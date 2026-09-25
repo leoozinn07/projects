@@ -15,6 +15,7 @@
     <img src="<%= c.src %>" alt="<%= c.alt %>" loading="lazy" decoding="async">
     <span class="cc-price"><%= gratuita ? t('comunidade.gratuita') : fmt.brl(e.price_cents / 100, e.price_cents % 100 !== 0) %></span>
     <% if (c.ilustrativa) { %><span class="cc-tag"><%= categoriaRotulo(e.category) %></span><% } %>
+    <% if (e.exemplo) { %><span class="tag-exemplo cc-exemplo" title="<%= t('social.aviso_exemplo') %>"><%= t('comunidade.exemplo') %></span><% } %>
   </figure>
   <div class="cc-body">
     <% if (locals.criador && e.criador) { %>

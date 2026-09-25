@@ -36,7 +36,8 @@
     "como2_t": "La gente se suma",
     "como2": "Quien se interesa da me gusta, comenta, sigue y confirma su plaza por AquaTrip.",
     "como3_t": "Todo registrado",
-    "como3": "Participantes, comentarios y pagos quedan organizados en tu perfil."
+    "como3": "Participantes, comentarios y pagos quedan organizados en tu perfil.",
+    "exemplo": "Ejemplo"
   },
   "criar": {
     "titulo": "Crear experiencia",
@@ -131,7 +132,10 @@
     "enviar_denuncia": "Enviar denuncia",
     "fechar": "Cerrar",
     "confirmar_participacao": "Confirmar participación",
-    "gratuita_nota": "Gratis: tu plaza se confirma al instante."
+    "gratuita_nota": "Gratis: tu plaza se confirma al instante.",
+    "aviso_exemplo": "Contenido de demostración: este viaje y sus perfiles, comentarios y reseñas se crearon para probar el sitio y no son reales.",
+    "avaliacao_exemplo_uma": "{n} reseña de ejemplo",
+    "avaliacao_exemplo_varias": "{n} reseñas de ejemplo"
   },
   "perfil_social": {
     "meu_titulo": "Mi perfil",
@@ -169,7 +173,8 @@
     "comentou_em": "comentó en",
     "experiencias_de": "Experiencias de {nome}",
     "publico_sem_exp": "No hay experiencias publicadas por ahora.",
-    "seo_desc": "Perfil de {nome} en la comunidad AquaTrip."
+    "seo_desc": "Perfil de {nome} en la comunidad AquaTrip.",
+    "perfil_exemplo": "Perfil de demostración creado para probar el sitio. No es una persona real."
   },
   "feedback": {
     "titulo": "Reclamos y sugerencias",

@@ -12,7 +12,7 @@
    ocupação do fluxo de reserva: confirmadas + pendentes vivas.
    ============================================================== */
 const db = require("../lib/db");
-const { visivel } = require("../lib/visibilidade");
+const { visivel, semExemplo } = require("../lib/visibilidade");
 
 const FUSO = process.env.OPERATION_TIMEZONE || "America/Sao_Paulo";
 
@@ -42,7 +42,7 @@ async function listByCategory(categoria) {
      LEFT JOIN livres l ON l.service_id = sv.id
      LEFT JOIN media m ON m.id = sv.cover_media_id
      LEFT JOIN partners pa ON pa.id = sv.partner_id
-     WHERE ${visivel("sv")} AND (? IS NULL OR sv.category = ?)
+     WHERE ${visivel("sv")} AND ${semExemplo("sv")} AND (? IS NULL OR sv.category = ?)
      GROUP BY sv.id, m.storage_key, pa.display_name
      -- Primeiro o que dá para reservar, pela data mais próxima.
      ORDER BY proxima_data IS NULL, proxima_data, sv.title`,
@@ -54,7 +54,7 @@ async function listByCategory(categoria) {
 /** Quantas experiências ativas cada categoria tem — navegação do catálogo. */
 async function countByCategory() {
   const { rows } = await db.query(
-    `SELECT category, COUNT(*) AS n FROM services sv WHERE ${visivel("sv")} GROUP BY category`
+    `SELECT category, COUNT(*) AS n FROM services sv WHERE ${visivel("sv")} AND ${semExemplo("sv")} GROUP BY category`
   );
   return Object.fromEntries(rows.map((r) => [r.category, r.n]));
 }

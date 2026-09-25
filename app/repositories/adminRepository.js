@@ -12,16 +12,21 @@ const db = require("../lib/db");
 
 /* ---------- Métricas do painel ---------- */
 
+/* Contas do seed de demonstração (users.is_demo) ficam fora de TODA
+   métrica: o painel mostra só dados reais. NOT EXISTS (e não NOT IN)
+   para coluna nula — experiência da equipe, sem criador — continuar contando. */
+const semDemo = (coluna) => `NOT EXISTS (SELECT 1 FROM users dz WHERE dz.id = ${coluna} AND dz.is_demo)`;
+
 async function metrics({ platformFeePercent }) {
   const { rows } = await db.query(
     `SELECT
-       (SELECT COUNT(*) FROM users)                                       AS usuarios,
-       (SELECT COUNT(*) FROM users WHERE created_at > NOW() - INTERVAL 30 DAY)
+       (SELECT COUNT(*) FROM users WHERE NOT is_demo)                     AS usuarios,
+       (SELECT COUNT(*) FROM users WHERE NOT is_demo AND created_at > NOW() - INTERVAL 30 DAY)
                                                                             AS usuarios_30d,
-       (SELECT COUNT(*) FROM services WHERE active)                       AS experiencias_ativas,
-       (SELECT COUNT(*) FROM bookings WHERE status = 'CONFIRMED')         AS reservas_confirmadas,
+       (SELECT COUNT(*) FROM services WHERE active AND ${semDemo("services.creator_user_id")}) AS experiencias_ativas,
+       (SELECT COUNT(*) FROM bookings WHERE status = 'CONFIRMED' AND ${semDemo("bookings.user_id")}) AS reservas_confirmadas,
        (SELECT COUNT(*) FROM bookings WHERE status = 'PENDING'
-          AND expires_at > NOW())                                         AS reservas_pendentes,
+          AND expires_at > NOW() AND ${semDemo("bookings.user_id")})      AS reservas_pendentes,
        (SELECT COALESCE(SUM(amount_cents), 0) FROM payments
           WHERE status = 'APPROVED')                                      AS receita_bruta_cents,
        (SELECT COALESCE(SUM(amount_cents), 0) FROM payments
@@ -384,26 +389,31 @@ async function listTransactions({ status = null, dias = null, limit = 200 } = {}
 async function platformCounts() {
   const { rows } = await db.query(
     `SELECT
-       (SELECT COUNT(*) FROM users WHERE last_seen_at > NOW() - INTERVAL 5 MINUTE)          AS online_agora,
-       (SELECT COUNT(*) FROM users WHERE last_seen_at > NOW() - INTERVAL 24 HOUR)           AS ativos_24h,
-       (SELECT COUNT(*) FROM users WHERE status = 'SUSPENDED')                               AS usuarios_suspensos,
-       (SELECT COUNT(*) FROM users WHERE status = 'BANNED')                                  AS usuarios_banidos,
+       (SELECT COUNT(*) FROM users WHERE NOT is_demo AND last_seen_at > NOW() - INTERVAL 5 MINUTE) AS online_agora,
+       (SELECT COUNT(*) FROM users WHERE NOT is_demo AND last_seen_at > NOW() - INTERVAL 24 HOUR)  AS ativos_24h,
+       (SELECT COUNT(*) FROM users WHERE NOT is_demo AND status = 'SUSPENDED')               AS usuarios_suspensos,
+       (SELECT COUNT(*) FROM users WHERE NOT is_demo AND status = 'BANNED')                  AS usuarios_banidos,
        (SELECT COUNT(*) FROM partners WHERE status = 'APPROVED')                             AS parceiros_aprovados,
        (SELECT COUNT(*) FROM partners WHERE status = 'PENDING')                              AS parceiros_pendentes,
-       (SELECT COUNT(*) FROM services)                                                       AS experiencias_total,
-       (SELECT COUNT(*) FROM services WHERE creator_user_id IS NOT NULL)                     AS experiencias_comunidade,
-       (SELECT COUNT(*) FROM services WHERE moderation_status <> 'ACTIVE')                   AS experiencias_moderadas,
-       (SELECT COALESCE(SUM(quantity), 0) FROM bookings WHERE status = 'CONFIRMED')          AS participantes,
+       (SELECT COUNT(*) FROM services WHERE ${semDemo("services.creator_user_id")})           AS experiencias_total,
+       (SELECT COUNT(*) FROM services WHERE creator_user_id IS NOT NULL
+          AND ${semDemo("services.creator_user_id")})                                        AS experiencias_comunidade,
+       (SELECT COUNT(*) FROM services WHERE moderation_status <> 'ACTIVE'
+          AND ${semDemo("services.creator_user_id")})                                        AS experiencias_moderadas,
+       (SELECT COALESCE(SUM(quantity), 0) FROM bookings WHERE status = 'CONFIRMED'
+          AND ${semDemo("bookings.user_id")})                                                AS participantes,
        (SELECT COUNT(*) FROM experience_reports WHERE status = 'OPEN')                       AS denuncias_abertas,
        (SELECT COUNT(*) FROM platform_feedback WHERE kind = 'COMPLAINT'
           AND status IN ('OPEN', 'IN_PROGRESS'))                                             AS reclamacoes_abertas,
-       (SELECT COUNT(*) FROM reviews WHERE status = 'VISIBLE')                               AS avaliacoes_experiencias,
-       (SELECT ROUND(AVG(rating), 1) FROM reviews WHERE status = 'VISIBLE')                  AS nota_media_experiencias,
+       (SELECT COUNT(*) FROM reviews WHERE status = 'VISIBLE' AND ${semDemo("reviews.user_id")}) AS avaliacoes_experiencias,
+       (SELECT ROUND(AVG(rating), 1) FROM reviews WHERE status = 'VISIBLE'
+          AND ${semDemo("reviews.user_id")})                                                 AS nota_media_experiencias,
        (SELECT COUNT(*) FROM platform_feedback WHERE kind = 'RATING')                        AS avaliacoes_plataforma,
        (SELECT ROUND(AVG(rating), 1) FROM platform_feedback WHERE kind = 'RATING')           AS nota_media_plataforma,
-       (SELECT COUNT(*) FROM experience_comments WHERE status = 'VISIBLE')                   AS comentarios,
-       (SELECT COUNT(*) FROM experience_likes)                                               AS curtidas,
-       (SELECT COUNT(*) FROM user_follows)                                                   AS conexoes`
+       (SELECT COUNT(*) FROM experience_comments WHERE status = 'VISIBLE'
+          AND ${semDemo("experience_comments.user_id")})                                     AS comentarios,
+       (SELECT COUNT(*) FROM experience_likes WHERE ${semDemo("experience_likes.user_id")})  AS curtidas,
+       (SELECT COUNT(*) FROM user_follows WHERE ${semDemo("user_follows.follower_id")})      AS conexoes`
   );
   const r = rows[0];
   const out = {};
@@ -458,7 +468,7 @@ async function listCommunityServices({ busca = null, status = null, comDenuncia 
             CASE WHEN s.creator_user_id IS NOT NULL THEN 'comunidade' ELSE 'parceiro' END AS origem,
             pa.display_name AS parceiro_nome,
             s.moderation_status, s.moderation_reason, s.moderated_at, s.created_at,
-            u.id AS criador_id, u.name AS criador_nome, u.email AS criador_email, u.status AS criador_status,
+            u.id AS criador_id, u.name AS criador_nome, u.email AS criador_email, u.status AS criador_status, u.is_demo AS criador_demo,
             sl.starts_at, CONVERT_TZ(sl.starts_at, 'UTC', ?) AS starts_local, sl.capacity,
             (SELECT COALESCE(SUM(b.quantity), 0) FROM bookings b WHERE b.slot_id = sl.id AND b.status = 'CONFIRMED') AS participantes,
             (SELECT COUNT(*) FROM experience_interests i WHERE i.service_id = s.id) AS interessados,
