@@ -122,6 +122,8 @@ const VIAGENS = [
       "Procuro parceiros para dividir o barco durante a semana.",
     info: "Licença de pesca amadora é obrigatória para cada pescador. Equipamento próprio. " +
       "Saída do porto da cidade logo cedo.",
+    fotos: ["database/fotos-exemplo/barcelos-1.jpg", "database/fotos-exemplo/barcelos-2.jpg"],
+    alt: "Praia de areia branca e barcos nas águas escuras do Rio Negro",
   },
   {
     chave: "jeri", criador: "thiago", categoria: "praia", dias: 28, hora: "16:30", vagas: 10,
