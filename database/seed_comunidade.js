@@ -90,6 +90,8 @@ const VIAGENS = [
       "Quero montar um grupo pequeno para dividir o transporte entre a cidade e os atrativos.",
     info: "Os passeios em Bonito têm vagas limitadas por dia e são comprados com agência credenciada: cada pessoa reserva o seu. " +
       "Divisão do carro combinada no grupo.",
+    fotos: ["database/fotos-exemplo/bonito-1.jpg"],
+    alt: "Pessoas flutuando em rio de água cristalina entre a mata, em Bonito",
   },
   {
     chave: "arraial", criador: "caio", categoria: "caiaque", dias: 14, hora: "07:30", vagas: 4,
