@@ -39,19 +39,17 @@ async function parceiro({ aprovar = true, mp = false, email } = {}) {
 const criar = (p, extra = {}) => p.agent.post("/api/parceiro/experiencias").set("X-CSRF-Token", p.csrf)
   .send({ titulo: "Mergulho no Saco do Sombrio", local: "Ilhabela, SP", categoria: "mergulho", preco: 250, descricao: DESC, ...extra });
 const enviar = (p, id) => p.agent.post(`/api/parceiro/experiencias/${id}/enviar`).set("X-CSRF-Token", p.csrf);
-const revisar = (adm, id, corpo) => adm.agent.post(`/api/admin/revisao/experiencias/${id}`).set("X-CSRF-Token", adm.csrf).send(corpo);
 
 async function publicada(opts = { mp: true }) {
   const p = await parceiro(opts);
   const id = (await criar(p)).body.experiencia.id;
-  await enviar(p, id);
   const adm = await comoAdmin();
-  await revisar(adm, id, { aprovar: true });
   await db.query(`INSERT INTO service_slots (id, service_id, starts_at, capacity) VALUES ($1, $2, NOW() + INTERVAL 5 DAY, 8)`, [crypto.randomUUID(), id]);
   const { rows } = await db.query("SELECT slug FROM services WHERE id = $1", [id]);
   return { p, adm, id, slug: rows[0].slug };
 }
 const naVitrine = async (titulo = "Mergulho no Saco do Sombrio") => (await request(app).get("/mergulho")).text.includes(titulo);
+const moderar = (adm, id, corpo) => adm.agent.post(`/api/admin/comunidade/${id}/moderar`).set("X-CSRF-Token", adm.csrf).send(corpo);
 
 describe("Quem cadastra", () => {
   it("só parceiro aprovado cria experiência", async () => {
@@ -62,42 +60,35 @@ describe("Quem cadastra", () => {
     expect((await criar(pendente)).body.codigo).toBe("PARTNER_NOT_ACTIVE");
   });
 
-  it("nasce como rascunho, fora da vitrine", async () => {
+  it("é publicada na hora, sem passar por revisão", async () => {
     const p = await parceiro({ mp: true });
     const r = await criar(p);
     expect(r.status).toBe(201);
-    expect(r.body.experiencia.review_status).toBe("DRAFT");
-    expect(await naVitrine()).toBe(false);
+    expect(r.body.experiencia.review_status).toBe("APPROVED");
+    expect(await naVitrine()).toBe(true);
   });
 });
 
-describe("Revisão", () => {
-  it("envio exige descrição; vai para a fila do admin", async () => {
+describe("Publicação", () => {
+  it("descrição curta é recusada já na criação", async () => {
     const p = await parceiro({ mp: true });
-    const id = (await criar(p, { descricao: "curta" })).body.experiencia.id;
-    expect((await enviar(p, id)).body.codigo).toBe("DESCRIPTION_REQUIRED");
-    await p.agent.put(`/api/parceiro/experiencias/${id}`).set("X-CSRF-Token", p.csrf).send({ descricao: DESC });
-    expect((await enviar(p, id)).body.experiencia.review_status).toBe("PENDING");
-    const adm = await comoAdmin();
-    expect((await adm.agent.get("/api/admin/revisao/experiencias")).body.experiencias.map((x) => x.id)).toContain(id);
-    expect(await naVitrine()).toBe(false);
+    const r = await criar(p, { descricao: "curta" });
+    expect(r.status).toBe(422);
+    expect(r.body.codigo).toBe("DESCRIPTION_REQUIRED");
+    expect((await db.query("SELECT COUNT(*) AS n FROM services")).rows[0].n).toBe(0);
   });
 
-  it("recusa exige motivo da lista; parceiro corrige e reenvia", async () => {
+  it("rascunho ou recusada de antes da mudança é publicada pelo botão Publicar", async () => {
     const p = await parceiro({ mp: true });
     const id = (await criar(p)).body.experiencia.id;
-    await enviar(p, id);
-    const adm = await comoAdmin();
-    expect((await revisar(adm, id, { aprovar: false, motivo: "feio" })).body.codigo).toBe("INVALID_REASON");
-    expect((await revisar(adm, id, { aprovar: false, motivo: "DADOS_DE_CONTATO" })).body.experiencia.review_status).toBe("REJECTED");
-    const minhas = (await p.agent.get("/api/parceiro/experiencias")).body.experiencias;
-    expect(minhas[0].motivo).toMatch(/telefone, site/);
-    expect((await enviar(p, id)).body.experiencia.review_status).toBe("PENDING");
-    const mails = fs.readdirSync(mailService.MAIL_DIR).filter((f) => f.includes("experiencia_recusada"));
-    expect(mails).toHaveLength(1);
+    await db.query(`UPDATE services SET review_status = 'REJECTED', review_reason = 'DADOS_DE_CONTATO' WHERE id = $1`, [id]);
+    expect(await naVitrine()).toBe(false);
+    expect((await enviar(p, id)).body.experiencia.review_status).toBe("APPROVED");
+    expect(await naVitrine()).toBe(true);
+    expect((await enviar(p, id)).body.codigo).toBe("INVALID_STATE");
   });
 
-  it("aprovada aparece com 'Operado por' o parceiro", async () => {
+  it("aparece com 'Operado por' o parceiro", async () => {
     const { slug } = await publicada();
     expect(await naVitrine()).toBe(true);
     const html = (await request(app).get(`/reservar/${slug}`)).text;
@@ -106,7 +97,7 @@ describe("Revisão", () => {
 });
 
 describe("O dinheiro só vai para o parceiro (sem Mercado Pago, não vende)", () => {
-  it("aprovada mas sem Mercado Pago conectado: fora da vitrine e horário não reservável", async () => {
+  it("publicada mas sem Mercado Pago conectado: fora da vitrine e horário não reservável", async () => {
     const { id, slug } = await publicada({ mp: false });
     expect(await naVitrine()).toBe(false);
     expect((await request(app).get(`/reservar/${slug}`)).status).toBe(404);
@@ -116,11 +107,10 @@ describe("O dinheiro só vai para o parceiro (sem Mercado Pago, não vende)", ()
     expect((await db.query("SELECT 1 FROM bookings")).rows).toHaveLength(0);
   });
 
-  it("o e-mail de aprovação avisa que falta conectar o Mercado Pago", async () => {
-    await publicada({ mp: false });
-    const [m] = fs.readdirSync(mailService.MAIL_DIR).filter((f) => f.includes("experiencia_aprovada"))
-      .map((f) => fs.readFileSync(`${mailService.MAIL_DIR}/${f}`, "utf8"));
-    expect(m).toMatch(/conectar sua conta do Mercado Pago/);
+  it("aparece assim que o Mercado Pago é conectado", async () => {
+    const { p } = await publicada({ mp: false });
+    await db.query("UPDATE partners SET mp_connected_at = NOW() WHERE id = $1", [p.partnerId]);
+    expect(await naVitrine()).toBe(true);
   });
 });
 
@@ -128,31 +118,53 @@ describe("Edição de experiência publicada", () => {
   it("preço muda na hora e continua no ar", async () => {
     const { p, id, slug } = await publicada();
     const r = await p.agent.put(`/api/parceiro/experiencias/${id}`).set("X-CSRF-Token", p.csrf).send({ preco: 199.9 });
-    expect(r.body.experiencia).toMatchObject({ review_status: "APPROVED", price_cents: 19990, voltouParaRevisao: false });
+    expect(r.body.experiencia).toMatchObject({ review_status: "APPROVED", price_cents: 19990 });
     expect((await request(app).get(`/reservar/${slug}`)).text).toContain("199,90");
   });
 
-  it("mudar o texto volta para revisão e tira da vitrine", async () => {
+  it("mudar o texto continua no ar", async () => {
     const { p, id } = await publicada();
     const r = await p.agent.put(`/api/parceiro/experiencias/${id}`).set("X-CSRF-Token", p.csrf)
-      .send({ descricao: DESC + " Ligue 12 99999-0000 para desconto." });
-    expect(r.body.experiencia).toMatchObject({ review_status: "PENDING", voltouParaRevisao: true });
-    expect(await naVitrine()).toBe(false);
+      .send({ titulo: "Mergulho no Saco do Sombrio ao amanhecer" });
+    expect(r.body.experiencia.review_status).toBe("APPROVED");
+    expect(await naVitrine("Mergulho no Saco do Sombrio ao amanhecer")).toBe(true);
   });
 
-  it("não edita durante a revisão", async () => {
-    const p = await parceiro({ mp: true });
-    const id = (await criar(p)).body.experiencia.id;
-    await enviar(p, id);
-    expect((await p.agent.put(`/api/parceiro/experiencias/${id}`).set("X-CSRF-Token", p.csrf).send({ preco: 10 })).body.codigo).toBe("UNDER_REVIEW");
-  });
-
-  it("pausar tira da vitrine sem passar por revisão", async () => {
+  it("pausar tira da vitrine e retomar devolve", async () => {
     const { p, id } = await publicada();
     await p.agent.post(`/api/parceiro/experiencias/${id}/ativa`).set("X-CSRF-Token", p.csrf).send({ ativa: false });
     expect(await naVitrine()).toBe(false);
     await p.agent.post(`/api/parceiro/experiencias/${id}/ativa`).set("X-CSRF-Token", p.csrf).send({ ativa: true });
     expect(await naVitrine()).toBe(true);
+  });
+});
+
+describe("Moderação depois de publicada", () => {
+  it("admin vê a experiência do parceiro, suspende (sai do ar, não edita) e reativa", async () => {
+    const { p, adm, id, slug } = await publicada();
+    const lista = (await adm.agent.get("/api/admin/comunidade")).body.experiencias;
+    expect(lista.find((x) => x.id === id)).toMatchObject({ origem: "parceiro" });
+
+    expect((await moderar(adm, id, { status: "SUSPENDED", motivo: "Anúncio com contato externo" })).status).toBe(200);
+    expect((await request(app).get(`/reservar/${slug}`)).status).toBe(404);
+    const edit = await p.agent.put(`/api/parceiro/experiencias/${id}`).set("X-CSRF-Token", p.csrf).send({ preco: 10 });
+    expect(edit.body.codigo).toBe("MODERATED");
+    const minhas = (await p.agent.get("/api/parceiro/experiencias")).body.experiencias;
+    expect(minhas[0]).toMatchObject({ moderation_status: "SUSPENDED", moderation_reason: "Anúncio com contato externo" });
+
+    await moderar(adm, id, { status: "ACTIVE" });
+    expect((await request(app).get(`/reservar/${slug}`)).status).toBe(200);
+  });
+
+  it("qualquer pessoa logada pode denunciar a experiência do parceiro", async () => {
+    const { id, slug, adm } = await publicada();
+    const cliente = await createUser({ email: "denuncia@aquatrip.local" });
+    const c = await loginAs(cliente);
+    expect((await request(app).get(`/reservar/${slug}`).set("Cookie", "")).text).toContain("sxDenunciar");
+    const r = await c.agent.post(`/api/experiencias/${id}/denunciar`).set("X-CSRF-Token", c.csrf).send({ motivo: "GOLPE" });
+    expect(r.status).toBe(200);
+    const lista = (await adm.agent.get("/api/admin/comunidade?denuncias=1")).body.experiencias;
+    expect(lista.map((x) => x.id)).toContain(id);
   });
 });
 

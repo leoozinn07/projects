@@ -57,8 +57,13 @@ com uma aplicação do tipo marketplace criada no painel do Mercado Pago.
 
 ## Fase 2
 
-**Ciclo:** rascunho → enviada → aprovada ou recusada (com motivo de lista fechada)
-→ corrigida e reenviada. Admin revisa em **Painel → Parceiros**.
+**Publicação imediata (set/2026):** a revisão prévia acabou por decisão do dono
+do produto. A experiência vai ao ar ao ser criada (descrição com no mínimo 40
+caracteres) e o controle passou a ser depois: denúncias dos usuários e moderação
+em **Painel → Comunidade → Moderação** (suspender, banir, reativar), a mesma das
+experiências da comunidade. Rascunhos e recusadas de antes da mudança são
+publicados pelo botão "Publicar"; as que estavam na fila foram publicadas pela
+migration 019.
 
 **Proteção do modelo de negócio:** experiência de parceiro só vai à vitrine
 (e só aceita reserva) quando o parceiro tem o **Mercado Pago conectado**. Sem
@@ -66,12 +71,10 @@ isso, o pagamento cairia na conta do AquaTrip — o modelo "recebe e repassa" qu
 foi recusado. A regra está em `app/lib/visibilidade.js`, usada também pela
 criação da reserva.
 
-**Edição de experiência publicada:**
-- título, descrição, local ou categoria → volta para revisão e sai da vitrine
-  (texto é onde mora o risco de conteúdo proibido ou "isca e troca");
-- preço e horários → mudam na hora (o valor de cada reserva já feita fica
-  congelado nela);
-- pausar/retomar vendas → sem revisão.
+**Edição de experiência publicada:** tudo muda na hora, sem sair do ar (o
+valor de cada reserva já feita fica congelado nela). Experiência suspensa ou
+banida pela moderação não pode ser editada. Pausar/retomar vendas continua
+disponível.
 
 **Capa:** foto nova fica pendente na fila de moderação (a mesma das fotos de
 avaliação) sem derrubar a capa atual; aprovada, substitui e a antiga é apagada.

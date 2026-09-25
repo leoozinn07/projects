@@ -22,6 +22,8 @@
   const precoFmt = gratuita ? t('comunidade.gratuita') : 'R$ ' + (service.price_cents / 100).toFixed(2).replace('.', ',');
   const comunidade = social && social.comunidade;
   const eDono = social && social.eDoViewer;
+  // Comunidade e parceiros publicam na hora: qualquer um pode denunciar.
+  const podeDenunciar = !eDono && (comunidade || !!service.operador);
   const rotas = { praia: '/praias', mergulho: '/mergulho', caiaque: '/caiaque', pesca: '/pesca', expedicao: '/expedicoes', aquario: '/aquarios' };
   const logado = typeof user !== 'undefined' && user;
 %>
@@ -66,7 +68,7 @@
           <a class="sx-btn" href="#comentarios"><i data-lucide="message-circle"></i> <span><%= t('social.comentarios') %></span> <span class="num sx-n" id="sxNComentarios"><%= comentarios.length %></span></a>
           <% if (eDono) { %>
             <a class="sx-btn sx-btn-primary" href="/criar_experiencia?editar=<%= encodeURIComponent(service.id) %>"><i data-lucide="settings-2"></i> <span><%= t('social.gerenciar') %></span></a>
-          <% } else if (comunidade) { %>
+          <% } else if (podeDenunciar) { %>
             <button type="button" class="sx-btn sx-btn-quiet" id="sxDenunciar" <%= logado ? '' : 'data-login' %> <%= social.meu.denunciou ? 'disabled' : '' %>>
               <i data-lucide="flag"></i> <span><%= social.meu.denunciou ? t('social.denunciado') : t('social.denunciar') %></span>
             </button>
@@ -209,7 +211,7 @@
           <p class="booking-sub" id="sxVazio"<%- comentarios.length ? ' hidden' : '' %>><%= t('social.sem_comentarios') %></p>
         </section>
 
-        <% if (comunidade && !eDono && logado && !social.meu.denunciou) { %>
+        <% if (podeDenunciar && logado && !social.meu.denunciou) { %>
           <dialog class="cx-dialog" id="sxDenuncia" aria-labelledby="sxDenTitulo">
             <form class="cx-dialog-body" id="sxDenForm" data-servico="<%= service.id %>" novalidate data-fk-busy="off">
               <h2 id="sxDenTitulo"><%= t('social.denunciar_titulo') %></h2>

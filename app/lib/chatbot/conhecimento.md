@@ -87,7 +87,8 @@ Quando algo mudar no sistema, atualize este arquivo.
 
 ## Parceiros
 - Barqueiros, operadoras de mergulho, guias de pesca, aquários, pousadas e outros profissionais podem vender experiências.
-- Caminho: /parceiros > criar conta > candidatura em /parceiro com CPF ou CNPJ (CNPJ alfanumérico é aceito) > análise em até 2 dias úteis > publicar experiências (passam por revisão antes de ir ao ar) > conectar o Mercado Pago > receber reservas.
+- Caminho: /parceiros > criar conta > candidatura em /parceiro com CPF ou CNPJ (CNPJ alfanumérico é aceito) > análise em até 2 dias úteis > publicar experiências (vão ao ar na hora em que são criadas; a moderação age depois, por denúncias) > conectar o Mercado Pago > receber reservas. Sem o Mercado Pago conectado, as experiências do parceiro não aparecem para o público.
+- Fotos de capa enviadas pelo parceiro passam por moderação antes de aparecer; a capa anterior continua no ar enquanto isso.
 - Sem mensalidade: a comissão só é cobrada sobre reservas pagas.
 - Na área do parceiro há reservas (com código do ingresso para conferir na chegada), vendas, comissões e valor líquido.
 

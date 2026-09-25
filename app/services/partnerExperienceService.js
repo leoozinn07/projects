@@ -1,15 +1,16 @@
 /* ==============================================================
    AquaTrip — Experiências de parceiros (marketplace, fase 2)
    ==============================================================
-   Ciclo: DRAFT -> (enviar) -> PENDING -> APPROVED | REJECTED
-          REJECTED -> (corrigir e reenviar) -> PENDING
+   Publicação imediata (decisão do dono do produto, set/2026): a
+   experiência nasce APPROVED e vai ao ar assim que o parceiro estiver
+   aprovado e com Mercado Pago conectado (lib/visibilidade.js). Editar
+   não tira do ar. O controle passou a ser DEPOIS de publicada: denúncia
+   de usuários + moderação do admin (moderation_status: suspender, banir,
+   reativar), a mesma das experiências da comunidade. Fotos de capa
+   continuam passando pela fila de moderação antes de aparecer.
 
-   Regras de edição de experiência APROVADA:
-   - título, descrição, local, categoria: voltam para revisão (PENDING)
-     e saem da vitrine até nova aprovação. Texto é onde mora o risco
-     de conteúdo proibido ou "isca e troca" depois de aprovado.
-   - preço e horários: mudam na hora (operação do dia a dia; o valor
-     de cada reserva já feita fica congelado nela).
+   Legado: rascunhos (DRAFT) e recusadas (REJECTED) de antes da mudança
+   são publicadas pelo botão "Publicar" (enviarParaRevisao).
 
    Toda operação confere a posse: o parceiro só mexe no que é dele.
    Experiência de outro parceiro responde 404 (não confirma que existe).
@@ -32,7 +33,6 @@ const MOTIVOS_REVISAO = Object.freeze({
   CONTEUDO_IMPROPRIO: "Texto com conteúdo impróprio ou ofensivo",
   DADOS_DE_CONTATO: "Texto contém telefone, site ou contato para fechar fora da plataforma",
 });
-const CAMPOS_REVISADOS = ["title", "description", "location", "category"];
 
 class ExperienceError extends Error {
   constructor(message, code, status = 400, campo = null) {
@@ -70,6 +70,7 @@ async function listarMinhas(userId) {
   const { rows } = await db.query(
     `SELECT s.id, s.slug, s.title, s.location, s.category, s.price_cents, s.description, s.active,
             s.review_status, s.review_reason, s.submitted_at, s.reviewed_at,
+            s.moderation_status, s.moderation_reason,
             (SELECT storage_key FROM media WHERE id = s.cover_media_id) AS cover_key,
             (SELECT storage_key FROM media WHERE id = s.pending_cover_media_id) AS pending_cover_key,
             (SELECT COUNT(*) FROM service_slots sl WHERE sl.service_id = s.id AND sl.starts_at > NOW()) AS horarios_futuros
@@ -90,9 +91,19 @@ function validarCategoria(cat) {
   if (!CATEGORIAS[cat]) throw new ExperienceError("Categoria inválida.", "INVALID_CATEGORY", 422, "categoria");
 }
 
+const DESCRICAO_MIN = 40;
+
+function exigirDescricao(texto) {
+  if (!texto || String(texto).trim().length < DESCRICAO_MIN) {
+    throw new ExperienceError(`Descreva a experiência (mínimo de ${DESCRICAO_MIN} caracteres).`, "DESCRIPTION_REQUIRED", 422, "descricao");
+  }
+}
+
 async function criar({ userId, dados, req }) {
   const p = await parceiroAtivo(userId);
   validarCategoria(dados.category);
+  // A descrição era exigida no envio à revisão; sem revisão, vale na criação.
+  exigirDescricao(dados.description);
   const base = adminService.slugify(dados.title);
   if (!base) throw new ExperienceError("Título inválido.", "INVALID_TITLE", 422, "titulo");
   let slug = base;
@@ -101,7 +112,7 @@ async function criar({ userId, dados, req }) {
   const id = crypto.randomUUID();
   await db.query(
     `INSERT INTO services (id, slug, title, location, category, price_cents, description, partner_id, review_status, active)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DRAFT', TRUE)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'APPROVED', TRUE)`,
     [id, slug, dados.title, dados.location, dados.category, dados.priceCents, dados.description || null, p.id]
   );
   const { rows } = await db.query(
@@ -119,12 +130,12 @@ async function editar({ userId, serviceId, dados, req }) {
   try {
     await client.query("BEGIN");
     const atual = await minha(p.id, serviceId, client);
-    if (atual.review_status === "PENDING") {
-      throw new ExperienceError("A experiência está em revisão. Aguarde a resposta para editar.", "UNDER_REVIEW", 409);
+    if (atual.moderation_status !== "ACTIVE") {
+      throw new ExperienceError("Esta experiência foi suspensa pela moderação e não pode ser alterada. Fale com o suporte.", "MODERATED", 409);
     }
-    const mudaTexto = CAMPOS_REVISADOS.some((c) => dados[c] !== undefined && dados[c] !== atual[c]);
-    // Aprovada + mudança de texto => volta para revisão (sai da vitrine).
-    const novoStatus = atual.review_status === "APPROVED" && mudaTexto ? "PENDING" : atual.review_status;
+    if (dados.description !== undefined) exigirDescricao(dados.description);
+    // Publicação imediata: editar não muda a situação nem tira do ar.
+    const novoStatus = atual.review_status;
 
     // status ANTIGO como parâmetro (atual.review_status), não lido da
     // coluna dentro do próprio UPDATE: o MySQL avalia um SET de várias
@@ -149,9 +160,9 @@ async function editar({ userId, serviceId, dados, req }) {
     );
     await client.query("COMMIT");
     await auditService.log(AuditAction.PARTNER_SERVICE_UPDATED, {
-      req, userId, metadata: { servicoId: serviceId, voltouParaRevisao: novoStatus !== atual.review_status },
+      req, userId, metadata: { servicoId: serviceId },
     });
-    return { ...rows[0], voltouParaRevisao: novoStatus !== atual.review_status };
+    return rows[0];
   } catch (err) {
     await client.query("ROLLBACK");
     throw err;
@@ -160,18 +171,16 @@ async function editar({ userId, serviceId, dados, req }) {
   }
 }
 
-/** DRAFT ou REJECTED -> PENDING. */
+/** Legado: DRAFT ou REJECTED -> APPROVED (publica na hora). */
 async function enviarParaRevisao({ userId, serviceId, req }) {
   const p = await parceiroAtivo(userId);
   const atual = await minha(p.id, serviceId);
   if (!["DRAFT", "REJECTED"].includes(atual.review_status)) {
-    throw new ExperienceError("Só rascunhos ou experiências recusadas podem ser enviados.", "INVALID_STATE", 409);
+    throw new ExperienceError("Esta experiência já está publicada.", "INVALID_STATE", 409);
   }
-  if (!atual.description || atual.description.trim().length < 40) {
-    throw new ExperienceError("Descreva a experiência (mínimo de 40 caracteres) antes de enviar.", "DESCRIPTION_REQUIRED", 422, "descricao");
-  }
+  exigirDescricao(atual.description);
   const { rowCount } = await db.query(
-    `UPDATE services SET review_status = 'PENDING', review_reason = NULL, submitted_at = NOW()
+    `UPDATE services SET review_status = 'APPROVED', review_reason = NULL, submitted_at = NOW()
      WHERE id = ? AND review_status IN ('DRAFT', 'REJECTED')`,
     [serviceId]
   );
