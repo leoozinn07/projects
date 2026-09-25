@@ -17,8 +17,14 @@
    e a criação da reserva nem isso checava. Centralizar evita que uma
    consulta nova esqueça parte da regra.
    ============================================================== */
+/* Experiência da comunidade (creator_user_id preenchido): gratuita vai
+   ao ar direto; paga só quando o criador tem cadastro de parceiro com
+   Mercado Pago conectado (partner_id preenchido) — a mesma regra do
+   "sem recebe e repassa". Suspensa ou banida pela moderação sai do ar. */
 function visivel(alias = "sv") {
-  return `(${alias}.active AND ${alias}.review_status = 'APPROVED' AND (${alias}.partner_id IS NULL OR EXISTS (
+  return `(${alias}.active AND ${alias}.review_status = 'APPROVED' AND ${alias}.moderation_status = 'ACTIVE'
+    AND (${alias}.creator_user_id IS NULL OR ${alias}.price_cents = 0 OR ${alias}.partner_id IS NOT NULL)
+    AND (${alias}.partner_id IS NULL OR EXISTS (
     SELECT 1 FROM partners _p WHERE _p.id = ${alias}.partner_id
       AND _p.status = 'APPROVED' AND _p.mp_connected_at IS NOT NULL)))`;
 }

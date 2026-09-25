@@ -85,6 +85,16 @@ async function verifyCredentials({ email, password }) {
     }
   }
 
+  // Banimento: mesma regra anti-enumeração da suspensão, sem prazo.
+  if (user.status === "BANNED") {
+    const senhaOk = await argon2.verify(user.password_hash, password);
+    if (!senhaOk) throw genericError();
+    throw new AuthError(
+      "Esta conta foi banida por violar os Termos de Uso. Fale com o suporte se acha que é um engano.",
+      "ACCOUNT_BANNED"
+    );
+  }
+
   if (user.locked_until && new Date(user.locked_until) > new Date()) {
     throw new AuthError(
       "Conta temporariamente bloqueada por excesso de tentativas. Tente novamente mais tarde.",

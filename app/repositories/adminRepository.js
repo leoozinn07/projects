@@ -95,6 +95,7 @@ async function listUsers({ busca = null, status = null, limit = 100 } = {}) {
   const { rows } = await db.query(
     `SELECT u.id, u.name, u.email, u.role, u.status, u.suspended_until,
             u.email_verified_at, u.last_login_at, u.created_at,
+            (u.last_seen_at > NOW() - INTERVAL 5 MINUTE) AS online,
             (u.totp_enabled_at IS NOT NULL) AS mfa,
             COUNT(CASE WHEN b.status IN ('CONFIRMED','REFUNDED') THEN b.id END) AS reservas
      FROM users u
@@ -113,7 +114,7 @@ async function setUserStatus(userId, { status, suspendedUntil = null, reason = n
     `UPDATE users
      SET status = ?,
          suspended_until = CASE WHEN ? = 'SUSPENDED' THEN ? ELSE NULL END,
-         suspended_reason = CASE WHEN ? = 'SUSPENDED' THEN ? ELSE NULL END
+         suspended_reason = CASE WHEN ? IN ('SUSPENDED', 'BANNED') THEN ? ELSE NULL END
      WHERE id = ?`,
     [status, status, suspendedUntil, status, reason, userId]
   );
@@ -375,6 +376,165 @@ async function listTransactions({ status = null, dias = null, limit = 200 } = {}
   return rows;
 }
 
+/* ---------- Comunidade, presença e visão geral ---------- */
+
+/** Números da plataforma que vão além do financeiro. Tudo COUNT real. */
+async function platformCounts() {
+  const { rows } = await db.query(
+    `SELECT
+       (SELECT COUNT(*) FROM users WHERE last_seen_at > NOW() - INTERVAL 5 MINUTE)          AS online_agora,
+       (SELECT COUNT(*) FROM users WHERE last_seen_at > NOW() - INTERVAL 24 HOUR)           AS ativos_24h,
+       (SELECT COUNT(*) FROM users WHERE status = 'SUSPENDED')                               AS usuarios_suspensos,
+       (SELECT COUNT(*) FROM users WHERE status = 'BANNED')                                  AS usuarios_banidos,
+       (SELECT COUNT(*) FROM partners WHERE status = 'APPROVED')                             AS parceiros_aprovados,
+       (SELECT COUNT(*) FROM partners WHERE status = 'PENDING')                              AS parceiros_pendentes,
+       (SELECT COUNT(*) FROM services)                                                       AS experiencias_total,
+       (SELECT COUNT(*) FROM services WHERE creator_user_id IS NOT NULL)                     AS experiencias_comunidade,
+       (SELECT COUNT(*) FROM services WHERE moderation_status <> 'ACTIVE')                   AS experiencias_moderadas,
+       (SELECT COALESCE(SUM(quantity), 0) FROM bookings WHERE status = 'CONFIRMED')          AS participantes,
+       (SELECT COUNT(*) FROM experience_reports WHERE status = 'OPEN')                       AS denuncias_abertas,
+       (SELECT COUNT(*) FROM platform_feedback WHERE kind = 'COMPLAINT'
+          AND status IN ('OPEN', 'IN_PROGRESS'))                                             AS reclamacoes_abertas,
+       (SELECT COUNT(*) FROM reviews WHERE status = 'VISIBLE')                               AS avaliacoes_experiencias,
+       (SELECT ROUND(AVG(rating), 1) FROM reviews WHERE status = 'VISIBLE')                  AS nota_media_experiencias,
+       (SELECT COUNT(*) FROM platform_feedback WHERE kind = 'RATING')                        AS avaliacoes_plataforma,
+       (SELECT ROUND(AVG(rating), 1) FROM platform_feedback WHERE kind = 'RATING')           AS nota_media_plataforma,
+       (SELECT COUNT(*) FROM experience_comments WHERE status = 'VISIBLE')                   AS comentarios,
+       (SELECT COUNT(*) FROM experience_likes)                                               AS curtidas,
+       (SELECT COUNT(*) FROM user_follows)                                                   AS conexoes`
+  );
+  const r = rows[0];
+  const out = {};
+  for (const [k, v] of Object.entries(r)) out[k] = v == null ? null : Number(v);
+  return out;
+}
+
+/** Cadastro completo para moderação. Só o painel admin chama isto. */
+async function userDetail(userId) {
+  const { rows } = await db.query(
+    `SELECT u.id, u.name, u.email, u.role, u.status, u.suspended_until, u.suspended_reason,
+            u.email_verified_at, u.last_login_at, u.last_seen_at, u.created_at, u.anonymized_at,
+            u.bio, u.locale, u.terms_version, u.terms_accepted_at,
+            (u.totp_enabled_at IS NOT NULL) AS mfa,
+            (u.last_seen_at > NOW() - INTERVAL 5 MINUTE) AS online,
+            (SELECT storage_key FROM media WHERE id = u.avatar_media_id) AS avatar_key,
+            pa.person_type, pa.document, pa.legal_name, pa.display_name AS parceiro_nome,
+            pa.phone, pa.city, pa.state, pa.status AS parceiro_status,
+            (SELECT COUNT(*) FROM bookings b WHERE b.user_id = u.id AND b.status = 'CONFIRMED') AS reservas_confirmadas,
+            (SELECT COUNT(*) FROM user_follows WHERE followee_id = u.id) AS seguidores,
+            (SELECT COUNT(*) FROM user_follows WHERE follower_id = u.id) AS seguindo,
+            (SELECT COUNT(*) FROM experience_comments WHERE user_id = u.id) AS comentarios_feitos,
+            (SELECT COUNT(*) FROM experience_reports r JOIN services s ON s.id = r.service_id
+               WHERE s.creator_user_id = u.id) AS denuncias_recebidas
+     FROM users u LEFT JOIN partners pa ON pa.user_id = u.id
+     WHERE u.id = ?`,
+    [userId]
+  );
+  if (!rows[0]) return null;
+  const { rows: experiencias } = await db.query(
+    `SELECT s.id, s.slug, s.title, s.location, s.price_cents, s.active, s.moderation_status, s.created_at,
+            (SELECT MIN(starts_at) FROM service_slots WHERE service_id = s.id) AS starts_at
+     FROM services s WHERE s.creator_user_id = ? ORDER BY s.created_at DESC`,
+    [userId]
+  );
+  return { ...rows[0], experiencias };
+}
+
+/** Experiências criadas por usuários, com o que a moderação precisa ver. */
+async function listCommunityServices({ busca = null, status = null, comDenuncia = false } = {}) {
+  const cond = ["s.creator_user_id IS NOT NULL"];
+  const params = [FUSO];
+  if (busca) {
+    cond.push("(s.title LIKE ? OR s.location LIKE ? OR u.name LIKE ? OR u.email LIKE ?)");
+    params.push(`%${busca}%`, `%${busca}%`, `%${busca}%`, `%${busca}%`);
+  }
+  if (status) { cond.push("s.moderation_status = ?"); params.push(status); }
+  if (comDenuncia) cond.push("EXISTS (SELECT 1 FROM experience_reports r WHERE r.service_id = s.id AND r.status = 'OPEN')");
+  const { rows } = await db.query(
+    `SELECT s.id, s.slug, s.title, s.location, s.category, s.price_cents, s.active,
+            s.moderation_status, s.moderation_reason, s.moderated_at, s.created_at,
+            u.id AS criador_id, u.name AS criador_nome, u.email AS criador_email, u.status AS criador_status,
+            sl.starts_at, CONVERT_TZ(sl.starts_at, 'UTC', ?) AS starts_local, sl.capacity,
+            (SELECT COALESCE(SUM(b.quantity), 0) FROM bookings b WHERE b.slot_id = sl.id AND b.status = 'CONFIRMED') AS participantes,
+            (SELECT COUNT(*) FROM experience_interests i WHERE i.service_id = s.id) AS interessados,
+            (SELECT COUNT(*) FROM experience_likes l WHERE l.service_id = s.id) AS curtidas,
+            (SELECT COUNT(*) FROM experience_comments c WHERE c.service_id = s.id) AS comentarios,
+            (SELECT COUNT(*) FROM experience_reports r WHERE r.service_id = s.id AND r.status = 'OPEN') AS denuncias_abertas,
+            (SELECT COUNT(*) FROM experience_reports r WHERE r.service_id = s.id) AS denuncias_total
+     FROM services s
+     JOIN users u ON u.id = s.creator_user_id
+     LEFT JOIN service_slots sl ON sl.service_id = s.id
+     WHERE ${cond.join(" AND ")}
+     ORDER BY denuncias_abertas DESC, s.created_at DESC
+     LIMIT 300`,
+    params
+  );
+  return rows.map((r) => ({
+    ...r,
+    participantes: Number(r.participantes), interessados: Number(r.interessados),
+    curtidas: Number(r.curtidas), comentarios: Number(r.comentarios),
+    denuncias_abertas: Number(r.denuncias_abertas), denuncias_total: Number(r.denuncias_total),
+  }));
+}
+
+async function setServiceModeration(serviceId, { status, reason, adminId }) {
+  const { rowCount } = await db.query(
+    `UPDATE services
+     SET moderation_status = ?, moderation_reason = ?, moderated_by = ?, moderated_at = NOW(6)
+     WHERE id = ?`,
+    [status, status === "ACTIVE" ? null : reason, adminId, serviceId]
+  );
+  return rowCount > 0;
+}
+
+async function listReports(serviceId) {
+  const { rows } = await db.query(
+    `SELECT r.id, r.reason, r.details, r.status, r.created_at, r.handled_at,
+            u.name AS denunciante
+     FROM experience_reports r JOIN users u ON u.id = r.reporter_id
+     WHERE r.service_id = ? ORDER BY r.created_at DESC`,
+    [serviceId]
+  );
+  return rows;
+}
+
+async function closeReports(serviceId, { status, adminId }) {
+  const { rowCount } = await db.query(
+    `UPDATE experience_reports SET status = ?, handled_by = ?, handled_at = NOW(6)
+     WHERE service_id = ? AND status = 'OPEN'`,
+    [status, adminId, serviceId]
+  );
+  return rowCount;
+}
+
+async function listServiceComments(serviceId) {
+  const { rows } = await db.query(
+    `SELECT c.id, c.body, c.status, c.hidden_reason, c.created_at, u.id AS autor_id, u.name AS autor
+     FROM experience_comments c JOIN users u ON u.id = c.user_id
+     WHERE c.service_id = ? ORDER BY c.created_at DESC LIMIT 200`,
+    [serviceId]
+  );
+  return rows;
+}
+
+async function setCommentStatus(commentId, { hidden, reason, adminId }) {
+  const { rowCount } = await db.query(
+    `UPDATE experience_comments SET status = ?, hidden_reason = ?, hidden_by = ? WHERE id = ?`,
+    [hidden ? "HIDDEN" : "VISIBLE", hidden ? reason : null, hidden ? adminId : null, commentId]
+  );
+  return rowCount > 0;
+}
+
+/** Banir a conta tira do ar o que ela publicou (estado, não exclusão). */
+async function moderateServicesOfCreator(userId, { reason, adminId }) {
+  const { rowCount } = await db.query(
+    `UPDATE services SET moderation_status = 'BANNED', moderation_reason = ?, moderated_by = ?, moderated_at = NOW(6)
+     WHERE creator_user_id = ? AND moderation_status <> 'BANNED'`,
+    [reason, adminId, userId]
+  );
+  return rowCount;
+}
+
 module.exports = {
   metrics,
   revenueByMonth,
@@ -395,4 +555,13 @@ module.exports = {
   slotUsage,
   updateSlotCapacity,
   deleteSlot,
+  platformCounts,
+  userDetail,
+  listCommunityServices,
+  setServiceModeration,
+  listReports,
+  closeReports,
+  listServiceComments,
+  setCommentStatus,
+  moderateServicesOfCreator,
 };

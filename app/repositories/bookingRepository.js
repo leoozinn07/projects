@@ -116,12 +116,16 @@ async function createPendingBooking({ userId, slotId, quantity, holdMinutes }) {
 
     const amountCents = slot.price_cents * quantity;
     const bookingId = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + holdMinutes * 60 * 1000);
+    // Experiência gratuita não tem o que pagar: a vaga já nasce
+    // confirmada, sem checkout de R$ 0 nem prazo de expiração.
+    const gratuita = amountCents === 0;
+    const expiresAt = gratuita ? null : new Date(Date.now() + holdMinutes * 60 * 1000);
 
     await client.query(
-      `INSERT INTO bookings (id, user_id, slot_id, quantity, amount_cents, currency, expires_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [bookingId, userId, slotId, quantity, amountCents, slot.currency, expiresAt]
+      `INSERT INTO bookings (id, user_id, slot_id, quantity, amount_cents, currency, expires_at, status, confirmed_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [bookingId, userId, slotId, quantity, amountCents, slot.currency, expiresAt,
+        gratuita ? "CONFIRMED" : "PENDING", gratuita ? new Date() : null]
     );
     const bookingRes = await client.query(
       `SELECT id, user_id, slot_id, status, quantity, amount_cents, currency,
