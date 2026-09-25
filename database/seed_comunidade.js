@@ -125,6 +125,8 @@ const VIAGENS = [
     local: "Jijoca de Jericoacoara, CE",
     descricao: "Encontro para subir a Duna do Pôr do Sol e depois caminhar até a Pedra Furada no dia seguinte, na maré baixa.",
     info: "Ponto de encontro na Rua Principal, perto da igreja. Levar lanterna para a volta e água.",
+    fotos: ["database/fotos-exemplo/jericoacoara-1.jpg", "database/fotos-exemplo/jericoacoara-2.jpg"],
+    alt: "Pedra Furada ao pôr do sol, em Jericoacoara",
   },
   {
     chave: "maragogi", criador: "rafael", categoria: "praia", dias: 18, hora: "09:00", vagas: 6,
