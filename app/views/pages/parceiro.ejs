@@ -16,7 +16,7 @@
     <h1>Área do parceiro</h1>
 
     <% if (!parceiro) { %>
-      <p class="booking-sub">Preencha os dados do seu negócio. A equipe revisa e responde por e-mail em até 2 dias úteis.</p>
+      <p class="booking-sub">Preencha os dados do seu negócio. Sua área de parceiro é liberada assim que você concluir o cadastro.</p>
       <form id="form-parceiro" class="parceiro-form" novalidate>
         <div class="campo">
           <label for="documento">CPF ou CNPJ</label>
@@ -71,7 +71,7 @@
     <% } else if (parceiro.status === 'APPROVED') { %>
       <section class="parceiro-status status-aprovado">
         <h2><%= parceiro.display_name %></h2>
-        <p>Cadastro aprovado · comissão de <%= Number(parceiro.commission_pct) %>% por venda</p>
+        <p>Cadastro ativo · <%= parceiro.person_type === 'PJ' ? 'CNPJ' : 'CPF' %> <%= parceiro.documento_exibicao %> · comissão de <%= Number(parceiro.commission_pct) %>% por venda</p>
         <% if (typeof mpMsg !== 'undefined' && mpMsg) { %><p class="parceiro-ok" role="status"><%= mpMsg %></p><% } %>
         <% if (typeof mpErro !== 'undefined' && mpErro) { %><p class="form-alert form-alert-error" role="alert"><%= mpErro %></p><% } %>
         <% if (!parceiro.mp_connected_at) { %>

@@ -18,8 +18,8 @@ dinheiro do parceiro).
 usuário — a mesma pessoa pode ser cliente e parceira, e os dados de parceiro só
 existem para quem é.
 
-**Fluxo:** `/parceiros` (apresentação pública) → conta → `/parceiro` (candidatura)
-→ admin aprova ou recusa em **Painel → Parceiros** → e-mail com a decisão.
+**Fluxo:** `/parceiros` (apresentação pública) → conta → `/parceiro` (cadastro)
+→ área do parceiro liberada na hora → e-mail de boas-vindas com os próximos passos.
 
 **Documento:**
 - **CNPJ alfanumérico aceito** — em produção desde 31/07/2026 (IN RFB 2.229/2024).
@@ -32,8 +32,15 @@ existem para quem é.
 - Documento já usado recebe resposta **genérica** — "CPF já cadastrado" revelaria
   que a pessoa é parceira.
 
-**Decisões do admin:** aprovar (com comissão, 0–50%), recusar ou suspender com
-motivo de **lista fechada**, reativar. Transições só a partir do estado esperado.
+**Aprovação no cadastro (set/2026):** por decisão do dono do produto, o
+cadastro nasce aprovado e a área do parceiro abre na hora (migration 020
+aprovou quem estava aguardando). Continuam valendo: CPF/CNPJ com dígito
+verificador, documento único e aceite dos termos.
+
+**Decisões do admin (depois do cadastro):** suspender com motivo de **lista
+fechada**, reativar e ajustar a comissão (0–50%; vale para as próximas vendas).
+Aprovar/recusar só existem para cadastros antigos ainda pendentes. Transições só
+a partir do estado esperado.
 
 **Suspensão tira da vitrine de verdade.** Uma regra única (`app/lib/visibilidade.js`)
 é usada por catálogo, vitrine, página da experiência, sitemap **e pela criação da

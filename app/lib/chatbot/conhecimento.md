@@ -50,7 +50,7 @@ Quando algo mudar no sistema, atualize este arquivo.
 - Campos: título, descrição, categoria (praia, mergulho, caiaque, pesca esportiva, expedição, aquário), destino, data, horário, quantidade de vagas (1 a 100), preço por pessoa (pode ser gratuito), informações da viagem (ponto de encontro, o que levar etc.) e até 6 fotos.
 - A data precisa ser pelo menos 1 hora no futuro e no máximo 2 anos à frente.
 - Experiência GRATUITA: é publicada na hora.
-- Experiência PAGA: o valor vai direto para quem organiza, pelo Mercado Pago. Para cobrar, a pessoa precisa concluir o cadastro de parceiro em /parceiros (aprovação em até 2 dias úteis) e conectar o Mercado Pago na área do parceiro. Sem isso, apenas experiências gratuitas podem ser publicadas. O AquaTrip não recebe o dinheiro para repassar depois.
+- Experiência PAGA: o valor vai direto para quem organiza, pelo Mercado Pago. Para cobrar, a pessoa precisa concluir o cadastro de parceiro em /parceiros (a área de parceiro é liberada na hora) e conectar o Mercado Pago na área do parceiro. Sem isso, apenas experiências gratuitas podem ser publicadas. O AquaTrip não recebe o dinheiro para repassar depois.
 - Fotos passam por moderação antes de aparecer. Até a primeira foto ser aprovada, a experiência usa uma ilustração da categoria.
 - O criador gerencia tudo em /meu-perfil (aba de experiências) ou /criar_experiencia?editar=<id>: editar textos, preço, vagas, fotos, pausar ou publicar de novo e ver participantes e interessados.
 - Depois que alguém confirmou participação, a data não pode mais ser alterada e o número de vagas não pode ficar abaixo das vagas já ocupadas.
@@ -87,7 +87,7 @@ Quando algo mudar no sistema, atualize este arquivo.
 
 ## Parceiros
 - Barqueiros, operadoras de mergulho, guias de pesca, aquários, pousadas e outros profissionais podem vender experiências.
-- Caminho: /parceiros > criar conta > candidatura em /parceiro com CPF ou CNPJ (CNPJ alfanumérico é aceito) > análise em até 2 dias úteis > publicar experiências (vão ao ar na hora em que são criadas; a moderação age depois, por denúncias) > conectar o Mercado Pago > receber reservas. Sem o Mercado Pago conectado, as experiências do parceiro não aparecem para o público.
+- Caminho: /parceiros > criar conta > cadastro em /parceiro com CPF ou CNPJ (CNPJ alfanumérico é aceito); a área de parceiro é liberada na hora, sem espera de análise > publicar experiências (vão ao ar na hora em que são criadas; a moderação age depois, por denúncias) > conectar o Mercado Pago > receber reservas. Sem o Mercado Pago conectado, as experiências do parceiro não aparecem para o público.
 - Fotos de capa enviadas pelo parceiro passam por moderação antes de aparecer; a capa anterior continua no ar enquanto isso.
 - Sem mensalidade: a comissão só é cobrada sobre reservas pagas.
 - Na área do parceiro há reservas (com código do ingresso para conferir na chegada), vendas, comissões e valor líquido.

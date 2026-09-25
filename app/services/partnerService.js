@@ -1,9 +1,13 @@
 /* ==============================================================
    AquaTrip — Parceiros (marketplace, fase 1)
    ==============================================================
-   Fluxo: a pessoa (já com conta) se candidata -> admin aprova ou
-   recusa com motivo -> aprovado poderá cadastrar experiências
-   (fase 2) e conectar o Mercado Pago para receber (fase 3).
+   Fluxo: a pessoa (já com conta) se cadastra e o cadastro já nasce
+   APROVADO (decisão do dono do produto, set/2026): a área do parceiro
+   abre na hora para cadastrar experiências e conectar o Mercado Pago.
+   O controle passou a ser depois: o admin suspende/reativa e ajusta a
+   comissão. As validações de entrada continuam (CPF/CNPJ com dígito
+   verificador, documento único, aceite dos termos). Candidaturas
+   PENDING antigas foram aprovadas pela migration 020.
    ============================================================== */
 const crypto = require("crypto");
 const db = require("../lib/db");
@@ -67,8 +71,8 @@ async function candidatar({ userId, dados, req }) {
     const id = crypto.randomUUID();
     await db.query(
       `INSERT INTO partners (id, user_id, person_type, document, legal_name, display_name, phone,
-                             city, state, description, commission_pct)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+                             city, state, description, commission_pct, status, decided_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?, 'APPROVED', NOW())`,
       [id, userId, tipo, doc, dados.nomeLegal, dados.nomeExibicao, dados.telefone,
        dados.cidade, dados.uf, dados.descricao || null, COMISSAO_PADRAO]
     );
@@ -77,7 +81,18 @@ async function candidatar({ userId, dados, req }) {
       [id]
     );
     // Documento NUNCA vai para a auditoria (CPF é dado pessoal).
-    await auditService.log(AuditAction.PARTNER_APPLIED, { req, userId, metadata: { parceiroId: id, tipo } });
+    await auditService.log(AuditAction.PARTNER_APPLIED, { req, userId, metadata: { parceiroId: id, tipo, aprovadoNaHora: true } });
+    const { rows: u } = await db.query(`SELECT email, name FROM users WHERE id = ?`, [userId]);
+    if (u[0]) {
+      mailService.send({
+        to: u[0].email,
+        template: "parceiro_cadastrado",
+        subject: "Sua área de parceiro está liberada — AquaTrip",
+        text: `${u[0].name.split(" ")[0]}, seu cadastro de parceiro "${dados.nomeExibicao}" está ativo. ` +
+          `Próximos passos em /parceiro: conecte sua conta do Mercado Pago para receber e cadastre suas experiências ` +
+          `(elas vão ao ar na hora). A comissão do AquaTrip é de ${COMISSAO_PADRAO}% por venda paga.`,
+      }).catch((err) => log.error({ err }, "falha ao avisar cadastro de parceiro"));
+    }
     return rows[0];
   } catch (err) {
     // ER_DUP_ENTRY (errno 1062) é o equivalente MySQL do 23505 do Postgres.
@@ -115,12 +130,17 @@ const TRANSICOES = {
   recusar:   { de: ["PENDING"], para: "REJECTED", motivos: MOTIVOS_RECUSA },
   suspender: { de: ["APPROVED"], para: "SUSPENDED", motivos: MOTIVOS_SUSPENSAO },
   reativar:  { de: ["SUSPENDED"], para: "APPROVED" },
+  // Sem aprovação manual, a comissão é ajustada depois, em parceiro ativo.
+  comissao:  { de: ["APPROVED"], para: "APPROVED", exigeComissao: true },
 };
 
 async function decidir({ adminId, partnerId, acao, motivo, comissao, req }) {
   const t = TRANSICOES[acao];
   if (!t) throw new PartnerError("Ação inválida.", "INVALID_ACTION", 422);
   if (t.motivos && !t.motivos[motivo]) throw new PartnerError("Escolha um motivo da lista.", "INVALID_REASON", 422);
+  if (t.exigeComissao && (comissao === undefined || comissao === null || comissao === "")) {
+    throw new PartnerError("Informe a nova comissão.", "INVALID_COMMISSION", 422);
+  }
   if (comissao !== undefined && comissao !== null && !(Number(comissao) >= 0 && Number(comissao) <= 50)) {
     throw new PartnerError("Comissão deve ficar entre 0% e 50%.", "INVALID_COMMISSION", 422);
   }
@@ -156,6 +176,7 @@ async function decidir({ adminId, partnerId, acao, motivo, comissao, req }) {
       recusar: `Seu cadastro de parceiro não foi aprovado. Motivo: ${MOTIVOS_RECUSA[motivo]}. Se quiser, responda este e-mail com mais informações.`,
       suspender: `Seu cadastro de parceiro "${p.display_name}" foi suspenso. Motivo: ${MOTIVOS_SUSPENSAO[motivo]}. Suas experiências saem da vitrine enquanto durar a suspensão; reservas já confirmadas continuam válidas.`,
       reativar: `Seu cadastro de parceiro "${p.display_name}" foi reativado.`,
+      comissao: `A comissão do AquaTrip sobre as vendas de "${p.display_name}" passa a ser de ${Number(p.commission_pct)}%. Vale para as próximas vendas; as já feitas mantêm a comissão da época.`,
     };
     mailService.send({
       to: u[0].email,

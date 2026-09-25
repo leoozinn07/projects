@@ -969,6 +969,10 @@
             <select aria-label="Recusar por" data-parc-motivo="${esc(p.id)}" data-acao="recusar">
               <option value="">Recusar por...</option>${opcoes(parcMotivos.recusa)}</select>` : ""}
           ${p.status === "APPROVED" ? `
+            <label class="parc-comissao">Comissão
+              <input type="number" min="0" max="50" step="0.5" value="${esc(Number(p.commission_pct))}" data-comissao="${esc(p.id)}"> %
+            </label>
+            <button type="button" class="btn btn-sm" data-parc="${esc(p.id)}" data-acao="comissao">Salvar comissão</button>
             <select aria-label="Suspender por" data-parc-motivo="${esc(p.id)}" data-acao="suspender">
               <option value="">Suspender por...</option>${opcoes(parcMotivos.suspensao)}</select>` : ""}
           ${p.status === "SUSPENDED" ? `<button type="button" class="btn btn-sm" data-parc="${esc(p.id)}" data-acao="reativar">Reativar</button>` : ""}

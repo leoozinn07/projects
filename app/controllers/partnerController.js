@@ -55,7 +55,7 @@ const candidatar = tratar(async (req, res) => {
     return res.status(422).json({ error: i.message, campo: i.path[0] });
   }
   const p = await partnerService.candidatar({ userId: req.session.user.id, dados: parsed.data, req });
-  res.status(201).json({ parceiro: p, mensagem: "Cadastro enviado. Você recebe a resposta por e-mail." });
+  res.status(201).json({ parceiro: p, mensagem: "Cadastro concluído. Sua área de parceiro já está liberada." });
 });
 
 const listar = tratar(async (req, res) => {

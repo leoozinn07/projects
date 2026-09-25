@@ -32,7 +32,7 @@
         if (campo) { campo.setAttribute("aria-invalid", "true"); campo.focus(); }
         return;
       }
-      window.location.reload(); // mostra a tela "em análise"
+      window.location.reload(); // cadastro já nasce ativo: recarrega na área do parceiro
     } catch (e) {
       erro.textContent = "Sem conexão. Tente de novo.";
       erro.hidden = false;
