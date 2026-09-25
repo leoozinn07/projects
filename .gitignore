@@ -1,7 +1,6 @@
 node_modules/
 .env
 *.log
-package-lock.json
 coverage/
 tmp/
 backups/

@@ -1,3 +1,4 @@
 /* Roda as migrations no banco de TESTE (.env.test). */
-require("dotenv").config({ path: ".env.test", override: true, quiet: true });
+// Mesmo carregamento da suíte (inclui o fallback sem .env.test, usado no CI).
+require("../tests/helpers/loadEnv");
 require("./migrate.js");
