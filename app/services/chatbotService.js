@@ -20,7 +20,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const db = require("../lib/db");
-const { visivel } = require("../lib/visibilidade");
+const { visivel, semExemplo } = require("../lib/visibilidade");
 const { CATEGORIAS } = require("../lib/categorias");
 const log = require("../lib/logger").forModule("assistente");
 
@@ -83,7 +83,7 @@ const FERRAMENTAS = [
 /* ---------- Ferramenta: catálogo público ---------- */
 
 async function buscarExperiencias({ termo, categoria } = {}) {
-  const cond = [visivel("sv")];
+  const cond = [visivel("sv"), semExemplo("sv")];
   const params = [];
   const t = typeof termo === "string" ? termo.trim().slice(0, 60) : "";
   if (t) {

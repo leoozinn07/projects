@@ -121,7 +121,17 @@ async function showService(req, res, next) {
     };
     // Nota só se houver avaliação real. Declarar nota inventada nos dados
     // estruturados viola as regras do Google (e o CDC) do mesmo jeito.
-    if (avaliacoes.resumo.total > 0) {
+    const viewerId = req.session.user ? req.session.user.id : null;
+    const [social, comentarios, galeria] = await Promise.all([
+      communityService.blocoSocial(service.id, viewerId),
+      socialService.comentarios(service.id, viewerId),
+      communityService.galeria(service.id),
+    ]);
+    // Conteúdo de demonstração (seed local): fora dos buscadores e sem nota
+    // nos dados estruturados — avaliação de exemplo não é avaliação real.
+    const exemplo = !!(social && social.exemplo);
+    if (exemplo) res.set("X-Robots-Tag", "noindex, nofollow");
+    if (avaliacoes.resumo.total > 0 && !exemplo) {
       jsonld.aggregateRating = {
         "@type": "AggregateRating",
         ratingValue: avaliacoes.resumo.media,
@@ -138,12 +148,6 @@ async function showService(req, res, next) {
       jsonld,
     });
 
-    const viewerId = req.session.user ? req.session.user.id : null;
-    const [social, comentarios, galeria] = await Promise.all([
-      communityService.blocoSocial(service.id, viewerId),
-      socialService.comentarios(service.id, viewerId),
-      communityService.galeria(service.id),
-    ]);
     res.render("pages/reservar_servico", {
       service,
       slots,

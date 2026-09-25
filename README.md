@@ -9,7 +9,7 @@ experiências e recebem com a comissão do AquaTrip descontada na hora.
 > ponta, mas **simulados**: nenhum dinheiro real é movimentado e nenhum
 > e-mail sai do servidor.
 
-Node.js 22 · Express · EJS · MySQL 8.0 · 422 testes automatizados
+Node.js 22 · Express · EJS · MySQL 8.0 · 455 testes automatizados
 
 Design: veja [docs/design.md](docs/design.md) (tokens, tipografia, movimento e fotos provisórias).
 
@@ -71,8 +71,18 @@ npm run db:migrate            # cria as tabelas
 npm run db:seed               # cria o administrador
 npm run db:seed:services      # experiências da equipe AquaTrip
 npm run db:seed:demo          # parceiro, experiências e cliente de demonstração
+npm run db:seed:comunidade    # (opcional) Comunidade de exemplo, com selo "Exemplo"
 npm start                     # http://localhost:3000
 ```
+
+**Comunidade de exemplo** (`npm run db:seed:comunidade`): cria 8 perfis, 10
+viagens em destinos brasileiros reais, participações, curtidas, comentários,
+seguidores e avaliações para testar a Comunidade "cheia". Tudo aparece com o
+selo **Exemplo** e o aviso de que não é real; fica fora do catálogo, do
+sitemap, do assistente e das métricas do admin, com `noindex` para
+buscadores. As contas não têm senha utilizável, as fotos são só as fotos
+reais que já estão no projeto e nenhuma mostra pessoas. O comando recusa rodar
+em produção. Para apagar tudo: `npm run db:seed:comunidade:limpar`.
 
 Rode todos os comandos **dentro da pasta do projeto** (onde está o `package.json`).
 
@@ -149,7 +159,7 @@ npm run db:migrate:test
 npm test
 ```
 
-422 testes em 28 suítes, rodando contra um MySQL 8.0 real. As proteções de
+455 testes em 30 suítes, rodando contra um MySQL 8.0 real. As proteções de
 segurança e de dinheiro foram validadas também por **teste de mutação**: a
 proteção é removida de propósito e o teste correspondente precisa falhar.
 

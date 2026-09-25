@@ -154,6 +154,7 @@ async function paginaPerfilPublico(req, res, next) {
       if (err instanceof socialService.SocialError) return next();
       throw err;
     }
+    if (perfil.exemplo) res.set("X-Robots-Tag", "noindex, nofollow");
     res.locals.seo.titulo = `${perfil.nome} | AquaTrip`;
     res.locals.seo.descricao = perfil.bio || res.locals.t("perfil_social.seo_desc", { nome: perfil.nome });
     res.render("pages/perfil_publico", { perfil });

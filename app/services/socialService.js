@@ -92,6 +92,7 @@ function comentarioPublico(r, viewerId, criadorId) {
       id: r.user_id,
       nome: nomeExibido(r.name),
       avatar: r.avatar_key ? `/media/${r.avatar_key}` : null,
+      exemplo: !!Number(r.is_demo),
     },
     // Quem pode apagar: o autor e o criador da experiência (moderar a
     // própria página). O admin oculta pelo painel, com motivo.
@@ -102,7 +103,7 @@ function comentarioPublico(r, viewerId, criadorId) {
 async function comentarios(serviceId, viewerId = null, limite = 50) {
   const sv = await experienciaVisivel(serviceId);
   const { rows } = await db.query(
-    `SELECT c.id, c.body, c.created_at, c.user_id, u.name,
+    `SELECT c.id, c.body, c.created_at, c.user_id, u.name, u.is_demo,
             (SELECT storage_key FROM media am WHERE am.id = u.avatar_media_id AND am.status = 'APPROVED') AS avatar_key
      FROM experience_comments c JOIN users u ON u.id = c.user_id
      WHERE c.service_id = ? AND c.status = 'VISIBLE'
@@ -129,7 +130,7 @@ async function comentar({ userId, serviceId, texto }) {
   const id = crypto.randomUUID();
   await db.query(`INSERT INTO experience_comments (id, service_id, user_id, body) VALUES (?, ?, ?, ?)`, [id, serviceId, userId, body]);
   const { rows } = await db.query(
-    `SELECT c.id, c.body, c.created_at, c.user_id, u.name,
+    `SELECT c.id, c.body, c.created_at, c.user_id, u.name, u.is_demo,
             (SELECT storage_key FROM media am WHERE am.id = u.avatar_media_id AND am.status = 'APPROVED') AS avatar_key
      FROM experience_comments c JOIN users u ON u.id = c.user_id WHERE c.id = ?`,
     [id]
@@ -177,14 +178,16 @@ async function listaDeConexoes(userId, tipo) {
   if (!(await perfilExiste(userId))) throw new SocialError("Perfil não encontrado.", "NOT_FOUND", 404);
   const [colunaAlvo, colunaOutro] = tipo === "seguindo" ? ["follower_id", "followee_id"] : ["followee_id", "follower_id"];
   const { rows } = await db.query(
-    `SELECT u.id, u.name,
+    `SELECT u.id, u.name, u.is_demo,
             (SELECT storage_key FROM media am WHERE am.id = u.avatar_media_id AND am.status = 'APPROVED') AS avatar_key
      FROM user_follows f JOIN users u ON u.id = f.${colunaOutro}
      WHERE f.${colunaAlvo} = ? AND u.status = 'ACTIVE' AND u.anonymized_at IS NULL
      ORDER BY f.created_at DESC LIMIT 200`,
     [userId]
   );
-  return rows.map((r) => ({ id: r.id, nome: nomeExibido(r.name), avatar: r.avatar_key ? `/media/${r.avatar_key}` : null }));
+  return rows.map((r) => ({
+    id: r.id, nome: nomeExibido(r.name), avatar: r.avatar_key ? `/media/${r.avatar_key}` : null, exemplo: !!Number(r.is_demo),
+  }));
 }
 
 /* ---------- Denúncias ---------- */
@@ -249,7 +252,7 @@ async function experienciasDe(userId, { soVisiveis }) {
 /** Perfil público: o que qualquer visitante pode ver. */
 async function perfilPublico(userId, viewerId = null) {
   const { rows } = await db.query(
-    `SELECT u.id, u.name, u.bio, u.created_at,
+    `SELECT u.id, u.name, u.bio, u.created_at, u.is_demo,
             (SELECT storage_key FROM media am WHERE am.id = u.avatar_media_id AND am.status = 'APPROVED') AS avatar_key
      FROM users u WHERE u.id = ? AND u.status = 'ACTIVE' AND u.anonymized_at IS NULL`,
     [userId]
@@ -269,8 +272,9 @@ async function perfilPublico(userId, viewerId = null) {
     bio: u.bio,
     avatar: u.avatar_key ? `/media/${u.avatar_key}` : null,
     membro_desde: u.created_at,
+    exemplo: !!Number(u.is_demo),
     ...stats,
-    experiencias,
+    experiencias: experiencias.map((e) => ({ ...e, exemplo: !!Number(u.is_demo) })),
     segue: !!segue,
     eu: viewerId === userId,
   };
@@ -290,7 +294,7 @@ async function meuPerfil(userId) {
     estatisticas(userId),
     experienciasDe(userId, { soVisiveis: false }),
     db.query(
-      `SELECT c.id, c.body, c.created_at, c.user_id, u.name, s.title AS experiencia, s.slug,
+      `SELECT c.id, c.body, c.created_at, c.user_id, u.name, u.is_demo, s.title AS experiencia, s.slug,
               (SELECT storage_key FROM media am WHERE am.id = u.avatar_media_id AND am.status = 'APPROVED') AS avatar_key
        FROM experience_comments c
        JOIN services s ON s.id = c.service_id
@@ -314,7 +318,7 @@ async function meuPerfil(userId) {
     comentarios_recebidos_lista: recebidos.rows.map((r) => ({
       id: r.id, texto: r.body, criado_em: r.created_at,
       experiencia: r.experiencia, slug: r.slug,
-      autor: { id: r.user_id, nome: nomeExibido(r.name), avatar: r.avatar_key ? `/media/${r.avatar_key}` : null },
+      autor: { id: r.user_id, nome: nomeExibido(r.name), avatar: r.avatar_key ? `/media/${r.avatar_key}` : null, exemplo: !!Number(r.is_demo) },
     })),
   };
 }

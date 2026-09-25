@@ -1157,7 +1157,7 @@
         <li class="req ${e.denuncias_abertas ? "req--late" : ""}">
           <div class="req-head">
             <strong><a href="/reservar/${encodeURIComponent(e.slug)}" target="_blank" rel="noopener">${esc(e.title)}</a></strong>
-            <span>${e.origem === "parceiro" ? '<span class="badge badge-info">Parceiro</span>' : '<span class="badge badge-info">Comunidade</span>'} ${badge(STATUS_MOD, e.moderation_status)} ${e.active ? "" : '<span class="badge badge-info">Pausada</span>'}</span>
+            <span>${e.origem === "parceiro" ? '<span class="badge badge-info">Parceiro</span>' : '<span class="badge badge-info">Comunidade</span>'} ${badge(STATUS_MOD, e.moderation_status)} ${e.active ? "" : '<span class="badge badge-info">Pausada</span>'} ${Number(e.criador_demo) ? '<span class="badge badge-warning">Exemplo (seed local)</span>' : ""}</span>
           </div>
           <p class="req-meta">
             ${e.origem === "parceiro" ? `Parceiro: <strong>${esc(e.parceiro_nome || "")}</strong> · ` : ""}Criador: <button type="button" class="link-btn" data-perfil-com="${esc(e.criador_id)}">${esc(e.criador_nome)}</button> (${esc(e.criador_email)})${e.criador_status !== "ACTIVE" ? " · conta " + esc(e.criador_status) : ""}

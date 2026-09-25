@@ -29,4 +29,12 @@ function visivel(alias = "sv") {
       AND _p.status = 'APPROVED' AND _p.mp_connected_at IS NOT NULL)))`;
 }
 
-module.exports = { visivel };
+/* Conteúdo do seed de demonstração (criador com users.is_demo): fica
+   restrito à Comunidade, onde aparece com o selo "Exemplo". Catálogo,
+   contagens, sitemap e assistente virtual usam isto para nunca oferecer
+   uma viagem de exemplo como se fosse real. */
+function semExemplo(alias = "sv") {
+  return `NOT EXISTS (SELECT 1 FROM users _d WHERE _d.id = ${alias}.creator_user_id AND _d.is_demo)`;
+}
+
+module.exports = { visivel, semExemplo };

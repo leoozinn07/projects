@@ -2,7 +2,7 @@
    AquaTrip — robots.txt e sitemap.xml
    ============================================================== */
 const db = require("../lib/db");
-const { visivel } = require("../lib/visibilidade");
+const { visivel, semExemplo } = require("../lib/visibilidade");
 const { base, PRIVADO } = require("../middlewares/seo");
 const { PAGINAS } = require("./catalogController");
 
@@ -35,7 +35,7 @@ async function sitemap(req, res, next) {
     const { rows } = await db.query(
       `SELECT slug, GREATEST(created_at, COALESCE(
                 (SELECT MAX(created_at) FROM reviews r WHERE r.service_id = s.id), created_at)) AS alterado
-       FROM services s WHERE ${visivel("s")} ORDER BY created_at DESC LIMIT 5000`
+       FROM services s WHERE ${visivel("s")} AND ${semExemplo("s")} ORDER BY created_at DESC LIMIT 5000`
     );
     const b = base();
     const urls = [

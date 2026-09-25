@@ -55,6 +55,9 @@
             <span class="service-operador"><i data-lucide="badge-check"></i> <%= t('exp.operado_por') %> <strong><%= service.operador || 'AquaTrip' %></strong></span>
           <% } %>
         </p>
+        <% if (social && social.exemplo) { %>
+          <p class="aviso-exemplo" role="note"><span class="tag-exemplo"><%= t('comunidade.exemplo') %></span> <%= t('social.aviso_exemplo') %></p>
+        <% } %>
 
         <div class="sx-bar" data-servico="<%= service.id %>">
           <button type="button" class="sx-btn<%= social.meu.curtiu ? ' is-on' : '' %>" data-curtir="<%= service.id %>" aria-pressed="<%= social.meu.curtiu %>" <%= logado ? '' : 'data-login' %>>
@@ -128,7 +131,7 @@
                 <strong><%= r.media.toLocaleString(locals.intl || 'pt-BR', { minimumFractionDigits: 1 }) %></strong>
                 <span aria-hidden="true" class="reviews-stars"><%= '★'.repeat(Math.round(r.media)) %><span class="off"><%= '★'.repeat(5 - Math.round(r.media)) %></span></span>
                 <span class="sr-only"><%= t('exp.nota_media', { media: r.media }) %>,</span>
-                <span class="reviews-total"><%= t(r.total === 1 ? 'home.avaliacao_uma' : 'home.avaliacao_varias', { n: r.total }) %></span>
+                <span class="reviews-total"><%= (social && social.exemplo) ? t(r.total === 1 ? 'social.avaliacao_exemplo_uma' : 'social.avaliacao_exemplo_varias', { n: r.total }) : t(r.total === 1 ? 'home.avaliacao_uma' : 'home.avaliacao_varias', { n: r.total }) %></span>
               </p>
               <ul class="reviews-bars" aria-label="<%= t('exp.distribuicao_notas') %>">
                 <% [5,4,3,2,1].forEach(function (n) { const q = r['n' + n]; %>
@@ -141,7 +144,7 @@
                 <li class="review">
                   <p class="review-head">
                     <span class="reviews-stars" aria-label="<%= t('exp.n_estrelas', { n: a.rating }) %>"><%= '★'.repeat(a.rating) %><span class="off"><%= '★'.repeat(5 - a.rating) %></span></span>
-                    <strong><%= a.autor %></strong>
+                    <strong><%= a.autor %></strong><% if (a.exemplo) { %> <span class="tag-exemplo"><%= t('comunidade.exemplo') %></span><% } %>
                     <time datetime="<%= new Date(a.created_at).toISOString() %>"><%= fmt.data(a.created_at) %></time>
                   </p>
                   <% if (a.title) { %><h3><%= a.title %></h3><% } %>
@@ -201,7 +204,7 @@
                   <% if (c.autor.avatar) { %><img src="<%= c.autor.avatar %>" alt="" width="36" height="36" loading="lazy"><% } else { %><span class="sx-avatar"><%= c.autor.nome.charAt(0).toUpperCase() %></span><% } %>
                 </a>
                 <div>
-                  <p class="sx-c-head"><a href="/usuarios/<%= encodeURIComponent(c.autor.id) %>"><strong><%= c.autor.nome %></strong></a> <time datetime="<%= new Date(c.criado_em).toISOString() %>"><%= fmt.dataHora(c.criado_em) %></time></p>
+                  <p class="sx-c-head"><a href="/usuarios/<%= encodeURIComponent(c.autor.id) %>"><strong><%= c.autor.nome %></strong></a><% if (c.autor.exemplo) { %> <span class="tag-exemplo"><%= t('comunidade.exemplo') %></span><% } %> <time datetime="<%= new Date(c.criado_em).toISOString() %>"><%= fmt.dataHora(c.criado_em) %></time></p>
                   <p class="sx-pre"><%= c.texto %></p>
                   <% if (c.pode_apagar) { %><button type="button" class="sx-c-del" data-apagar="<%= c.id %>"><%= t('social.apagar') %></button><% } %>
                 </div>

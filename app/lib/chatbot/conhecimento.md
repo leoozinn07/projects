@@ -55,6 +55,7 @@ Quando algo mudar no sistema, atualize este arquivo.
 - O criador gerencia tudo em /meu-perfil (aba de experiências) ou /criar_experiencia?editar=<id>: editar textos, preço, vagas, fotos, pausar ou publicar de novo e ver participantes e interessados.
 - Depois que alguém confirmou participação, a data não pode mais ser alterada e o número de vagas não pode ficar abaixo das vagas já ocupadas.
 - A moderação do AquaTrip pode suspender ou banir experiências que violem os Termos. Qualquer pessoa pode denunciar uma experiência na página dela.
+- Viagens, perfis, comentários e avaliações com o selo "Exemplo" são conteúdo de demonstração, criado só para testar o site: não são pessoas nem viagens reais. Nunca as recomende como opção real.
 
 ## Participar de uma experiência
 - Na página da experiência a pessoa escolhe a data/horário e o número de pessoas.

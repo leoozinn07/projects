@@ -307,3 +307,17 @@
 @media (prefers-reduced-motion: reduce) {
   .cc-card, .cc-media img, .cx-thumb, .sx-comment.is-new, .cx-dialog[open] { transition: none; animation: none; }
 }
+
+/* ---------- Conteúdo de demonstração (npm run db:seed:comunidade) ----------
+   Selo sempre visível: conteúdo de exemplo nunca pode passar por real. */
+.tag-exemplo {
+  display: inline-flex; align-items: center; padding: 2px 8px; border-radius: var(--radius-pill);
+  background: var(--warning-soft); color: var(--warning); border: 1px solid var(--warning-line);
+  font-size: .7rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; vertical-align: middle;
+}
+.cc-exemplo { position: absolute; left: 12px; top: 12px; }
+.aviso-exemplo {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0 0; padding: 10px 14px;
+  border-radius: var(--radius-sm); font-size: var(--text-sm);
+  background: var(--warning-soft); color: var(--ink); border: 1px solid var(--warning-line);
+}

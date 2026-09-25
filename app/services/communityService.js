@@ -334,7 +334,7 @@ async function feed({ viewerId = null, ordem = "recentes", categoria = null, bus
   const off = (Math.max(Number(pagina) || 1, 1) - 1) * lim;
 
   const { rows } = await db.query(
-    `SELECT ${COLUNAS_CARTAO}, u.name AS criador_nome,
+    `SELECT ${COLUNAS_CARTAO}, u.name AS criador_nome, u.is_demo AS criador_demo,
             (SELECT storage_key FROM media am WHERE am.id = u.avatar_media_id AND am.status = 'APPROVED') AS criador_avatar,
             ${viewerId ? "EXISTS (SELECT 1 FROM experience_likes ml WHERE ml.service_id = s.id AND ml.user_id = ?)" : "FALSE"} AS curtida_por_mim
      FROM services s
@@ -349,6 +349,8 @@ async function feed({ viewerId = null, ordem = "recentes", categoria = null, bus
     ...cartao(r),
     criador: { id: r.creator_user_id, nome: nomeExibido(r.criador_nome), avatar: r.criador_avatar ? `/media/${r.criador_avatar}` : null },
     curtida_por_mim: !!Number(r.curtida_por_mim),
+    // Conteúdo do seed de demonstração: a tela mostra o selo "Exemplo".
+    exemplo: !!Number(r.criador_demo),
   }));
 }
 
@@ -435,7 +437,7 @@ async function pessoas(userId, serviceId) {
 /** Bloco social da página da experiência (/reservar/:slug). */
 async function blocoSocial(serviceId, viewerId = null) {
   const { rows } = await db.query(
-    `SELECT s.creator_user_id, s.trip_info, u.name AS criador_nome, u.created_at AS criador_desde,
+    `SELECT s.creator_user_id, s.trip_info, u.name AS criador_nome, u.created_at AS criador_desde, u.is_demo AS criador_demo,
             (SELECT storage_key FROM media am WHERE am.id = u.avatar_media_id AND am.status = 'APPROVED') AS criador_avatar,
             (SELECT COUNT(*) FROM experience_likes l WHERE l.service_id = s.id) AS curtidas,
             (SELECT COUNT(*) FROM experience_interests i WHERE i.service_id = s.id) AS interessados,
@@ -461,6 +463,7 @@ async function blocoSocial(serviceId, viewerId = null) {
   return {
     serviceId,
     comunidade: !!r.creator_user_id,
+    exemplo: !!Number(r.criador_demo),
     criador: r.creator_user_id ? {
       id: r.creator_user_id,
       nome: nomeExibido(r.criador_nome),

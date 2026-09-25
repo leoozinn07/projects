@@ -5,14 +5,14 @@
    ============================================================== */
 const crypto = require("crypto");
 const db = require("../lib/db");
-const { visivel } = require("../lib/visibilidade");
+const { visivel, semExemplo } = require("../lib/visibilidade");
 
 /* ---------- Catálogo ---------- */
 
 async function listServices() {
   const { rows } = await db.query(
     `SELECT id, slug, title, location, category, price_cents, currency
-     FROM services sv WHERE ${visivel("sv")} ORDER BY title`
+     FROM services sv WHERE ${visivel("sv")} AND ${semExemplo("sv")} ORDER BY title`
   );
   return rows;
 }
