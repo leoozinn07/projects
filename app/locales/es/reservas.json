@@ -5,7 +5,6 @@
     "checkout_brick_erro": "El formulario de tarjeta tuvo un problema. Recarga la página o paga con PIX.",
     "checkout_copiado": "¡Código copiado!",
     "checkout_selecionado": "Seleccionado. Usa Ctrl+C",
-    "checkout_qr_simulado": "Código QR no disponible en modo simulado. Usa el código copiar y pegar de abajo.",
     "checkout_enviando": "Enviando...",
     "checkout_erro_tentar": "Error. Intentar de nuevo",
     "ing_todos": "Todos",
@@ -49,7 +48,18 @@
     "avaliacao_fotos_recusadas": "Algunas fotos no fueron aceptadas: ",
     "avaliacao_falha_envio": "error al enviar",
     "avaliacao_so_primeiras": "Solo se enviarán las primeras {n}.",
-    "avaliacao_maior_5mb": "{nome}: supera los 5 MB, no se enviará."
+    "avaliacao_maior_5mb": "{nome}: supera los 5 MB, no se enviará.",
+    "checkout_err_numero_vazio": "Ingresa el número de la tarjeta.",
+    "checkout_err_numero_debito": "La tarjeta de débito debe tener 16 dígitos.",
+    "checkout_err_numero_credito": "La tarjeta de crédito debe tener de 13 a 19 dígitos.",
+    "checkout_err_numero_invalido": "Número de tarjeta inválido. Revisa los dígitos.",
+    "checkout_err_validade_vazia": "Ingresa el vencimiento (MM/AA).",
+    "checkout_err_validade_formato": "Usa el formato MM/AA, con mes de 01 a 12.",
+    "checkout_err_validade_vencida": "Esta tarjeta está vencida.",
+    "checkout_err_validade_longe": "Vencimiento demasiado lejano. Revisa la fecha.",
+    "checkout_err_cvv_vazio": "Ingresa el CVV.",
+    "checkout_err_cvv_formato": "El CVV debe tener {n} dígitos.",
+    "checkout_err_revise": "Revisa los campos destacados para continuar."
   },
   "status": {
     "reserva": {
@@ -96,8 +106,6 @@
     "debito_hint": "Débito en un solo pago",
     "cartao_indisponivel": "El pago con tarjeta no está disponible por ahora para esta experiencia. Usa PIX.",
     "pci_nota": "Por seguridad, el número de la tarjeta nunca pasa por el servidor de AquaTrip: se envía directo al proveedor de pago y solo recibimos de vuelta un token y los últimos 4 dígitos.",
-    "ultimos4": "Últimos 4 dígitos (simulación)",
-    "sim_hint_html": "Usa <strong>0000</strong> para simular un rechazo, <strong>0001</strong> para análisis pendiente, o cualquier otro valor para aprobación inmediata.",
     "brick_carregando": "Cargando el formulario seguro de Mercado Pago…",
     "parcelas": "Cuotas",
     "parcela_opcao": "{n}x de {valor}",
@@ -122,7 +130,21 @@
     "local_label": "Lugar",
     "data_label": "Fecha",
     "situacao_label": "Estado",
-    "garantida_ate": "Reserva garantizada hasta"
+    "garantida_ate": "Reserva garantizada hasta",
+    "pix_info": "Al continuar, generamos un código QR PIX de prueba. No se cobra nada.",
+    "pci_nota_teste": "Checkout de prueba: usa solo las tarjetas de prueba de abajo, nunca una tarjeta real. El número completo y el CVV se verifican solo en tu navegador y no se envían al servidor; guardamos solo los últimos 4 dígitos para el comprobante.",
+    "numero_cartao": "Número de la tarjeta",
+    "validade": "Vencimiento (MM/AA)",
+    "cvv": "CVV",
+    "cvv_help": "3 dígitos al dorso (4 al frente en American Express).",
+    "cartoes_teste_html": "Tarjetas de prueba: <code>4111 1111 1111 1111</code> aprueba, <code>4000 0000 0002 0000</code> rechaza, <code>4000 0000 0001 0001</code> queda en revisión. Crédito de 17 dígitos: <code>5555 0000 0000 41234</code>. Vencimiento: cualquier fecha futura. CVV: 3 dígitos cualesquiera.",
+    "gerar_pix_btn": "Generar código QR PIX",
+    "qr_teste_alt": "Código QR PIX de prueba, que no se puede pagar",
+    "qr_teste_legenda": "Código QR de prueba: no se puede pagar en ningún banco.",
+    "teste_tag": "Prueba",
+    "pix_passos": "En un pago real leerías el código QR en la app del banco. Esto es una simulación: confirma abajo para terminar.",
+    "ja_paguei_btn": "Ya realicé el pago",
+    "outros_cenarios": "Otros escenarios de prueba"
   },
   "comprovante": {
     "seo_titulo": "Comprobante | AquaTrip",
@@ -130,8 +152,10 @@
     "metodo_label": "Método",
     "pago_em_label": "Pagado el",
     "total_pago_label": "Total pagado",
-    "sim_titulo": "Pago simulado",
-    "sim_texto": "No se procesó ningún cobro real."
+    "titulo_teste": "Comprobante de prueba",
+    "teste_banner_titulo": "Transacción de prueba (simulada).",
+    "teste_banner_texto": "No se movió dinero. Este comprobante es solo para demostración y no vale como recibo de un pago real.",
+    "total_teste_label": "Total (simulado)"
   },
   "reservas": {
     "seo_titulo": "Mis reservas | AquaTrip",
@@ -261,6 +285,16 @@
     "o pagamento foi recusado pela análise de segurança. Tente outro cartão ou o PIX.": "el pago fue rechazado por el análisis de seguridad. Prueba otra tarjeta o PIX.",
     "o cartão não pôde ser processado. Tente outro cartão.": "la tarjeta no pudo procesarse. Prueba otra tarjeta.",
     "estamos processando o pagamento. Em até 2 dias úteis você recebe a confirmação.": "estamos procesando el pago. Recibirás la confirmación en un máximo de 2 días hábiles.",
-    "o pagamento está em análise. Em até 2 dias úteis você recebe a confirmação.": "el pago está en análisis. Recibirás la confirmación en un máximo de 2 días hábiles."
+    "o pagamento está em análise. Em até 2 dias úteis você recebe a confirmação.": "el pago está en análisis. Recibirás la confirmación en un máximo de 2 días hábiles.",
+    "Preencha número, validade e CVV do cartão.": "Completa número, vencimiento y CVV de la tarjeta.",
+    "O cartão de débito precisa ter 16 dígitos.": "La tarjeta de débito debe tener 16 dígitos.",
+    "O cartão de crédito precisa ter de 13 a 19 dígitos.": "La tarjeta de crédito debe tener de 13 a 19 dígitos.",
+    "Informe a validade do cartão no formato MM/AA.": "Ingresa el vencimiento de la tarjeta en formato MM/AA.",
+    "Este cartão está vencido.": "Esta tarjeta está vencida.",
+    "Validade muito distante. Confira a data.": "Vencimiento demasiado lejano. Revisa la fecha.",
+    "Esta reserva não está aguardando pagamento.": "Esta reserva no está esperando pago.",
+    "Gere o QR Code PIX antes de confirmar o pagamento.": "Genera el código QR PIX antes de confirmar el pago.",
+    "Não foi possível confirmar o pagamento de teste. Tente novamente.": "No fue posible confirmar el pago de prueba. Inténtalo de nuevo.",
+    "O prazo da reserva terminou antes da confirmação. Escolha o horário de novo.": "El plazo de la reserva terminó antes de la confirmación. Elige el horario de nuevo."
   }
 }

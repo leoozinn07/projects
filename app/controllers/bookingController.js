@@ -9,6 +9,7 @@ const communityService = require("../services/communityService");
 const socialService = require("../services/socialService");
 const reviewService = require("../services/reviewService");
 const paymentRepository = require("../repositories/paymentRepository");
+const QRCode = require("qrcode");
 const { PaymentMethod } = require("../lib/payments/contract");
 const auditService = require("../services/auditService");
 const { AuditAction } = auditService;
@@ -36,11 +37,19 @@ const startPaymentSchema = z.object({
   // Token gerado NO NAVEGADOR pelo SDK do gateway. O backend nunca vê
   // número de cartão nem CVV.
   cardToken: z.string().max(200).optional().nullable(),
+  // Checkout de TESTE: o número completo e o CVV são conferidos só no
+  // navegador e nunca chegam aqui. O servidor recebe o que não é dado
+  // sensível e confere de novo: 4 últimos dígitos, quantidade de dígitos
+  // e validade.
   cardLastFour: z
     .string()
     .regex(/^\d{4}$/, "Informe os 4 últimos dígitos do cartão.")
     .optional()
-    .nullable(),
+    .nullable()
+    .or(z.literal("")),
+  cardLength: z.coerce.number().int().optional().nullable().or(z.literal("")),
+  cardExpMonth: z.coerce.number().int().optional().nullable().or(z.literal("")),
+  cardExpYear: z.coerce.number().int().optional().nullable().or(z.literal("")),
   // Devolvidos pelo formulário do Mercado Pago junto com o token.
   // Nenhum deles é dado sensível de cartão.
   paymentMethodId: z.string().regex(/^[a-z0-9_]{2,30}$/, "Bandeira do cartão inválida.").optional().nullable().or(z.literal("")),
@@ -53,7 +62,34 @@ const startPaymentSchema = z.object({
   if (cartao && !bookingService.isSimulated() && !d.cardToken) {
     ctx.addIssue({ code: "custom", path: ["cardToken"], message: "Preencha os dados do cartão para continuar." });
   }
+  if (cartao && bookingService.isSimulated()) {
+    const erro = conferirCartaoDeTeste(d);
+    if (erro) ctx.addIssue({ code: "custom", path: ["card"], message: erro });
+  }
 });
+
+/**
+ * Regras do cartão no checkout de teste (as mesmas do navegador):
+ * débito com 16 dígitos; crédito de 13 a 19 (faixa da ISO/IEC 7812,
+ * que cobre 16 e 17); validade MM/AA não vencida. Devolve a mensagem
+ * do primeiro problema ou null.
+ */
+function conferirCartaoDeTeste(d, agora = new Date()) {
+  if (!d.cardLastFour || !d.cardLength) return "Preencha número, validade e CVV do cartão.";
+  const n = Number(d.cardLength);
+  if (d.method === PaymentMethod.DEBIT_CARD && n !== 16) return "O cartão de débito precisa ter 16 dígitos.";
+  if (d.method === PaymentMethod.CREDIT_CARD && (n < 13 || n > 19)) return "O cartão de crédito precisa ter de 13 a 19 dígitos.";
+  const mes = Number(d.cardExpMonth);
+  const ano = Number(d.cardExpYear);
+  if (!Number.isInteger(mes) || mes < 1 || mes > 12 || !Number.isInteger(ano) || ano < 2000 || ano > 2100) {
+    return "Informe a validade do cartão no formato MM/AA.";
+  }
+  // Vale até o último dia do mês impresso no cartão.
+  const fimDaValidade = new Date(Date.UTC(ano, mes, 1));
+  if (fimDaValidade <= agora) return "Este cartão está vencido.";
+  if (ano > agora.getUTCFullYear() + 20) return "Validade muito distante. Confira a data.";
+  return null;
+}
 
 /**
  * Motivo legível para o status_detail do Mercado Pago. Só os códigos
@@ -219,12 +255,26 @@ async function showCheckout(req, res, next) {
     );
     const payment = await paymentRepository.findLatestByBooking(booking.id);
     const mp = await bookingService.configDoCheckout(booking.id);
+    const simulated = bookingService.isSimulated();
+
+    // PIX de TESTE: QR Code gerado do código propositalmente inválido do
+    // simulador ("SIMULADO-NAO-PAGAVEL"). Nenhum banco aceita pagá-lo.
+    let pixQrTeste = null;
+    const dados = payment && payment.display_data;
+    if (simulated && payment && payment.method === PaymentMethod.PIX && payment.status === "PENDING"
+        && dados && dados.simulated && dados.pixCopiaECola) {
+      pixQrTeste = await QRCode.toDataURL(dados.pixCopiaECola, { margin: 1, width: 240, errorCorrectionLevel: "M" });
+    }
 
     res.render("pages/checkout", {
       booking,
       payment,
+      pixQrTeste,
+      // Volta com o método que a pessoa estava usando (erro ou recusa).
+      metodoEscolhido: Object.values(PaymentMethod).includes(req.query.metodo) ? req.query.metodo
+        : (payment && payment.method) || PaymentMethod.PIX,
       motivo: motivoDoPagamento(payment),
-      simulated: bookingService.isSimulated(),
+      simulated,
       // Dados públicos para o formulário de cartão do Mercado Pago.
       mp: mp && {
         publicKey: mp.publicKey,
@@ -246,12 +296,17 @@ async function showCheckout(req, res, next) {
   }
 }
 
+/** Volta ao checkout com o erro e o MESMO método marcado (antes voltava
+    sempre no PIX, e o erro do cartão parecia ser do PIX). */
+function voltarAoCheckout(res, bookingId, mensagem, metodo) {
+  const m = Object.values(PaymentMethod).includes(metodo) ? `&metodo=${metodo}` : "";
+  return res.redirect(`/reservas/${bookingId}/checkout?error=${encodeURIComponent(mensagem)}${m}`);
+}
+
 async function startPayment(req, res, next) {
   const parsed = startPaymentSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.redirect(
-      `/reservas/${req.params.id}/checkout?error=${encodeURIComponent(firstZodMessage(parsed.error))}`
-    );
+    return voltarAoCheckout(res, req.params.id, firstZodMessage(parsed.error), req.body && req.body.method);
   }
 
   try {
@@ -284,15 +339,11 @@ async function startPayment(req, res, next) {
     res.redirect(`/reservas/${req.params.id}/checkout`);
   } catch (err) {
     if (err instanceof bookingService.BookingError) {
-      return res.redirect(
-        `/reservas/${req.params.id}/checkout?error=${encodeURIComponent(err.message)}`
-      );
+      return voltarAoCheckout(res, req.params.id, err.message, parsed.data.method);
     }
     if (err.name === "PaymentError") {
       (req.log || log).error({ err, codigo: err.code }, "falha ao criar cobrança");
-      return res.redirect(
-        `/reservas/${req.params.id}/checkout?error=${encodeURIComponent("Não foi possível iniciar o pagamento. Tente novamente.")}`
-      );
+      return voltarAoCheckout(res, req.params.id, "Não foi possível iniciar o pagamento. Tente novamente.", parsed.data.method);
     }
     next(err);
   }
@@ -327,7 +378,7 @@ async function showReceipt(req, res, next) {
       return res.redirect(`/reservas/${booking.id}/checkout`);
     }
     const payment = await paymentRepository.findLatestByBooking(booking.id);
-    res.render("pages/comprovante", { booking, payment });
+    res.render("pages/comprovante", { booking, payment, simulated: bookingService.isSimulated() });
   } catch (err) {
     if (err instanceof bookingService.BookingError) {
       return res.status(404).render("pages/erro", {

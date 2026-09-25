@@ -171,6 +171,10 @@
 .cats-track {
   display: flex; gap: clamp(16px, 2.4vw, 40px); align-items: stretch;
   padding: calc(var(--header-h) + 48px) var(--gutter) 64px;
+  /* Mesma margem esquerda do conteúdo em .wrap (centralizado em
+     --maxw): sem isto, em telas largas o título "6 jeitos" ficava
+     colado à esquerda e o "Lugares que..." bem mais para dentro. */
+  padding-left: max(var(--gutter), calc((100% - var(--maxw)) / 2 + var(--gutter)));
   width: max-content;
 }
 .cats-intro {
@@ -206,7 +210,9 @@
 }
 @media (max-width: 767px) {
   .cats-intro { justify-content: flex-start; gap: 20px; }
-  .cats-pin { overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  /* scroll-padding: o ponto de encaixe respeita a margem lateral. Sem
+     ele, o encaixe do primeiro bloco colava o título na borda da tela. */
+  .cats-pin { overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; scroll-padding-inline: var(--gutter); }
   .cats-pin::-webkit-scrollbar { display: none; }
   .cats-track { padding-top: 88px; }
   .cats-intro { flex-basis: 78vw; scroll-snap-align: start; }

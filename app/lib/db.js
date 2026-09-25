@@ -54,6 +54,17 @@ const pool = mysql.createPool({
   typeCast,
 });
 
+/* Toda conexão trabalha em UTC. As datas são gravadas em UTC (timezone
+   "Z" acima), mas NOW(), CURRENT_TIMESTAMP e os DEFAULTs usam o fuso da
+   SESSÃO, que por padrão é o do sistema: num MySQL instalado no Brasil
+   (UTC-3), NOW() ficava 3 horas atrás das datas gravadas — horário já
+   passado parecia futuro, o prazo de 15 minutos da reserva e o bloqueio
+   de login saíam errados. '+00:00' é um deslocamento numérico: não
+   depende das tabelas de fuso do MySQL. */
+pool.on("connection", (conexao) => {
+  conexao.query("SET time_zone = '+00:00'");
+});
+
 pool.on("error", (err) => {
   // Erros em conexões ociosas do pool não devem derrubar o processo,
   // mas precisam ser visíveis nos logs.

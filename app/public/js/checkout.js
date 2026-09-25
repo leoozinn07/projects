@@ -138,6 +138,137 @@
     try { await montando; } finally { montando = null; }
   }
 
+  /* ---------- Cartão de TESTE (modo simulado) ----------
+     Número completo e CVV são conferidos só aqui, no navegador: os dois
+     campos não têm "name" e nunca são enviados. Vão para o servidor os
+     4 últimos dígitos (o simulador decide aprovação por eles), a
+     quantidade de dígitos e a validade — nada disso é dado sensível.  */
+  const numeroEl = document.getElementById("cardNumber");
+  const validadeEl = document.getElementById("cardExp");
+  const cvvEl = document.getElementById("cardCvv");
+  const payErro = document.getElementById("payErro");
+  const tocado = new Set();
+
+  const digitos = (v) => String(v || "").replace(/\D/g, "");
+
+  /** Algoritmo de Luhn: pega erro de digitação em número de cartão. */
+  function luhn(num) {
+    let soma = 0, dobra = false;
+    for (let i = num.length - 1; i >= 0; i--) {
+      let n = Number(num[i]);
+      if (dobra) { n *= 2; if (n > 9) n -= 9; }
+      soma += n;
+      dobra = !dobra;
+    }
+    return soma % 10 === 0;
+  }
+  const amex = (num) => /^3[47]/.test(num);
+
+  function erroNumero() {
+    const num = digitos(numeroEl.value);
+    if (!num) return t("checkout_err_numero_vazio", null, "Informe o número do cartão.");
+    if (metodo() === "DEBIT_CARD" && num.length !== 16) {
+      return t("checkout_err_numero_debito", null, "O cartão de débito precisa ter 16 dígitos.");
+    }
+    if (metodo() === "CREDIT_CARD" && (num.length < 13 || num.length > 19)) {
+      return t("checkout_err_numero_credito", null, "O cartão de crédito precisa ter de 13 a 19 dígitos.");
+    }
+    if (!luhn(num)) return t("checkout_err_numero_invalido", null, "Número de cartão inválido. Confira os dígitos.");
+    return "";
+  }
+
+  function lerValidade() {
+    const m = /^(\d{2})\/(\d{2})$/.exec(validadeEl.value.trim());
+    return m ? { mes: Number(m[1]), ano: 2000 + Number(m[2]) } : null;
+  }
+
+  function erroValidade() {
+    if (!validadeEl.value.trim()) return t("checkout_err_validade_vazia", null, "Informe a validade (MM/AA).");
+    const v = lerValidade();
+    if (!v || v.mes < 1 || v.mes > 12) return t("checkout_err_validade_formato", null, "Use o formato MM/AA, com mês de 01 a 12.");
+    const agora = new Date();
+    // Vale até o último dia do mês impresso no cartão.
+    if (new Date(v.ano, v.mes, 1) <= agora) return t("checkout_err_validade_vencida", null, "Este cartão está vencido.");
+    if (v.ano > agora.getFullYear() + 20) return t("checkout_err_validade_longe", null, "Validade muito distante. Confira a data.");
+    return "";
+  }
+
+  function erroCvv() {
+    const cvv = digitos(cvvEl.value);
+    const n = amex(digitos(numeroEl.value)) ? 4 : 3;
+    if (!cvv) return t("checkout_err_cvv_vazio", null, "Informe o CVV.");
+    if (cvv.length !== n) return t("checkout_err_cvv_formato", { n }, `O CVV precisa ter ${n} dígitos.`);
+    return "";
+  }
+
+  function marcar(el, msg) {
+    const alvo = document.getElementById(el.id + "Err");
+    if (alvo) alvo.textContent = msg;
+    el.setAttribute("aria-invalid", msg ? "true" : "false");
+    el.classList.toggle("is-invalid", !!msg);
+    el.classList.toggle("is-valid", !msg && !!el.value);
+  }
+
+  function limparErrosCartao() {
+    [numeroEl, validadeEl, cvvEl].forEach((el) => { if (el) { marcar(el, ""); el.classList.remove("is-valid"); } });
+    tocado.clear();
+    if (payErro) payErro.hidden = true;
+  }
+
+  const regras = [[() => numeroEl, erroNumero], [() => validadeEl, erroValidade], [() => cvvEl, erroCvv]];
+
+  /** Confere tudo; com `enviar`, marca todos os campos e prepara os ocultos. */
+  function validarCartao(enviar) {
+    let primeiro = null;
+    for (const [campo, regra] of regras) {
+      const el = campo();
+      const msg = regra();
+      if (enviar || tocado.has(el.id)) marcar(el, msg);
+      if (msg && !primeiro) primeiro = el;
+    }
+    if (!enviar) return !primeiro;
+    if (primeiro) {
+      if (payErro) {
+        payErro.textContent = t("checkout_err_revise", null, "Revise os campos destacados para continuar.");
+        payErro.hidden = false;
+      }
+      primeiro.focus();
+      return false;
+    }
+    if (payErro) payErro.hidden = true;
+    const num = digitos(numeroEl.value);
+    const v = lerValidade();
+    document.getElementById("cardLastFour").value = num.slice(-4);
+    document.getElementById("cardLength").value = String(num.length);
+    document.getElementById("cardExpMonth").value = String(v.mes);
+    document.getElementById("cardExpYear").value = String(v.ano);
+    return true;
+  }
+
+  if (numeroEl) {
+    // Máscaras: número em grupos de 4, validade com a barra, CVV só dígitos.
+    numeroEl.addEventListener("input", () => {
+      const num = digitos(numeroEl.value).slice(0, 19);
+      numeroEl.value = num.replace(/(\d{4})(?=\d)/g, "$1 ");
+      validarCartao(false);
+    });
+    validadeEl.addEventListener("input", (e) => {
+      let d = digitos(validadeEl.value).slice(0, 4);
+      if (d.length >= 3 || (d.length === 2 && e.inputType !== "deleteContentBackward")) d = d.slice(0, 2) + "/" + d.slice(2);
+      validadeEl.value = d;
+      validarCartao(false);
+    });
+    cvvEl.addEventListener("input", () => {
+      cvvEl.value = digitos(cvvEl.value).slice(0, 4);
+      validarCartao(false);
+    });
+    // Erro aparece depois que a pessoa sai do campo, não enquanto digita.
+    [numeroEl, validadeEl, cvvEl].forEach((el) => el.addEventListener("blur", () => {
+      if (el.value) tocado.add(el.id);
+      validarCartao(false);
+    }));
+  }
+
   /* ---------- Alternar método ---------- */
   function sincronizar() {
     const m = metodo();
@@ -151,13 +282,23 @@
       return;
     }
 
-    // Modo simulado: parcelas nativas, débito sem parcelamento.
+    // Modo simulado: parcelas só no crédito; débito é à vista.
     const parcelas = document.getElementById("installments");
     if (parcelas) {
       const debito = m === "DEBIT_CARD";
       parcelas.disabled = debito;
       if (debito) parcelas.value = "1";
+      const campo = document.getElementById("installmentsField");
+      if (campo) campo.hidden = debito;
     }
+    // PIX: aviso do QR Code de teste e botão "Gerar QR Code PIX".
+    const pixInfo = document.getElementById("pixInfo");
+    if (pixInfo) pixInfo.hidden = cartao;
+    if (payButton && payButton.dataset.rotuloPix) {
+      payButton.textContent = cartao ? payButton.dataset.rotuloCartao : payButton.dataset.rotuloPix;
+    }
+    if (!cartao) limparErrosCartao();
+    else if (numeroEl) validarCartao(false); // débito e crédito têm regras de tamanho diferentes
   }
   methodInputs.forEach((i) => i.addEventListener("change", sincronizar));
   // O script do Mercado Pago carrega com defer antes deste; se o cartão
@@ -174,8 +315,13 @@
     }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
   }
 
-  // Sem Brick, evita envio duplo (duplo toque no celular).
-  form?.addEventListener("submit", () => {
+  // Valida o cartão de teste antes de enviar; sem Brick, evita envio
+  // duplo (duplo toque no celular).
+  form?.addEventListener("submit", (e) => {
+    if (ehCartao(metodo()) && numeroEl && !validarCartao(true)) {
+      e.preventDefault();
+      return;
+    }
     if (payButton) {
       payButton.disabled = true;
       payButton.setAttribute("aria-busy", "true");
@@ -199,16 +345,12 @@
     setTimeout(() => (copyBtn.textContent = rotuloCopiar), 2500);
   });
 
-  /* ---------- QR code no modo simulado ----------
-     O Mercado Pago devolve a imagem pronta. No simulador não há QR
-     real; o que vale para teste é o código copia e cola.             */
-  const pixQr = document.getElementById("pixQr");
-  if (pixQr && pixCode && pixCode.value) {
-    pixQr.replaceWith(Object.assign(document.createElement("p"), {
-      className: "method-hint",
-      textContent: t("checkout_qr_simulado", null, "QR Code indisponível no modo simulado. Use o código Copia e Cola abaixo."),
-    }));
-  }
+  /* ---------- PIX de teste: "Já realizei o pagamento" ---------- */
+  const pixConfirmar = document.getElementById("pixConfirmar");
+  pixConfirmar?.closest("form").addEventListener("submit", () => {
+    pixConfirmar.disabled = true;
+    pixConfirmar.setAttribute("aria-busy", "true");
+  });
 
   /* ---------- Acompanhar o status ----------
      Consulta um JSON leve e só recarrega quando o status muda. Pausa

@@ -92,6 +92,6 @@ Pago (que exige credenciais reais).
 ## CI
 
 `.github/workflows/ci.yml` roda a cada push e PR: checagem de sintaxe,
-migrations contra um MySQL 8.0 real (com as tabelas de fuso horário
-carregadas, senão `CONVERT_TZ` devolve `NULL`), suíte completa, cobertura
+migrations contra um MySQL 8.0 real (de propósito SEM as tabelas de fuso
+horário, como no Windows: a conversão de fuso é do Node), suíte completa, cobertura
 e `npm audit --audit-level=high` (falha o build em vulnerabilidade alta).

@@ -64,7 +64,7 @@
             <ul class="method-list">
               <li>
                 <label class="method-option">
-                  <input type="radio" name="method" value="PIX" checked>
+                  <input type="radio" name="method" value="PIX"<%= metodoEscolhido === 'PIX' || semCartao ? ' checked' : '' %>>
                   <span>
                     <span class="method-name">PIX</span>
                     <span class="method-hint"><%= t('checkout.pix_hint') %></span>
@@ -73,7 +73,7 @@
               </li>
               <li>
                 <label class="method-option">
-                  <input type="radio" name="method" value="CREDIT_CARD"<%= semCartao ? ' disabled' : '' %>>
+                  <input type="radio" name="method" value="CREDIT_CARD"<%= semCartao ? ' disabled' : (metodoEscolhido === 'CREDIT_CARD' ? ' checked' : '') %>>
                   <span>
                     <span class="method-name"><%= t('checkout.credito') %></span>
                     <span class="method-hint"><%= t('checkout.credito_hint') %></span>
@@ -82,7 +82,7 @@
               </li>
               <li>
                 <label class="method-option">
-                  <input type="radio" name="method" value="DEBIT_CARD"<%= semCartao ? ' disabled' : '' %>>
+                  <input type="radio" name="method" value="DEBIT_CARD"<%= semCartao ? ' disabled' : (metodoEscolhido === 'DEBIT_CARD' ? ' checked' : '') %>>
                   <span>
                     <span class="method-name"><%= t('checkout.debito') %></span>
                     <span class="method-hint"><%= t('checkout.debito_hint') %></span>
@@ -96,19 +96,47 @@
               </p>
             <% } %>
 
-            <div class="card-fields" id="cardFields" hidden>
-              <p class="pci-note">
-                <%= t('checkout.pci_nota') %>
-              </p>
+            <% if (simulated) { %>
+              <p class="pix-info" id="pixInfo"<%= metodoEscolhido !== 'PIX' && !semCartao ? ' hidden' : '' %>><i data-lucide="qr-code" aria-hidden="true"></i> <%= t('checkout.pix_info') %></p>
+            <% } %>
 
+            <div class="card-fields" id="cardFields" hidden>
               <% if (simulated) { %>
-                <label for="cardLastFour"><%= t('checkout.ultimos4') %></label>
-                <input type="text" id="cardLastFour" name="cardLastFour"
-                       inputmode="numeric" pattern="\d{4}" maxlength="4"
-                       placeholder="1234" autocomplete="off">
-                <p class="method-hint">
-                  <%- t('checkout.sim_hint_html') %>
-                </p>
+                <%# Checkout de TESTE. Número e CVV NÃO têm "name": nunca são
+                    enviados ao servidor. O checkout.js confere tudo e manda
+                    só os 4 últimos dígitos, a quantidade de dígitos e a
+                    validade (campos ocultos abaixo). %>
+                <p class="pci-note"><%= t('checkout.pci_nota_teste') %></p>
+
+                <div class="field">
+                  <label for="cardNumber"><%= t('checkout.numero_cartao') %></label>
+                  <input type="text" id="cardNumber" inputmode="numeric" autocomplete="off"
+                         maxlength="23" placeholder="0000 0000 0000 0000"
+                         aria-describedby="cardNumberErr" data-fk-off>
+                  <span class="field-error" id="cardNumberErr" aria-live="polite"></span>
+                </div>
+                <div class="card-row">
+                  <div class="field">
+                    <label for="cardExp"><%= t('checkout.validade') %></label>
+                    <input type="text" id="cardExp" inputmode="numeric" autocomplete="off"
+                           maxlength="5" placeholder="MM/AA" aria-describedby="cardExpErr" data-fk-off>
+                    <span class="field-error" id="cardExpErr" aria-live="polite"></span>
+                  </div>
+                  <div class="field">
+                    <label for="cardCvv"><%= t('checkout.cvv') %></label>
+                    <input type="password" id="cardCvv" inputmode="numeric" autocomplete="off"
+                           maxlength="4" placeholder="123" aria-describedby="cardCvvHelp cardCvvErr" data-fk-off>
+                    <span class="field-help" id="cardCvvHelp"><%= t('checkout.cvv_help') %></span>
+                    <span class="field-error" id="cardCvvErr" aria-live="polite"></span>
+                  </div>
+                </div>
+                <input type="hidden" name="cardLastFour" id="cardLastFour">
+                <input type="hidden" name="cardLength" id="cardLength">
+                <input type="hidden" name="cardExpMonth" id="cardExpMonth">
+                <input type="hidden" name="cardExpYear" id="cardExpYear">
+                <p class="method-hint test-cards"><%- t('checkout.cartoes_teste_html') %></p>
+              <% } else { %>
+                <p class="pci-note"><%= t('checkout.pci_nota') %></p>
               <% } %>
 
               <% if (cartaoReal) { %>
@@ -130,6 +158,7 @@
                 <input type="hidden" name="docNumber" id="docNumber">
                 <input type="hidden" name="installments" id="installmentsHidden" value="1">
               <% } else { %>
+                <div class="field" id="installmentsField">
                 <label for="installments"><%= t('checkout.parcelas') %></label>
                 <select id="installments" name="installments">
                   <% for (let i = 1; i <= 12; i++) { %>
@@ -138,10 +167,14 @@
                     </option>
                   <% } %>
                 </select>
+                </div>
               <% } %>
             </div>
 
-            <button type="submit" class="btn-primary btn-block" id="payButton">
+            <p class="form-alert form-alert-error" id="payErro" role="alert" hidden></p>
+            <button type="submit" class="btn-primary btn-block" id="payButton"
+                    data-rotulo-pix="<%= simulated ? t('checkout.gerar_pix_btn') : t('checkout.pagar_btn', { valor: fmt.brl(booking.amount_cents / 100, true) }) %>"
+                    data-rotulo-cartao="<%= t('checkout.pagar_btn', { valor: fmt.brl(booking.amount_cents / 100, true) }) %>">
               <%= t('checkout.pagar_btn', { valor: fmt.brl(booking.amount_cents / 100, true) }) %>
             </button>
           </form>
@@ -157,8 +190,11 @@
               <% if (payment.display_data.pixQrCodeBase64) { %>
                 <img class="pix-qr" alt="<%= t('checkout.qr_alt') %>"
                      src="data:image/png;base64,<%= payment.display_data.pixQrCodeBase64 %>">
-              <% } else { %>
-                <img class="pix-qr" id="pixQr" alt="<%= t('checkout.qr_alt') %>" src="data:,">
+              <% } else if (pixQrTeste) { %>
+                <figure class="pix-qr-teste">
+                  <img class="pix-qr" id="pixQrTeste" alt="<%= t('checkout.qr_teste_alt') %>" src="<%= pixQrTeste %>" width="200" height="200">
+                  <figcaption><span class="tag-teste"><%= t('checkout.teste_tag') %></span> <%= t('checkout.qr_teste_legenda') %></figcaption>
+                </figure>
               <% } %>
 
               <label for="pixCode" class="method-hint"><%= t('checkout.copia_cola') %></label>
@@ -167,6 +203,14 @@
               <div class="pix-actions">
                 <button type="button" class="btn-ghost" id="copyPix"><%= t('checkout.copiar_codigo') %></button>
               </div>
+
+              <% if (simulated) { %>
+                <form class="pix-confirmar" action="/reservas/<%= booking.id %>/pix/confirmar-teste" method="POST">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <p class="method-hint"><%= t('checkout.pix_passos') %></p>
+                  <button type="submit" class="btn-primary btn-block" id="pixConfirmar"><%= t('checkout.ja_paguei_btn') %></button>
+                </form>
+              <% } %>
             </div>
           <% } else { %>
             <p class="booking-sub">
@@ -180,14 +224,15 @@
           </p>
 
           <% if (simulated) { %>
-            <div class="sim-panel">
-              <h3><%= t('checkout.sim_forcar_titulo') %></h3>
+            <details class="sim-panel">
+              <summary><%= t('checkout.outros_cenarios') %></summary>
+              <p class="method-hint"><%= t('checkout.sim_forcar_titulo') %></p>
               <div class="sim-buttons">
-                <button type="button" data-sim="APPROVED" data-payment="<%= payment.provider_payment_id %>"><%= t('checkout.aprovar') %></button>
+                <% if (payment.method !== 'PIX') { %><button type="button" data-sim="APPROVED" data-payment="<%= payment.provider_payment_id %>"><%= t('checkout.aprovar') %></button><% } %>
                 <button type="button" data-sim="REJECTED" data-payment="<%= payment.provider_payment_id %>"><%= t('checkout.recusar') %></button>
                 <button type="button" data-sim="EXPIRED"  data-payment="<%= payment.provider_payment_id %>"><%= t('checkout.expirar') %></button>
               </div>
-            </div>
+            </details>
           <% } %>
 
         <% } else if (payment.status === 'APPROVED') { %>

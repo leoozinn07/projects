@@ -47,11 +47,17 @@ fs.writeFileSync(destino, texto);
 
 const url = (texto.match(/^DATABASE_URL=(.*)$/m) || [])[1] || "";
 const admin = (texto.match(/^ADMIN_EMAIL=(.*)$/m) || [])[1] || "";
-const senhaAdmin = preenchidos.find(([k]) => k === "ADMIN_PASSWORD");
+const senhaAdmin = (texto.match(/^ADMIN_PASSWORD=(.*)$/m) || [])[1] || "";
+const senhaNova = preenchidos.some(([k]) => k === "ADMIN_PASSWORD");
 
 console.log(`\n${jaExistia ? ".env já existia — preenchido só o que faltava." : ".env criado a partir do .env.example."}`);
 for (const [k] of preenchidos) console.log(`  gerado: ${k}`);
-if (senhaAdmin) console.log(`\n  Login do admin: ${admin}  /  senha: ${senhaAdmin[1]}   (anote)`);
+// Sempre mostra o login que vale: o do .env. O banco recebe essa senha
+// no "npm run db:seed" (que também atualiza um admin que já existia).
+console.log(`\n  Login do admin: ${admin}  /  senha: ${senhaAdmin}   (anote)`);
+if (senhaNova) {
+  console.log("  Senha nova: se o admin já existia no banco, rode  npm run db:seed  para ela passar a valer.");
+}
 
 console.log(`\nBanco de dados configurado no .env:\n  ${url}`);
 let u;

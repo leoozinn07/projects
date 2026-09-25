@@ -9,7 +9,7 @@ experiências e recebem com a comissão do AquaTrip descontada na hora.
 > ponta, mas **simulados**: nenhum dinheiro real é movimentado e nenhum
 > e-mail sai do servidor.
 
-Node.js 22 · Express · EJS · MySQL 8.0 · 455 testes automatizados
+Node.js 22 · Express · EJS · MySQL 8.0 · 481 testes automatizados
 
 Design: veja [docs/design.md](docs/design.md) (tokens, tipografia, movimento e fotos provisórias).
 
@@ -52,17 +52,10 @@ FLUSH PRIVILEGES;
 ```
 
 > **Fuso horário:** horários de experiências são digitados e exibidos no fuso
-> de operação (`OPERATION_TIMEZONE`, padrão `America/Sao_Paulo`) e convertidos
-> para UTC pelo próprio banco (`CONVERT_TZ`). Isso exige que o MySQL tenha as
-> tabelas de fuso horário carregadas — na maioria das instalações Linux via
-> pacote isso já vem pronto; se `CONVERT_TZ` devolver `NULL` (ou o `npm run
-> doctor` avisar), carregue com:
-> ```bash
-> mysql_tzinfo_to_sql /usr/share/zoneinfo | mysql -u root -p mysql
-> ```
-> No Windows/macOS sem esse utilitário, baixe as tabelas prontas na página de
-> downloads do MySQL ("Time zone description tables") e importe pelo
-> Workbench.
+> de operação (`OPERATION_TIMEZONE`, padrão `America/Sao_Paulo`) e gravados em
+> UTC. A conversão é feita pelo próprio Node, e cada conexão com o banco
+> trabalha em UTC: **não é preciso** carregar as tabelas de fuso horário do
+> MySQL (a instalação do Windows não as traz).
 
 **3. Crie as tabelas, os dados e suba o site:**
 
@@ -114,9 +107,19 @@ produção**. Perdeu o acesso? `npm run 2fa:redefinir -- email --confirmar`.
 
 ## O que dá para simular
 
-**Como cliente:** navegar pelo catálogo, reservar, pagar com PIX ou cartão
-simulado (cartão final `0000` recusa, `0001` fica em análise, outros aprovam),
-ver o ingresso, cancelar com estorno, avaliar com fotos depois da data,
+**Como cliente:** navegar pelo catálogo, reservar, pagar no **checkout de
+teste** (nenhum valor real é cobrado):
+
+- **PIX:** "Gerar QR Code PIX" mostra um QR Code de teste (não pagável em
+  banco nenhum) e o botão "Já realizei o pagamento" leva ao comprovante de teste.
+- **Cartão:** número completo, validade (MM/AA) e CVV, validados antes de
+  avançar. Débito com 16 dígitos; crédito de 13 a 19. O número completo e o
+  CVV nunca saem do navegador: o servidor recebe só os 4 últimos dígitos.
+  Cartões de teste: `4111 1111 1111 1111` aprova, `4000 0000 0002 0000`
+  recusa, `4000 0000 0001 0001` fica em análise, `5555 0000 0000 41234`
+  (crédito, 17 dígitos) aprova. Validade: qualquer data futura; CVV: 3 dígitos.
+
+Também dá para ver o ingresso, cancelar com estorno, avaliar com fotos depois da data,
 exportar ou pedir exclusão dos dados (LGPD).
 
 **Como parceiro:** candidatar-se (aceita CNPJ alfanumérico, em vigor desde
@@ -160,7 +163,7 @@ npm run db:migrate:test
 npm test
 ```
 
-455 testes em 30 suítes, rodando contra um MySQL 8.0 real. As proteções de
+481 testes em 33 suítes, rodando contra um MySQL 8.0 real. As proteções de
 segurança e de dinheiro foram validadas também por **teste de mutação**: a
 proteção é removida de propósito e o teste correspondente precisa falhar.
 

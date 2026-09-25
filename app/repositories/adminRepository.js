@@ -223,19 +223,16 @@ async function slugExists(slug) {
 }
 
 /* ---------- Horários ----------
-   Datas e horas chegam como texto no fuso de operação (Brasília) e
-   são convertidas pelo PRÓPRIO banco com CONVERT_TZ (equivalente ao
-   AT TIME ZONE do Postgres). Banco e servidor rodam em UTC: sem essa
-   conversão explícita, a saída das 9h digitada pelo admin viraria 6h
-   para o cliente. CONVERT_TZ depende das tabelas de fuso horário do
-   MySQL estarem carregadas (mysql_tzinfo_to_sql) — ver README. */
-const FUSO = process.env.OPERATION_TIMEZONE || "America/Sao_Paulo";
+   Datas e horas chegam como texto no fuso de operação (Brasília) e são
+   gravadas em UTC. A conversão é do Node (lib/fuso.js), não mais do
+   CONVERT_TZ do MySQL: ele depende das tabelas de fuso horário, que a
+   instalação do MySQL no Windows não traz (devolvia NULL). Sem a
+   conversão, a saída das 9h digitada pelo admin viraria 6h para o cliente. */
+const fuso = require("../lib/fuso");
 
 async function listSlots(serviceId) {
   const { rows } = await db.query(
     `SELECT s.id, s.starts_at, s.capacity,
-            DATE_FORMAT(CONVERT_TZ(s.starts_at, 'UTC', ?), '%Y-%m-%d') AS data_local,
-            DATE_FORMAT(CONVERT_TZ(s.starts_at, 'UTC', ?), '%H:%i')    AS hora_local,
             COALESCE(SUM(CASE WHEN
               b.status = 'CONFIRMED'
                  OR (b.status = 'PENDING' AND b.expires_at > NOW())
@@ -246,9 +243,12 @@ async function listSlots(serviceId) {
      GROUP BY s.id
      ORDER BY s.starts_at
      LIMIT 500`,
-    [FUSO, FUSO, serviceId]
+    [serviceId]
   );
-  return rows;
+  return rows.map((r) => {
+    const { data, hora } = fuso.localDe(r.starts_at);
+    return { ...r, data_local: data, hora_local: hora };
+  });
 }
 
 /**
@@ -265,16 +265,9 @@ async function listSlots(serviceId) {
 async function createSlots(serviceId, combinacoes, capacidade) {
   if (!combinacoes.length) return [];
 
-  const locais = combinacoes.map((c) => `${c.data} ${c.hora}:00`);
-  const selects = locais.map(() => "SELECT ? AS d").join(" UNION ALL ");
-  const { rows: convertidos } = await db.query(
-    `SELECT t.d AS local_dt, CONVERT_TZ(t.d, ?, 'UTC') AS starts_at
-     FROM (${selects}) AS t`,
-    [FUSO, ...locais]
-  );
-
   const criados = [];
-  for (const { starts_at: startsAt } of convertidos) {
+  for (const c of combinacoes) {
+    const startsAt = fuso.paraUtc(c.data, c.hora);
     if (!startsAt || new Date(startsAt) <= new Date()) continue;
 
     const id = crypto.randomUUID();
@@ -456,7 +449,7 @@ async function userDetail(userId) {
     são moderadas depois), com o que a moderação precisa ver. */
 async function listCommunityServices({ busca = null, status = null, comDenuncia = false } = {}) {
   const cond = ["(s.creator_user_id IS NOT NULL OR s.partner_id IS NOT NULL)"];
-  const params = [FUSO];
+  const params = [];
   if (busca) {
     cond.push("(s.title LIKE ? OR s.location LIKE ? OR u.name LIKE ? OR u.email LIKE ?)");
     params.push(`%${busca}%`, `%${busca}%`, `%${busca}%`, `%${busca}%`);
@@ -469,7 +462,7 @@ async function listCommunityServices({ busca = null, status = null, comDenuncia 
             pa.display_name AS parceiro_nome,
             s.moderation_status, s.moderation_reason, s.moderated_at, s.created_at,
             u.id AS criador_id, u.name AS criador_nome, u.email AS criador_email, u.status AS criador_status, u.is_demo AS criador_demo,
-            sl.starts_at, CONVERT_TZ(sl.starts_at, 'UTC', ?) AS starts_local, sl.capacity,
+            sl.starts_at, sl.capacity,
             (SELECT COALESCE(SUM(b.quantity), 0) FROM bookings b WHERE b.slot_id = sl.id AND b.status = 'CONFIRMED') AS participantes,
             (SELECT COUNT(*) FROM experience_interests i WHERE i.service_id = s.id) AS interessados,
             (SELECT COUNT(*) FROM experience_likes l WHERE l.service_id = s.id) AS curtidas,
@@ -568,7 +561,7 @@ module.exports = {
   slugExists,
   listTransactions,
   inconsistencies,
-  FUSO,
+  FUSO: fuso.FUSO,
   listSlots,
   createSlots,
   slotUsage,
