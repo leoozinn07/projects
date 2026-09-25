@@ -112,8 +112,10 @@
       } else {
         const img = document.createElement("img");
         img.alt = "";
-        img.src = URL.createObjectURL(f);
-        img.onload = () => URL.revokeObjectURL(img.src);
+        // data: e não blob: — a CSP do site (img-src) bloqueia blob:.
+        const leitor = new FileReader();
+        leitor.onload = () => { img.src = leitor.result; };
+        leitor.readAsDataURL(f);
         li.appendChild(img);
       }
       previewFotos.appendChild(li);

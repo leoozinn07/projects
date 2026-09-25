@@ -136,6 +136,7 @@ app.use(
 );
 
 app.use(attachUserToLocals);
+app.use(require("./app/middlewares/presence").registrarPresenca);
 app.use(issueCsrfToken);
 
 /* Idioma (pt, en, es): t(), tm() e formatadores por requisição.

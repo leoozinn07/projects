@@ -14,7 +14,7 @@
   display: grid; place-items: center;
   color: var(--deep-ink);
 }
-.intro-stage { position: relative; width: min(64vw, 340px); aspect-ratio: 600 / 312; }
+.intro-stage { position: relative; width: min(48vw, 220px); aspect-ratio: 1; }
 .intro-ghost, .intro-fill {
   position: absolute; inset: 0;
   -webkit-mask: var(--logo) center / contain no-repeat;

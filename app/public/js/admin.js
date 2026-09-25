@@ -39,7 +39,7 @@
   }
 
   /* ---------- Navegação entre seções ---------- */
-  const TITULOS = { dashboard: "Dashboard", usuarios: "Usuários", pacotes: "Experiências", faturamento: "Faturamento", atendimento: "Atendimento", parceiros: "Parceiros" };
+  const TITULOS = { dashboard: "Dashboard", usuarios: "Usuários", pacotes: "Experiências", faturamento: "Faturamento", atendimento: "Atendimento", parceiros: "Parceiros", comunidade: "Moderação da comunidade", reclamacoes: "Reclamações e avaliações" };
   const carregadas = new Set();
 
   document.querySelectorAll(".nav-item").forEach((item) => {
@@ -59,7 +59,7 @@
   function carregarSecao(sec) {
     if (carregadas.has(sec)) return;
     carregadas.add(sec);
-    ({ dashboard: carregarPainel, usuarios: carregarUsuarios, pacotes: carregarExperiencias, faturamento: carregarFaturamento, atendimento: carregarAtendimento, parceiros: carregarParceiros }[sec] || (() => {}))();
+    ({ dashboard: carregarPainel, usuarios: carregarUsuarios, pacotes: carregarExperiencias, faturamento: carregarFaturamento, atendimento: carregarAtendimento, parceiros: carregarParceiros, comunidade: carregarComunidade, reclamacoes: carregarFeedback }[sec] || (() => {}))();
   }
 
   /* ---------- Badges ---------- */
@@ -125,6 +125,28 @@
       preencher("ticket_medio", m.reservas_confirmadas
         ? brl(Math.round(m.receita_bruta_cents / m.reservas_confirmadas)) : "-");
 
+      preencher("receita_bruta_dash", brl(m.receita_bruta_cents));
+      preencher("taxa_total_dash", `Plataforma: ${brl(m.taxa_plataforma_cents)} · estornado ${brl(m.estornado_cents)}`);
+      const p = painel.plataforma || {};
+      const n = (v) => Number(v || 0).toLocaleString("pt-BR");
+      const P = (k, v) => document.querySelectorAll(`[data-p="${k}"]`).forEach((el) => { el.textContent = v; });
+      P("online_agora", n(p.online_agora));
+      P("ativos_24h_txt", `${n(p.ativos_24h)} ativos nas últimas 24 h`);
+      P("parceiros_aprovados", n(p.parceiros_aprovados));
+      P("parceiros_pendentes_txt", `${n(p.parceiros_pendentes)} aguardando análise`);
+      P("experiencias_total", n(p.experiencias_total));
+      P("experiencias_comunidade_txt", `${n(p.experiencias_comunidade)} da comunidade · ${n(p.experiencias_moderadas)} moderadas`);
+      P("participantes", n(p.participantes));
+      P("reclamacoes_abertas", n(p.reclamacoes_abertas));
+      P("denuncias_txt", `${n(p.denuncias_abertas)} denúncias abertas`);
+      P("avaliacoes_experiencias", n(p.avaliacoes_experiencias));
+      P("avaliacoes_txt", (p.nota_media_experiencias != null ? `Nota média ${String(p.nota_media_experiencias).replace(".", ",")}` : "Sem notas ainda") +
+        ` · AquaTrip: ${n(p.avaliacoes_plataforma)}${p.nota_media_plataforma != null ? " (" + String(p.nota_media_plataforma).replace(".", ",") + ")" : ""}`);
+      P("curtidas", n(p.curtidas));
+      P("interacoes_txt", `curtidas · ${n(p.comentarios)} comentários · ${n(p.conexoes)} conexões`);
+      badgeNum("badge-denuncias", p.denuncias_abertas);
+      badgeNum("badge-reclamacoes", p.reclamacoes_abertas);
+
       barras("chart-receita", painel.receitaMensal);
       barras("chart-receita-fat", painel.receitaMensal);
 
@@ -162,17 +184,20 @@
     const tbody = $("user-tbody");
     if (!lista.length) return linhaVazia(tbody, 6, "Nenhum usuário encontrado.");
     tbody.innerHTML = lista.map((u) => {
-      const suspenso = u.status === "SUSPENDED";
+      const suspenso = u.status === "SUSPENDED" || u.status === "BANNED";
       const status = u.role === "ADMIN"
         ? '<span class="badge badge-info">Administrador</span>'
-        : suspenso
-          ? `<span class="badge badge-danger">Suspenso${u.suspended_until ? " até " + esc(data(u.suspended_until)) : ""}</span>`
-          : '<span class="badge badge-success">Ativo</span>';
-      const acao = u.role === "ADMIN" ? "" : suspenso
+        : u.status === "BANNED"
+          ? '<span class="badge badge-danger">Banido</span>'
+          : suspenso
+            ? `<span class="badge badge-danger">Suspenso${u.suspended_until ? " até " + esc(data(u.suspended_until)) : ""}</span>`
+            : '<span class="badge badge-success">Ativo</span>';
+      const perfil = `<button type="button" class="btn btn-sm" data-perfil="${esc(u.id)}">Ver perfil</button> `;
+      const acao = perfil + (u.role === "ADMIN" ? "" : suspenso
         ? `<button type="button" class="btn btn-sm" data-reativar="${esc(u.id)}">Reativar</button>`
-        : `<button type="button" class="btn btn-sm btn-danger" data-suspender="${esc(u.id)}">Suspender</button>`;
+        : `<button type="button" class="btn btn-sm btn-danger" data-suspender="${esc(u.id)}">Suspender</button> <button type="button" class="btn btn-sm btn-danger" data-banir="${esc(u.id)}">Banir</button>`);
       return `<tr>
-          <td>${esc(u.name)}</td>
+          <td>${u.online ? '<span class="live-dot" title="Online agora"></span> ' : ""}${esc(u.name)}</td>
           <td>${esc(u.email)}</td>
           <td>${esc(data(u.created_at))}</td>
           <td>${esc(u.reservas)}</td>
@@ -194,7 +219,8 @@
   // Situação derivada: mesma regra do antigo painel de gestão.
   function situacao(u) {
     if (u.role === "ADMIN") return "admin";
-    if (u.status === "SUSPENDED") return u.suspended_until ? "suspenso" : "banido";
+    if (u.status === "BANNED") return "banido";
+    if (u.status === "SUSPENDED") return u.suspended_until ? "suspenso" : "suspenso_sem_prazo";
     return "ativo";
   }
 
@@ -207,7 +233,7 @@
     const st = $("user-status")?.value || "";
     renderUsuarios(usuarios.filter((u) =>
       (!q || sem(u.name).includes(q) || sem(u.email).includes(q)) &&
-      (!st || situacao(u) === st)));
+      (!st || (st === "online" ? !!u.online : situacao(u) === st))));
   }
   $("user-search")?.addEventListener("input", filtrarUsuarios);
   $("user-status")?.addEventListener("change", filtrarUsuarios);
@@ -219,6 +245,20 @@
       try {
         await api("POST", `/api/admin/usuarios/${encodeURIComponent(mfa.dataset.redefinir2fa)}/2fa/redefinir`);
         aviso("2FA redefinido. A pessoa foi avisada por e-mail e as sessões dela foram encerradas.");
+        carregadas.delete("usuarios"); carregarSecao("usuarios");
+      } catch (e) { aviso(e.message); }
+      return;
+    }
+    const ver = ev.target.closest("[data-perfil]");
+    if (ver) return abrirPerfil(ver.dataset.perfil);
+    const ban = ev.target.closest("[data-banir]");
+    if (ban) {
+      const u = usuarios.find((x) => x.id === ban.dataset.banir);
+      const motivo = await pedirMotivo("Banir usuário", `${u.name} · ${u.email}. Banimento é permanente até reativar; as sessões caem e as experiências dele saem do ar.`, "Banir");
+      if (!motivo) return;
+      try {
+        await api("POST", `/api/admin/usuarios/${encodeURIComponent(u.id)}/banir`, { motivo });
+        aviso("Usuário banido. Sessões encerradas e experiências retiradas do ar.");
         carregadas.delete("usuarios"); carregarSecao("usuarios");
       } catch (e) { aviso(e.message); }
       return;
@@ -1005,6 +1045,267 @@
     if (!window.confirm(`${verbo} por "${rotulo}"? O parceiro recebe o motivo por e-mail.`)) { s.value = ""; return; }
     s.disabled = true;
     decidirParceiro(s.dataset.parcMotivo, s.dataset.acao, s.value);
+  });
+
+  /* ============================================================
+     UTILITÁRIOS NOVOS: contador no menu e diálogo de motivo
+     ============================================================ */
+  function badgeNum(id, n) {
+    const b = $(id);
+    if (b) { b.textContent = n; b.hidden = !Number(n); }
+  }
+
+  /** Abre o diálogo de motivo e devolve o texto (ou null se cancelar). */
+  function pedirMotivo(titulo, quem, rotuloBotao) {
+    const dlg = $("motivo-modal");
+    $("motivo-title").textContent = titulo;
+    $("motivo-quem").textContent = quem || "";
+    $("motivo-texto").value = "";
+    $("motivo-erro").hidden = true;
+    $("motivo-confirmar").querySelector("span").textContent = rotuloBotao || "Confirmar";
+    dlg.showModal();
+    $("motivo-texto").focus();
+    return new Promise((resolve) => {
+      const fim = (valor) => {
+        $("motivo-form").removeEventListener("submit", ok);
+        $("motivo-cancelar").removeEventListener("click", cancelar);
+        dlg.removeEventListener("close", fechou);
+        if (dlg.open) dlg.close();
+        resolve(valor);
+      };
+      const ok = (ev) => {
+        ev.preventDefault();
+        const m = $("motivo-texto").value.trim();
+        if (m.length < 5) { $("motivo-erro").textContent = "Descreva o motivo (mínimo 5 caracteres)."; $("motivo-erro").hidden = false; return; }
+        fim(m);
+      };
+      const cancelar = () => fim(null);
+      const fechou = () => fim(null);
+      $("motivo-form").addEventListener("submit", ok);
+      $("motivo-cancelar").addEventListener("click", cancelar);
+      dlg.addEventListener("close", fechou);
+    });
+  }
+
+  /* ============================================================
+     PERFIL COMPLETO DO USUÁRIO (LGPD: acesso auditado no servidor)
+     ============================================================ */
+  // Horários de experiência são do fuso de operação, não do navegador de quem modera.
+  const FUSO_OP = "America/Sao_Paulo";
+  const STATUS_MOD = { ACTIVE: ["badge-success", "Ativa"], SUSPENDED: ["badge-warning", "Suspensa"], BANNED: ["badge-danger", "Banida"] };
+  const STATUS_USR = { ACTIVE: ["badge-success", "Ativo"], SUSPENDED: ["badge-warning", "Suspenso"], BANNED: ["badge-danger", "Banido"] };
+
+  async function abrirPerfil(id) {
+    const dlg = $("user-modal");
+    const corpo = $("user-modal-corpo");
+    corpo.textContent = "Carregando...";
+    dlg.showModal();
+    try {
+      const { usuario: u } = await api("GET", `/api/admin/usuarios/${encodeURIComponent(id)}`);
+      const doc = u.document
+        ? (u.person_type === "PF" ? String(u.document).replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, "$1.$2.$3-$4") : u.document)
+        : "Não informado (só existe no cadastro de parceiro)";
+      const linha = (k, v) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`;
+      corpo.innerHTML = `
+        <dl class="adm-dl">
+          ${linha("Nome", esc(u.name))}
+          ${linha("E-mail", esc(u.email) + (u.email_verified_at ? ' <span class="badge badge-success">verificado</span>' : ' <span class="badge badge-warning">não verificado</span>'))}
+          ${linha(u.person_type === "PJ" ? "CNPJ" : "CPF", esc(doc))}
+          ${linha("Situação", badge(STATUS_USR, u.status) + (u.suspended_reason ? " " + esc(u.suspended_reason) : ""))}
+          ${linha("Papel", esc(u.role))}
+          ${linha("Cadastro", esc(data(u.created_at)))}
+          ${linha("Último login", esc(u.last_login_at ? new Date(u.last_login_at).toLocaleString("pt-BR", { timeZone: FUSO_OP }) : "-"))}
+          ${linha("Presença", u.online ? '<span class="live-dot"></span> Online agora' : esc(u.last_seen_at ? "Visto em " + new Date(u.last_seen_at).toLocaleString("pt-BR", { timeZone: FUSO_OP }) : "-"))}
+          ${linha("2FA", u.mfa ? "Ativo" : "Inativo")}
+          ${linha("Termos aceitos", esc(u.terms_version ? `v${u.terms_version} em ${data(u.terms_accepted_at)}` : "-"))}
+          ${linha("Parceiro", u.parceiro_status ? `${esc(u.parceiro_nome)} (${esc(u.parceiro_status)}) · ${esc(u.city || "")}/${esc(u.state || "")} · tel. ${esc(u.phone || "-")}` : "Não")}
+          ${linha("Reservas confirmadas", esc(u.reservas_confirmadas))}
+          ${linha("Seguidores / seguindo", `${esc(u.seguidores)} / ${esc(u.seguindo)}`)}
+          ${linha("Comentários feitos", esc(u.comentarios_feitos))}
+          ${linha("Denúncias recebidas", esc(u.denuncias_recebidas))}
+          ${u.bio ? linha("Bio", esc(u.bio)) : ""}
+        </dl>
+        <h3 class="adm-h3">Experiências criadas (${u.experiencias.length})</h3>
+        ${u.experiencias.length ? `<ul class="adm-mini-list">${u.experiencias.map((e) => `<li>${badge(STATUS_MOD, e.moderation_status)} <a href="/reservar/${encodeURIComponent(e.slug)}" target="_blank" rel="noopener">${esc(e.title)}</a> · ${esc(e.location || "")} · ${esc(e.starts_at ? data(e.starts_at) : "-")} · ${e.price_cents ? esc(brl(e.price_cents)) : "Gratuita"}</li>`).join("")}</ul>` : '<p class="form-hint">Nenhuma.</p>'}`;
+      if (window.lucide) window.lucide.createIcons();
+    } catch (e) {
+      corpo.textContent = e.message;
+    }
+  }
+  $("user-modal-fechar")?.addEventListener("click", () => $("user-modal").close());
+
+  /* ============================================================
+     MODERAÇÃO DA COMUNIDADE
+     ============================================================ */
+  let comTimer = null;
+  async function carregarComunidade() {
+    const lista = $("com-lista");
+    const q = new URLSearchParams();
+    const busca = ($("com-busca")?.value || "").trim();
+    if (busca) q.set("busca", busca);
+    if ($("com-status")?.value) q.set("status", $("com-status").value);
+    if ($("com-denuncias")?.checked) q.set("denuncias", "1");
+    try {
+      const { experiencias } = await api("GET", "/api/admin/comunidade?" + q.toString());
+      $("com-contagem").textContent = `${experiencias.length} experiência(s)`;
+      if (!experiencias.length) { lista.innerHTML = '<li class="req">Nenhuma experiência da comunidade com esse filtro.</li>'; return; }
+      lista.innerHTML = experiencias.map((e) => `
+        <li class="req ${e.denuncias_abertas ? "req--late" : ""}">
+          <div class="req-head">
+            <strong><a href="/reservar/${encodeURIComponent(e.slug)}" target="_blank" rel="noopener">${esc(e.title)}</a></strong>
+            <span>${badge(STATUS_MOD, e.moderation_status)} ${e.active ? "" : '<span class="badge badge-info">Pausada</span>'}</span>
+          </div>
+          <p class="req-meta">
+            Criador: <button type="button" class="link-btn" data-perfil-com="${esc(e.criador_id)}">${esc(e.criador_nome)}</button> (${esc(e.criador_email)})${e.criador_status !== "ACTIVE" ? " · conta " + esc(e.criador_status) : ""}
+            · ${esc(e.location || "")} · ${esc(e.starts_at ? new Date(e.starts_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: FUSO_OP }) : "-")}
+          </p>
+          <p class="req-meta">
+            Valor: <strong>${e.price_cents ? esc(brl(e.price_cents)) : "Gratuita"}</strong> · Vagas: ${esc(e.capacity ?? "-")} · Participantes: ${esc(e.participantes)} · Interessados: ${esc(e.interessados)}
+            · ${esc(e.curtidas)} curtidas · ${esc(e.comentarios)} comentários
+            · <strong${e.denuncias_abertas ? ' class="req-late-txt"' : ""}>Denúncias: ${esc(e.denuncias_abertas)} abertas / ${esc(e.denuncias_total)}</strong>
+          </p>
+          ${e.moderation_reason ? `<p class="req-answer"><strong>Motivo da moderação:</strong> ${esc(e.moderation_reason)}${e.moderated_at ? " · " + esc(data(e.moderated_at)) : ""}</p>` : ""}
+          <div class="req-actions">
+            <button type="button" class="btn btn-sm" data-com-det="${esc(e.id)}" data-titulo="${esc(e.title)}">Denúncias e comentários</button>
+            ${e.moderation_status !== "ACTIVE" ? `<button type="button" class="btn btn-sm" data-com-mod="ACTIVE" data-id="${esc(e.id)}">Reativar</button>` : ""}
+            ${e.moderation_status !== "SUSPENDED" ? `<button type="button" class="btn btn-sm btn-danger" data-com-mod="SUSPENDED" data-id="${esc(e.id)}" data-titulo="${esc(e.title)}">Suspender</button>` : ""}
+            ${e.moderation_status !== "BANNED" ? `<button type="button" class="btn btn-sm btn-danger" data-com-mod="BANNED" data-id="${esc(e.id)}" data-titulo="${esc(e.title)}">Banir</button>` : ""}
+            ${e.denuncias_abertas ? `<button type="button" class="btn btn-sm" data-com-arq="${esc(e.id)}">Arquivar denúncias</button>` : ""}
+          </div>
+        </li>`).join("");
+    } catch (e) {
+      lista.innerHTML = `<li class="req">Não foi possível carregar: ${esc(e.message)}</li>`;
+    }
+  }
+  $("com-busca")?.addEventListener("input", () => { clearTimeout(comTimer); comTimer = setTimeout(carregarComunidade, 300); });
+  $("com-status")?.addEventListener("change", carregarComunidade);
+  $("com-denuncias")?.addEventListener("change", carregarComunidade);
+
+  $("com-lista")?.addEventListener("click", async (ev) => {
+    const perfil = ev.target.closest("[data-perfil-com]");
+    if (perfil) return abrirPerfil(perfil.dataset.perfilCom);
+    const det = ev.target.closest("[data-com-det]");
+    if (det) return abrirDetalhe(det.dataset.comDet, det.dataset.titulo);
+    const arq = ev.target.closest("[data-com-arq]");
+    if (arq) {
+      if (!window.confirm("Arquivar as denúncias abertas sem mudar a experiência?")) return;
+      try { await api("POST", `/api/admin/comunidade/${encodeURIComponent(arq.dataset.comArq)}/denuncias/arquivar`); aviso("Denúncias arquivadas."); carregarComunidade(); }
+      catch (e) { aviso(e.message); }
+      return;
+    }
+    const mod = ev.target.closest("[data-com-mod]");
+    if (!mod) return;
+    const status = mod.dataset.comMod;
+    let motivo = null;
+    if (status !== "ACTIVE") {
+      motivo = await pedirMotivo(status === "BANNED" ? "Banir experiência" : "Suspender experiência", mod.dataset.titulo,
+        status === "BANNED" ? "Banir" : "Suspender");
+      if (!motivo) return;
+    } else if (!window.confirm("Reativar esta experiência? Ela volta a aparecer para o público.")) return;
+    try {
+      await api("POST", `/api/admin/comunidade/${encodeURIComponent(mod.dataset.id)}/moderar`, { status, motivo });
+      aviso(status === "ACTIVE" ? "Experiência reativada." : "Decisão registrada. A experiência saiu do ar.");
+      carregarComunidade();
+    } catch (e) { aviso(e.message); }
+  });
+
+  const MOTIVO_DEN = { GOLPE: "Golpe/cobrança enganosa", INFORMACAO_FALSA: "Informação falsa", CONTEUDO_IMPROPRIO: "Conteúdo impróprio", PERIGOSO: "Perigosa/sem segurança", CONTATO_EXTERNO: "Contato/pagamento por fora", OUTRO: "Outro" };
+  let detalheId = null;
+  async function abrirDetalhe(id, titulo) {
+    detalheId = id;
+    const dlg = $("exp-modal");
+    $("exp-modal-title").textContent = titulo || "Denúncias e comentários";
+    const corpo = $("exp-modal-corpo");
+    corpo.textContent = "Carregando...";
+    if (!dlg.open) dlg.showModal();
+    try {
+      const d = await api("GET", `/api/admin/comunidade/${encodeURIComponent(id)}`);
+      corpo.innerHTML = `
+        <h3 class="adm-h3">Denúncias (${d.denuncias.length})</h3>
+        ${d.denuncias.length ? `<ul class="adm-mini-list">${d.denuncias.map((r) => `<li><span class="badge ${r.status === "OPEN" ? "badge-danger" : "badge-info"}">${esc(r.status === "OPEN" ? "Aberta" : r.status === "RESOLVED" ? "Procedente" : "Arquivada")}</span> <strong>${esc(MOTIVO_DEN[r.reason] || r.reason)}</strong> · ${esc(r.denunciante)} · ${esc(data(r.created_at))}${r.details ? `<br><span class="form-hint">${esc(r.details)}</span>` : ""}</li>`).join("")}</ul>` : '<p class="form-hint">Nenhuma denúncia.</p>'}
+        <h3 class="adm-h3">Comentários (${d.comentarios.length})</h3>
+        ${d.comentarios.length ? `<ul class="adm-mini-list">${d.comentarios.map((c) => `<li>${c.status === "HIDDEN" ? '<span class="badge badge-warning">Oculto</span> ' : ""}<strong>${esc(c.autor)}</strong> · ${esc(data(c.created_at))}<br>${esc(c.body)}${c.hidden_reason ? `<br><span class="form-hint">Motivo: ${esc(c.hidden_reason)}</span>` : ""}
+          <br><button type="button" class="btn btn-sm${c.status === "HIDDEN" ? "" : " btn-danger"}" data-coment="${esc(c.id)}" data-ocultar="${c.status === "HIDDEN" ? "0" : "1"}">${c.status === "HIDDEN" ? "Mostrar de novo" : "Ocultar"}</button></li>`).join("")}</ul>` : '<p class="form-hint">Nenhum comentário.</p>'}`;
+    } catch (e) { corpo.textContent = e.message; }
+  }
+  $("exp-modal-fechar")?.addEventListener("click", () => $("exp-modal").close());
+  $("exp-modal-corpo")?.addEventListener("click", async (ev) => {
+    const b = ev.target.closest("[data-coment]");
+    if (!b) return;
+    const ocultar = b.dataset.ocultar === "1";
+    let motivo = null;
+    if (ocultar) {
+      $("exp-modal").close();
+      motivo = await pedirMotivo("Ocultar comentário", "O comentário deixa de aparecer na página.", "Ocultar");
+      if (!motivo) return abrirDetalhe(detalheId);
+    }
+    try {
+      await api("POST", `/api/admin/comentarios/${encodeURIComponent(b.dataset.coment)}`, { ocultar, motivo });
+      aviso(ocultar ? "Comentário ocultado." : "Comentário visível de novo.");
+    } catch (e) { aviso(e.message); }
+    abrirDetalhe(detalheId);
+  });
+
+  /* ============================================================
+     RECLAMAÇÕES, SUGESTÕES E AVALIAÇÕES DO AQUATRIP
+     ============================================================ */
+  const TIPO_FB = { COMPLAINT: ["badge-danger", "Reclamação"], SUGGESTION: ["badge-info", "Sugestão"], RATING: ["badge-success", "Avaliação"] };
+  const STATUS_FB = { OPEN: ["badge-warning", "Aberta"], IN_PROGRESS: ["badge-info", "Em andamento"], RESOLVED: ["badge-success", "Resolvida"], CLOSED: ["badge-info", "Encerrada"] };
+  async function carregarFeedback() {
+    const lista = $("fb-lista");
+    const q = new URLSearchParams();
+    if ($("fb-status")?.value) q.set("status", $("fb-status").value);
+    if ($("fb-tipo")?.value) q.set("tipo", $("fb-tipo").value);
+    try {
+      const { itens, resumo } = await api("GET", "/api/admin/feedback?" + q.toString());
+      $("fb-abertas").textContent = resumo.reclamacoes_abertas;
+      $("fb-avaliacoes").textContent = resumo.avaliacoes;
+      $("fb-nota").textContent = resumo.nota_media != null ? String(resumo.nota_media).replace(".", ",") + " ★" : "-";
+      badgeNum("badge-reclamacoes", resumo.reclamacoes_abertas);
+      if (!itens.length) { lista.innerHTML = '<li class="req">Nada por aqui com esse filtro.</li>'; return; }
+      lista.innerHTML = itens.map((f) => `
+        <li class="req ${f.status === "OPEN" ? "req--new" : ""}">
+          <div class="req-head"><strong>${esc(f.subject)}${f.rating ? " · " + "★".repeat(f.rating) : ""}</strong><span>${badge(TIPO_FB, f.kind)} ${badge(STATUS_FB, f.status)}</span></div>
+          <p class="req-meta">${f.user_id ? `<button type="button" class="link-btn" data-perfil-fb="${esc(f.user_id)}">${esc(f.user_name)}</button> · ${esc(f.user_email)}` : "Conta removida"} · ${esc(data(f.created_at))}</p>
+          <blockquote class="req-body">${esc(f.message)}</blockquote>
+          ${f.admin_response ? `<p class="req-answer"><strong>Resposta${f.respondido_por ? " de " + esc(f.respondido_por) : ""}:</strong> ${esc(f.admin_response)}</p>` : ""}
+          <form class="req-form" data-fb="${esc(f.id)}" novalidate data-fk-busy="off">
+            <label>Resposta para a pessoa (aparece na página dela)
+              <textarea name="resposta" maxlength="2000" data-counter placeholder="${f.admin_response ? "Enviar nova resposta (substitui a anterior)" : "Escreva a resposta"}"></textarea>
+            </label>
+            <div class="req-actions">
+              <label class="sr-only" for="fbst-${esc(f.id)}">Status</label>
+              <select name="status" id="fbst-${esc(f.id)}">
+                ${Object.keys(STATUS_FB).map((k) => `<option value="${k}"${k === f.status ? " selected" : ""}>${STATUS_FB[k][1]}</option>`).join("")}
+              </select>
+              <button type="submit" class="btn btn-primary btn-sm"><span>Salvar</span></button>
+            </div>
+          </form>
+        </li>`).join("");
+      if (window.AQForm) window.AQForm.preparar(lista);
+    } catch (e) {
+      lista.innerHTML = `<li class="req">Não foi possível carregar: ${esc(e.message)}</li>`;
+    }
+  }
+  $("fb-status")?.addEventListener("change", carregarFeedback);
+  $("fb-tipo")?.addEventListener("change", carregarFeedback);
+  $("fb-lista")?.addEventListener("click", (ev) => {
+    const p = ev.target.closest("[data-perfil-fb]");
+    if (p) abrirPerfil(p.dataset.perfilFb);
+  });
+  $("fb-lista")?.addEventListener("submit", async (ev) => {
+    const form = ev.target.closest("[data-fb]");
+    if (!form) return;
+    ev.preventDefault();
+    const botao = form.querySelector('button[type="submit"]');
+    const resposta = form.resposta.value.trim();
+    if (window.AQForm) window.AQForm.ocupado(botao, true);
+    try {
+      await api("POST", `/api/admin/feedback/${encodeURIComponent(form.dataset.fb)}`, { status: form.status.value, resposta: resposta || null });
+      aviso("Registro atualizado.");
+      carregarFeedback();
+    } catch (e) { aviso(e.message); }
+    finally { if (window.AQForm) window.AQForm.ocupado(botao, false); }
   });
 
   carregarSecao("dashboard");

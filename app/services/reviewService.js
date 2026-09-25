@@ -248,6 +248,10 @@ async function moderarFoto({ adminId, mediaId, aprovar, motivo, req }) {
       mediaId, aprovada: aprovar, motivoTexto: aprovar ? null : mediaService.MOTIVOS_RECUSA[motivo],
     });
   }
+  // Foto de experiência da comunidade: a primeira aprovada vira a capa.
+  if (m.purpose === "EXPERIENCE" && aprovar) {
+    await require("./communityService").aoAprovarFoto(mediaId);
+  }
   await auditService.log(aprovar ? AuditAction.PHOTO_APPROVED : AuditAction.PHOTO_REJECTED, {
     req, userId: adminId, metadata: { midiaId: mediaId, motivo: aprovar ? null : motivo },
   });

@@ -23,7 +23,9 @@ var mpc = require('../controllers/marketplaceController');
 var twoFactorController = require('../controllers/twoFactorController');
 var { requireAuth, requireRole } = require('../middlewares/auth');
 var { csrfProtect } = require('../middlewares/csrf');
-var { loginLimiter, writeLimiter, webhookLimiter, contactLimiter } = require('../middlewares/rateLimiters');
+var { loginLimiter, writeLimiter, webhookLimiter, contactLimiter, socialLimiter, chatLimiter } = require('../middlewares/rateLimiters');
+var cc = require('../controllers/communityController');
+var chatbotController = require('../controllers/chatbotController');
 
 /* ------------------------------------------------------------------
    WEBHOOK — público por definição (quem chama é o gateway, não o
@@ -282,14 +284,65 @@ router.get('/ingressos', requireAuth, function(req,res ){
 // papel aqui: o /admin já exige ADMIN (e o redirect não expõe nada).
 router.get('/gestao', function (req, res) { res.redirect(301, '/admin'); });
 
-router.get('/criar_experiencia', function(req,res ){
-    res.render('pages/criar_experiencia');
-});
+// Criar experiência: antes era um formulário que não gravava nada.
+// Agora qualquer usuário com conta publica de verdade (comunidade).
+router.get('/criar_experiencia', requireAuth, cc.paginaCriar);
 
 router.get('/perfil_editado', requireAuth, profileController.paginaConta);
 router.post('/api/conta/nome', requireAuth, writeLimiter, csrfProtect, profileController.salvarNome);
 // Senha e e-mail usam o limitador de login: aceitam senha, então são alvo de força bruta.
 router.post('/api/conta/senha', requireAuth, loginLimiter, csrfProtect, profileController.trocarSenha);
 router.post('/api/conta/email', requireAuth, loginLimiter, csrfProtect, profileController.trocarEmail);
+
+/* ------------------------------------------------------------------
+   COMUNIDADE — experiências criadas por usuários, rede social e perfis
+   Leitura pública; toda escrita exige login + CSRF + limitador. Posse
+   e visibilidade são conferidas nos serviços, não aqui.
+   ------------------------------------------------------------------ */
+router.get('/comunidade', cc.paginaComunidade);
+router.get('/meu-perfil', requireAuth, cc.paginaMeuPerfil);
+router.get('/usuarios/:id', cc.paginaPerfilPublico);
+router.get('/feedback', requireAuth, cc.paginaFeedback);
+
+router.get('/api/comunidade/feed', cc.feed);
+router.get('/api/comunidade/minhas', requireAuth, cc.minhas);
+router.post('/api/comunidade/experiencias', requireAuth, writeLimiter, csrfProtect, cc.criar);
+router.get('/api/comunidade/experiencias/:id', requireAuth, cc.detalheParaEditar);
+router.put('/api/comunidade/experiencias/:id', requireAuth, writeLimiter, csrfProtect, cc.editar);
+router.post('/api/comunidade/experiencias/:id/publicada', requireAuth, writeLimiter, csrfProtect, cc.publicada);
+router.get('/api/comunidade/experiencias/:id/pessoas', requireAuth, cc.pessoas);
+// Upload: login e CSRF ANTES de aceitar o arquivo (mesma regra das capas).
+router.post('/api/comunidade/experiencias/:id/fotos', requireAuth, writeLimiter, csrfProtect, mediaController.receberImagem, cc.enviarFoto);
+router.delete('/api/comunidade/experiencias/:id/fotos/:mediaId', requireAuth, writeLimiter, csrfProtect, cc.removerFoto);
+
+router.post('/api/experiencias/:id/curtir', requireAuth, socialLimiter, csrfProtect, cc.curtir);
+router.post('/api/experiencias/:id/interesse', requireAuth, socialLimiter, csrfProtect, cc.interesse);
+router.get('/api/experiencias/:id/comentarios', cc.listarComentarios);
+router.post('/api/experiencias/:id/comentarios', requireAuth, socialLimiter, csrfProtect, cc.comentar);
+router.delete('/api/comentarios/:id', requireAuth, socialLimiter, csrfProtect, cc.apagarComentario);
+router.post('/api/experiencias/:id/denunciar', requireAuth, writeLimiter, csrfProtect, cc.denunciar);
+router.post('/api/usuarios/:id/seguir', requireAuth, socialLimiter, csrfProtect, cc.seguir);
+router.get('/api/usuarios/:id/seguidores', cc.seguidores);
+router.get('/api/usuarios/:id/seguindo', cc.seguindo);
+router.post('/api/perfil/bio', requireAuth, writeLimiter, csrfProtect, cc.salvarBio);
+router.post('/api/perfil/avatar', requireAuth, writeLimiter, csrfProtect, mediaController.receberImagem, cc.enviarAvatar);
+router.delete('/api/perfil/avatar', requireAuth, writeLimiter, csrfProtect, cc.removerAvatar);
+router.post('/api/feedback', requireAuth, writeLimiter, csrfProtect, cc.enviarFeedback);
+
+/* Assistente virtual (IA). Público; CSRF e limitador em toda escrita. */
+router.get('/api/assistente', chatbotController.status);
+router.post('/api/assistente/mensagem', chatLimiter, csrfProtect, chatbotController.mensagem);
+router.post('/api/assistente/limpar', writeLimiter, csrfProtect, chatbotController.limpar);
+
+/* Admin: banimento, cadastro completo, moderação da comunidade e feedback */
+router.post('/api/admin/usuarios/:id/banir', requireRole('ADMIN'), writeLimiter, csrfProtect, adminController.banir);
+router.get('/api/admin/usuarios/:id', requireRole('ADMIN'), adminController.usuarioDetalhe);
+router.get('/api/admin/comunidade', requireRole('ADMIN'), adminController.comunidade);
+router.get('/api/admin/comunidade/:id', requireRole('ADMIN'), adminController.comunidadeDetalhe);
+router.post('/api/admin/comunidade/:id/moderar', requireRole('ADMIN'), writeLimiter, csrfProtect, adminController.moderarExperiencia);
+router.post('/api/admin/comunidade/:id/denuncias/arquivar', requireRole('ADMIN'), writeLimiter, csrfProtect, adminController.arquivarDenuncias);
+router.post('/api/admin/comentarios/:id', requireRole('ADMIN'), writeLimiter, csrfProtect, adminController.moderarComentario);
+router.get('/api/admin/feedback', requireRole('ADMIN'), adminController.feedbacks);
+router.post('/api/admin/feedback/:id', requireRole('ADMIN'), writeLimiter, csrfProtect, adminController.responderFeedback);
 
 module.exports = router;

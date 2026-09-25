@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="<%= locals.htmlLang || 'pt-BR' %>">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="csrf-token" content="<%= csrfToken %>">
+  <title><%= seo.titulo %></title>
+  <%- include('../partials/seo') %>
+  <link rel="stylesheet" href="/css/comunidade.css">
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+<%- include('../partials/header') %>
+<%
+  const cats = ['praia','mergulho','caiaque','pesca','expedicao','aquario'];
+  const q = function (extra) {
+    const p = Object.assign({ ordem: filtros.ordem, categoria: filtros.categoria || '', q: filtros.busca || '', filtro: filtros.seguindo ? 'seguindo' : '' }, extra);
+    const s = Object.keys(p).filter(function (k) { return p[k]; }).map(function (k) { return k + '=' + encodeURIComponent(p[k]); }).join('&');
+    return '/comunidade' + (s ? '?' + s : '');
+  };
+%>
+<main id="main-content" class="wrap cm-page">
+  <header class="page-head cm-head">
+    <div>
+      <p class="kicker"><%= t('comunidade.kicker') %></p>
+      <h1 class="display h-l"><%= t('comunidade.titulo') %></h1>
+      <p class="lead"><%= t('comunidade.lead') %></p>
+    </div>
+    <a class="btn-primary btn-lg" href="<%= user ? '/criar_experiencia' : '/login?redirect=%2Fcriar_experiencia' %>"><i data-lucide="circle-plus"></i> <%= t('comunidade.criar') %></a>
+  </header>
+
+  <form class="cm-filters" action="/comunidade" method="GET" role="search" data-fk-busy="off">
+    <div class="field cm-search">
+      <label for="cmBusca" class="sr-only"><%= t('comunidade.buscar_rotulo') %></label>
+      <i data-lucide="search" aria-hidden="true"></i>
+      <input id="cmBusca" name="q" type="search" value="<%= filtros.busca %>" placeholder="<%= t('comunidade.buscar_ph') %>" autocomplete="off">
+      <input type="hidden" name="ordem" value="<%= filtros.ordem %>">
+      <% if (filtros.categoria) { %><input type="hidden" name="categoria" value="<%= filtros.categoria %>"><% } %>
+      <% if (filtros.seguindo) { %><input type="hidden" name="filtro" value="seguindo"><% } %>
+    </div>
+    <nav class="chips cm-chips" aria-label="<%= t('comunidade.filtrar_cat') %>">
+      <a class="chip" href="<%= q({ categoria: '' }) %>"<%- !filtros.categoria ? ' aria-current="true"' : '' %>><%= t('comunidade.todas') %></a>
+      <% cats.forEach(function (c) { %>
+        <a class="chip" href="<%= q({ categoria: c }) %>"<%- filtros.categoria === c ? ' aria-current="true"' : '' %>><%= categoriaRotulo(c) %></a>
+      <% }) %>
+    </nav>
+    <nav class="cm-sort" aria-label="<%= t('comunidade.ordenar') %>">
+      <a href="<%= q({ ordem: 'recentes' }) %>"<%- filtros.ordem === 'recentes' ? ' aria-current="true"' : '' %>><%= t('comunidade.recentes') %></a>
+      <a href="<%= q({ ordem: 'proximas' }) %>"<%- filtros.ordem === 'proximas' ? ' aria-current="true"' : '' %>><%= t('comunidade.proximas') %></a>
+      <a href="<%= q({ ordem: 'populares' }) %>"<%- filtros.ordem === 'populares' ? ' aria-current="true"' : '' %>><%= t('comunidade.populares') %></a>
+      <% if (user) { %>
+        <a href="<%= q({ filtro: filtros.seguindo ? '' : 'seguindo' }) %>" class="cm-follow-filter"<%- filtros.seguindo ? ' aria-current="true"' : '' %>><i data-lucide="user-check"></i> <%= t('comunidade.seguindo_filtro') %></a>
+      <% } %>
+    </nav>
+  </form>
+
+  <% if (experiencias.length) { %>
+    <ul class="cc-grid" aria-label="<%= t('comunidade.lista') %>">
+      <% experiencias.forEach(function (e) { %>
+        <li><%- include('../partials/cc-card', { e: e, criador: true }) %></li>
+      <% }) %>
+    </ul>
+  <% } else { %>
+    <section class="empty-state cm-empty">
+      <i data-lucide="waves" aria-hidden="true"></i>
+      <h2><%= filtros.seguindo ? t('comunidade.vazio_seguindo') : (filtros.busca || filtros.categoria ? t('comunidade.vazio_filtro') : t('comunidade.vazio')) %></h2>
+      <p><%= t('comunidade.vazio_texto') %></p>
+      <a class="btn-primary" href="<%= user ? '/criar_experiencia' : '/login?redirect=%2Fcriar_experiencia' %>"><%= t('comunidade.criar_primeira') %></a>
+    </section>
+  <% } %>
+
+  <section class="cm-how" aria-labelledby="cmComo">
+    <h2 id="cmComo" class="h-m"><%= t('comunidade.como_titulo') %></h2>
+    <ol>
+      <li><span class="mono">01</span><h3><%= t('comunidade.como1_t') %></h3><p><%= t('comunidade.como1') %></p></li>
+      <li><span class="mono">02</span><h3><%= t('comunidade.como2_t') %></h3><p><%= t('comunidade.como2') %></p></li>
+      <li><span class="mono">03</span><h3><%= t('comunidade.como3_t') %></h3><p><%= t('comunidade.como3') %></p></li>
+    </ol>
+  </section>
+</main>
+<%- include('../partials/footer') %>
+<script src="/js/social.js" defer></script>
+</body>
+</html>

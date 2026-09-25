@@ -58,7 +58,7 @@ async function parceiroAtivo(userId) {
 /** Experiência do parceiro, travada para escrita quando `client` é dado. */
 async function minha(partnerId, serviceId, client = db) {
   const { rows } = await client.query(
-    `SELECT * FROM services WHERE id = ? AND partner_id = ?${client === db ? "" : " FOR UPDATE"}`,
+    `SELECT * FROM services WHERE id = ? AND partner_id = ? AND creator_user_id IS NULL${client === db ? "" : " FOR UPDATE"}`,
     [serviceId, partnerId]
   );
   if (!rows[0]) throw new ExperienceError("Experiência não encontrada.", "NOT_FOUND", 404);
@@ -73,7 +73,7 @@ async function listarMinhas(userId) {
             (SELECT storage_key FROM media WHERE id = s.cover_media_id) AS cover_key,
             (SELECT storage_key FROM media WHERE id = s.pending_cover_media_id) AS pending_cover_key,
             (SELECT COUNT(*) FROM service_slots sl WHERE sl.service_id = s.id AND sl.starts_at > NOW()) AS horarios_futuros
-     FROM services s WHERE s.partner_id = ? ORDER BY s.created_at DESC`,
+     FROM services s WHERE s.partner_id = ? AND s.creator_user_id IS NULL ORDER BY s.created_at DESC`,
     [p.id]
   );
   return {

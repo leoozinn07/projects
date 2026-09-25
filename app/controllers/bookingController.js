@@ -5,6 +5,8 @@
 const { z } = require("zod");
 const log = require("../lib/logger").forModule("reservas");
 const bookingService = require("../services/bookingService");
+const communityService = require("../services/communityService");
+const socialService = require("../services/socialService");
 const reviewService = require("../services/reviewService");
 const paymentRepository = require("../repositories/paymentRepository");
 const { PaymentMethod } = require("../lib/payments/contract");
@@ -136,10 +138,20 @@ async function showService(req, res, next) {
       jsonld,
     });
 
+    const viewerId = req.session.user ? req.session.user.id : null;
+    const [social, comentarios, galeria] = await Promise.all([
+      communityService.blocoSocial(service.id, viewerId),
+      socialService.comentarios(service.id, viewerId),
+      communityService.galeria(service.id),
+    ]);
     res.render("pages/reservar_servico", {
       service,
       slots,
       avaliacoes,
+      social,
+      comentarios,
+      galeria,
+      motivosDenuncia: socialService.MOTIVOS_DENUNCIA,
       holdMinutes: bookingService.HOLD_MINUTES,
       error: req.query.error || null,
     });
@@ -181,7 +193,9 @@ async function createBooking(req, res, next) {
         valorCentavos: booking.amount_cents,
       },
     });
-    res.redirect(`/reservas/${booking.id}/checkout`);
+    res.redirect(booking.status === "CONFIRMED"
+      ? `/reservas/${booking.id}/comprovante`
+      : `/reservas/${booking.id}/checkout`);
   } catch (err) {
     if (err instanceof bookingService.BookingError) {
       const back = req.body.serviceSlug ? `/reservar/${req.body.serviceSlug}` : "/reservar";

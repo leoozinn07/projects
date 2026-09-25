@@ -31,13 +31,15 @@ class AdminError extends Error {
 /* ---------- Painel ---------- */
 
 async function dashboard() {
-  const [metricas, receitaMensal, inconsistencias] = await Promise.all([
+  const [metricas, receitaMensal, inconsistencias, plataforma] = await Promise.all([
     adminRepository.metrics({ platformFeePercent: PLATFORM_FEE_PERCENT }),
     adminRepository.revenueByMonth(6),
     adminRepository.inconsistencies(),
+    adminRepository.platformCounts(),
   ]);
   return {
     metricas,
+    plataforma,
     receitaMensal,
     inconsistencias,
     taxaPlataformaPercent: PLATFORM_FEE_PERCENT,
@@ -294,6 +296,97 @@ async function listTransactions(filtros) {
   }));
 }
 
+/* ---------- Banimento, perfil completo e moderação da comunidade ---------- */
+
+const MOTIVO_MIN = 5;
+
+function exigirMotivo(motivo) {
+  const m = String(motivo || "").trim();
+  if (m.length < MOTIVO_MIN || m.length > 300) {
+    throw new AdminError("Informe o motivo (entre 5 e 300 caracteres). Ele fica registrado.", "REASON_REQUIRED", 422);
+  }
+  return m;
+}
+
+/** Banimento: permanente, derruba sessões e tira do ar o que a conta publicou. */
+async function banUser({ adminId, userId, motivo, req }) {
+  const razao = exigirMotivo(motivo);
+  if (userId === adminId) throw new AdminError("Você não pode banir a própria conta.", "SELF_BAN");
+  const alvo = await userRepository.findById(userId);
+  if (!alvo) throw new AdminError("Usuário não encontrado.", "NOT_FOUND", 404);
+  if (alvo.role === "ADMIN") throw new AdminError("Administradores não podem ser banidos pelo painel.", "ADMIN_PROTECTED");
+
+  const atualizado = await adminRepository.setUserStatus(userId, { status: "BANNED", reason: razao });
+  const sessoes = await adminRepository.destroyUserSessions(userId);
+  const experiencias = await adminRepository.moderateServicesOfCreator(userId, {
+    reason: `Conta do criador banida: ${razao}`.slice(0, 300), adminId,
+  });
+  await auditService.log(AuditAction.ADMIN_USER_BANNED, {
+    req, userId: adminId,
+    metadata: { alvo: userId, alvoEmail: alvo.email, motivo: razao, sessoesEncerradas: sessoes, experienciasRetiradas: experiencias },
+  });
+  return atualizado;
+}
+
+/**
+ * Cadastro completo (inclui CPF/CNPJ do cadastro de parceiro, quando
+ * existe). Dado sensível: só admin chega aqui (requireRole no router)
+ * e todo acesso fica na trilha de auditoria, com quem viu e quando.
+ */
+async function userDetail({ adminId, userId, req }) {
+  const detalhe = await adminRepository.userDetail(userId);
+  if (!detalhe) throw new AdminError("Usuário não encontrado.", "NOT_FOUND", 404);
+  await auditService.log(AuditAction.ADMIN_USER_VIEWED, {
+    req, userId: adminId, metadata: { alvo: userId, viuDocumento: !!detalhe.document },
+  });
+  return detalhe;
+}
+
+function listCommunityServices(filtros) {
+  return adminRepository.listCommunityServices(filtros);
+}
+
+const ESTADOS_MODERACAO = ["ACTIVE", "SUSPENDED", "BANNED"];
+
+async function moderateExperience({ adminId, serviceId, status, motivo, req }) {
+  if (!ESTADOS_MODERACAO.includes(status)) throw new AdminError("Estado inválido.", "INVALID_STATUS", 422);
+  const razao = status === "ACTIVE" ? null : exigirMotivo(motivo);
+  const ok = await adminRepository.setServiceModeration(serviceId, { status, reason: razao, adminId });
+  if (!ok) throw new AdminError("Experiência não encontrada.", "NOT_FOUND", 404);
+  // Decidir sobre a experiência encerra as denúncias abertas dela.
+  const denuncias = await adminRepository.closeReports(serviceId, {
+    status: status === "ACTIVE" ? "DISMISSED" : "RESOLVED", adminId,
+  });
+  await auditService.log(AuditAction.ADMIN_EXPERIENCE_MODERATED, {
+    req, userId: adminId, metadata: { servicoId: serviceId, status, motivo: razao, denunciasEncerradas: denuncias },
+  });
+  return { id: serviceId, moderation_status: status, moderation_reason: razao };
+}
+
+async function experienceModerationDetail(serviceId) {
+  const [denuncias, comentarios] = await Promise.all([
+    adminRepository.listReports(serviceId),
+    adminRepository.listServiceComments(serviceId),
+  ]);
+  return { denuncias, comentarios };
+}
+
+async function dismissReports({ adminId, serviceId, req }) {
+  const n = await adminRepository.closeReports(serviceId, { status: "DISMISSED", adminId });
+  await auditService.log(AuditAction.ADMIN_REPORT_HANDLED, { req, userId: adminId, metadata: { servicoId: serviceId, arquivadas: n } });
+  return { arquivadas: n };
+}
+
+async function moderateComment({ adminId, commentId, ocultar, motivo, req }) {
+  const razao = ocultar ? exigirMotivo(motivo) : null;
+  const ok = await adminRepository.setCommentStatus(commentId, { hidden: ocultar, reason: razao, adminId });
+  if (!ok) throw new AdminError("Comentário não encontrado.", "NOT_FOUND", 404);
+  await auditService.log(AuditAction.ADMIN_COMMENT_MODERATED, {
+    req, userId: adminId, metadata: { comentarioId: commentId, ocultar, motivo: razao },
+  });
+  return { id: commentId, status: ocultar ? "HIDDEN" : "VISIBLE" };
+}
+
 module.exports = {
   AdminError,
   PLATFORM_FEE_PERCENT,
@@ -313,4 +406,11 @@ module.exports = {
   createSlots,
   updateSlotCapacity,
   deleteSlot,
+  banUser,
+  userDetail,
+  listCommunityServices,
+  moderateExperience,
+  experienceModerationDetail,
+  dismissReports,
+  moderateComment,
 };

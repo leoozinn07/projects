@@ -75,7 +75,7 @@ const CHAVE_VALIDA = /^[0-9a-f-]{36}\.webp$/;
  * Processa e guarda uma imagem. Devolve o registro em `media`.
  * `buffer` vem do multer (memória), já limitado em tamanho.
  */
-async function salvarImagem({ buffer, usuarioId, purpose = "COVER", status = "APPROVED" }) {
+async function salvarImagem({ buffer, usuarioId, purpose = "COVER", status = "APPROVED", minimo = { w: 400, h: 250 } }) {
   if (!buffer || !buffer.length) throw new MediaError("Nenhum arquivo recebido.", "EMPTY");
   if (buffer.length > MAX_BYTES) {
     throw new MediaError(`Arquivo grande demais (máximo ${Math.round(MAX_BYTES / 1024 / 1024)} MB).`, "TOO_LARGE", 413);
@@ -99,8 +99,10 @@ async function salvarImagem({ buffer, usuarioId, purpose = "COVER", status = "AP
   if (!meta.width || !meta.height || meta.width > MAX_LADO_ENTRADA || meta.height > MAX_LADO_ENTRADA) {
     throw new MediaError(`Imagem grande demais (máximo ${MAX_LADO_ENTRADA} px de lado).`, "TOO_BIG_DIMENSIONS");
   }
-  if (meta.width < 400 || meta.height < 250) {
-    throw new MediaError("Imagem pequena demais para a vitrine (mínimo 400 × 250 px).", "TOO_SMALL");
+  if (meta.width < minimo.w || meta.height < minimo.h) {
+    throw new MediaError(minimo.w === 400 && minimo.h === 250
+      ? "Imagem pequena demais para a vitrine (mínimo 400 × 250 px)."
+      : `Imagem pequena demais (mínimo ${minimo.w} × ${minimo.h} px).`, "TOO_SMALL");
   }
 
   let saida;
@@ -177,14 +179,19 @@ async function pendentes(limite = 100) {
     `SELECT m.id, m.storage_key, m.width, m.height, m.purpose, m.created_at,
             u.name AS autor, u.email AS autor_email,
             r.id AS review_id, r.rating, r.title AS review_title,
-            COALESCE(sv.title, sc.title) AS experiencia,
-            CASE WHEN sc.id IS NOT NULL THEN 'capa de parceiro' ELSE 'foto de avaliação' END AS origem
+            COALESCE(sv.title, sc.title, se.title) AS experiencia,
+            CASE WHEN sc.id IS NOT NULL THEN 'capa de parceiro'
+                 WHEN se.id IS NOT NULL THEN 'foto de experiência da comunidade'
+                 WHEN m.purpose = 'AVATAR' THEN 'foto de perfil'
+                 ELSE 'foto de avaliação' END AS origem
      FROM media m
      LEFT JOIN users u         ON u.id = m.uploaded_by
      LEFT JOIN review_photos rp ON rp.media_id = m.id
      LEFT JOIN reviews r        ON r.id = rp.review_id
      LEFT JOIN services sv      ON sv.id = r.service_id
      LEFT JOIN services sc      ON sc.pending_cover_media_id = m.id
+     LEFT JOIN service_photos sp ON sp.media_id = m.id
+     LEFT JOIN services se      ON se.id = sp.service_id
      WHERE m.status = 'PENDING'
      ORDER BY m.created_at
      LIMIT ?`,

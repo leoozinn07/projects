@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="/css/admin.css">
   <script src="/vendor/lucide.min.js"></script>
   <script src="/js/theme.js"></script>
+  <script src="/js/form-kit.js" defer></script>
 </head>
 <body>
 
@@ -19,7 +20,7 @@
     <aside class="sidebar" aria-label="Menu lateral">
       <header class="sidebar-header">
         <section class="logo-mark">
-          <span class="logo-icon" aria-hidden="true"><i data-lucide="droplet"></i></span>
+          <img class="logo-icon" src="/img/logo-mark-light.svg" alt="" aria-hidden="true" width="40" height="40">
           <section>
             <strong class="logo-text">Aqua Trip</strong>
             <small class="logo-sub">Admin Panel</small>
@@ -50,6 +51,16 @@
         <button type="button" class="nav-item" data-section="parceiros">
           <i data-lucide="store" aria-hidden="true"></i> Parceiros
           <span class="nav-badge" id="badge-parceiros" hidden></span>
+        </button>
+
+        <p class="nav-label">Comunidade</p>
+        <button type="button" class="nav-item" data-section="comunidade">
+          <i data-lucide="users-round" aria-hidden="true"></i> Moderação
+          <span class="nav-badge nav-badge--late" id="badge-denuncias" hidden></span>
+        </button>
+        <button type="button" class="nav-item" data-section="reclamacoes">
+          <i data-lucide="message-square-warning" aria-hidden="true"></i> Reclamações
+          <span class="nav-badge" id="badge-reclamacoes" hidden></span>
         </button>
       </nav>
     </aside>
@@ -90,6 +101,50 @@
               <p class="metric-label"><i data-lucide="shopping-cart" aria-hidden="true"></i> Reservas confirmadas</p>
               <strong class="metric-value" data-m="reservas_confirmadas">–</strong>
               <p class="metric-delta" data-m="pendentes_txt">&nbsp;</p>
+            </article>
+          </section>
+
+          <h2 class="section-title adm-sub">Plataforma agora</h2>
+          <section class="metrics adm-metrics" aria-live="polite">
+            <article class="metric-card metric-live">
+              <p class="metric-label"><span class="live-dot" aria-hidden="true"></span> Online agora</p>
+              <strong class="metric-value" data-p="online_agora">–</strong>
+              <p class="metric-delta" data-p="ativos_24h_txt">&nbsp;</p>
+            </article>
+            <article class="metric-card">
+              <p class="metric-label"><i data-lucide="store" aria-hidden="true"></i> Parceiros aprovados</p>
+              <strong class="metric-value" data-p="parceiros_aprovados">–</strong>
+              <p class="metric-delta" data-p="parceiros_pendentes_txt">&nbsp;</p>
+            </article>
+            <article class="metric-card">
+              <p class="metric-label"><i data-lucide="map" aria-hidden="true"></i> Experiências</p>
+              <strong class="metric-value" data-p="experiencias_total">–</strong>
+              <p class="metric-delta" data-p="experiencias_comunidade_txt">&nbsp;</p>
+            </article>
+            <article class="metric-card">
+              <p class="metric-label"><i data-lucide="ticket" aria-hidden="true"></i> Participantes</p>
+              <strong class="metric-value" data-p="participantes">–</strong>
+              <p class="metric-delta">vagas confirmadas</p>
+            </article>
+            <article class="metric-card">
+              <p class="metric-label"><i data-lucide="landmark" aria-hidden="true"></i> Faturamento total</p>
+              <strong class="metric-value" data-m="receita_bruta_dash">–</strong>
+              <p class="metric-delta" data-m="taxa_total_dash">&nbsp;</p>
+            </article>
+            <article class="metric-card">
+              <p class="metric-label"><i data-lucide="message-square-warning" aria-hidden="true"></i> Reclamações abertas</p>
+              <strong class="metric-value" data-p="reclamacoes_abertas">–</strong>
+              <p class="metric-delta" data-p="denuncias_txt">&nbsp;</p>
+            </article>
+            <article class="metric-card">
+              <p class="metric-label"><i data-lucide="star" aria-hidden="true"></i> Avaliações</p>
+              <strong class="metric-value" data-p="avaliacoes_experiencias">–</strong>
+              <p class="metric-delta" data-p="avaliacoes_txt">&nbsp;</p>
+            </article>
+            <article class="metric-card">
+              <p class="metric-label"><i data-lucide="heart" aria-hidden="true"></i> Interações</p>
+              <strong class="metric-value" data-p="curtidas">–</strong>
+              <p class="metric-delta" data-p="interacoes_txt">&nbsp;</p>
             </article>
           </section>
 
@@ -150,8 +205,10 @@
             <select id="user-status">
               <option value="">Todas as situações</option>
               <option value="ativo">Ativos</option>
+              <option value="online">Online agora</option>
               <option value="suspenso">Suspensos (com prazo)</option>
-              <option value="banido">Suspensos sem prazo</option>
+              <option value="suspenso_sem_prazo">Suspensos sem prazo</option>
+              <option value="banido">Banidos</option>
             </select>
           </search>
 
@@ -369,6 +426,55 @@
             <ul class="req-list" id="rev-lista"></ul>
           </article>
         </section>
+
+        <!-- COMUNIDADE: moderação das experiências criadas por usuários -->
+        <section class="section" id="section-comunidade" aria-label="Moderação da comunidade">
+          <header class="section-header">
+            <h2 class="section-title">Experiências da comunidade</h2>
+            <span class="td-mono" id="com-contagem" aria-live="polite"></span>
+          </header>
+          <search class="search-bar">
+            <label for="com-busca" class="sr-only">Buscar</label>
+            <i data-lucide="search" class="search-icon" aria-hidden="true"></i>
+            <input type="search" id="com-busca" placeholder="Título, destino, criador ou e-mail..." autocomplete="off">
+            <label for="com-status" class="sr-only">Estado</label>
+            <select id="com-status">
+              <option value="">Todos os estados</option>
+              <option value="ACTIVE">Ativas</option>
+              <option value="SUSPENDED">Suspensas</option>
+              <option value="BANNED">Banidas</option>
+            </select>
+            <label class="check-inline adm-check"><input type="checkbox" id="com-denuncias"> Só com denúncias abertas</label>
+          </search>
+          <ul class="req-list" id="com-lista"><li class="req">Carregando...</li></ul>
+        </section>
+
+        <!-- RECLAMAÇÕES, SUGESTÕES E AVALIAÇÕES DO AQUATRIP -->
+        <section class="section" id="section-reclamacoes" aria-label="Reclamações e avaliações">
+          <section class="metrics metrics-3">
+            <article class="metric-card"><p class="metric-label">Reclamações abertas</p><strong class="metric-value" id="fb-abertas">–</strong></article>
+            <article class="metric-card"><p class="metric-label">Avaliações do AquaTrip</p><strong class="metric-value" id="fb-avaliacoes">–</strong></article>
+            <article class="metric-card"><p class="metric-label">Nota média</p><strong class="metric-value" id="fb-nota">–</strong></article>
+          </section>
+          <div class="toolbar-filtros">
+            <label for="fb-status" class="sr-only">Status</label>
+            <select id="fb-status">
+              <option value="">Todos os status</option>
+              <option value="OPEN">Abertas</option>
+              <option value="IN_PROGRESS">Em andamento</option>
+              <option value="RESOLVED">Resolvidas</option>
+              <option value="CLOSED">Encerradas</option>
+            </select>
+            <label for="fb-tipo" class="sr-only">Tipo</label>
+            <select id="fb-tipo">
+              <option value="">Todos os tipos</option>
+              <option value="COMPLAINT">Reclamações</option>
+              <option value="SUGGESTION">Sugestões</option>
+              <option value="RATING">Avaliações</option>
+            </select>
+          </div>
+          <ul class="req-list" id="fb-lista"><li class="req">Carregando...</li></ul>
+        </section>
       </main>
     </section>
   </section>
@@ -402,6 +508,46 @@
         <button type="submit" class="btn btn-danger" id="suspend-confirmar">Suspender</button>
       </footer>
     </form>
+  </dialog>
+
+  <!-- MODAL PERFIL COMPLETO (dado sensível: acesso auditado) -->
+  <dialog id="user-modal" aria-labelledby="user-modal-title" aria-modal="true">
+    <article class="modal modal--wide">
+      <header class="modal-header">
+        <h2 id="user-modal-title">Perfil completo</h2>
+        <button type="button" class="btn-icon" id="user-modal-fechar" aria-label="Fechar"><i data-lucide="x" aria-hidden="true"></i></button>
+      </header>
+      <p class="form-hint adm-lgpd"><i data-lucide="shield-alert" aria-hidden="true"></i> Dados pessoais (LGPD). Este acesso fica registrado na auditoria. Use só para moderação.</p>
+      <div id="user-modal-corpo">Carregando...</div>
+    </article>
+  </dialog>
+
+  <!-- MODAL MOTIVO (banir, suspender experiência, ocultar comentário) -->
+  <dialog id="motivo-modal" aria-labelledby="motivo-title" aria-modal="true">
+    <form class="modal" id="motivo-form" method="dialog" novalidate data-fk-busy="off">
+      <header class="modal-header"><h2 id="motivo-title">Motivo</h2></header>
+      <p class="form-hint" id="motivo-quem"></p>
+      <section class="form-group">
+        <label for="motivo-texto">Motivo <small>(obrigatório, fica na auditoria)</small></label>
+        <textarea id="motivo-texto" maxlength="300" minlength="5" required data-counter></textarea>
+      </section>
+      <p class="form-alert form-alert-error" id="motivo-erro" role="alert" hidden></p>
+      <footer class="modal-footer">
+        <button type="button" class="btn" id="motivo-cancelar">Cancelar</button>
+        <button type="submit" class="btn btn-danger" id="motivo-confirmar"><span>Confirmar</span></button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- MODAL DETALHES DA EXPERIÊNCIA (denúncias e comentários) -->
+  <dialog id="exp-modal" aria-labelledby="exp-modal-title" aria-modal="true">
+    <article class="modal modal--wide">
+      <header class="modal-header">
+        <h2 id="exp-modal-title">Denúncias e comentários</h2>
+        <button type="button" class="btn-icon" id="exp-modal-fechar" aria-label="Fechar"><i data-lucide="x" aria-hidden="true"></i></button>
+      </header>
+      <div id="exp-modal-corpo">Carregando...</div>
+    </article>
   </dialog>
 
   <!-- MODAL HORÁRIOS -->

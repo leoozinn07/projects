@@ -34,8 +34,10 @@
 <link rel="stylesheet" href="/css/mobile-shell.css">
 <link rel="stylesheet" href="/css/header.css">
 <script type="application/json" id="i18n-data"><%- i18nCliente %></script>
+<link rel="stylesheet" href="/css/assistente.css">
 <script src="/js/i18n.js"></script>
 <script src="/vendor/lucide.min.js"></script>
+<script src="/js/form-kit.js" defer></script>
 
 <a class="skip-link" href="#main-content"><%= t('shell.pular') %></a>
 <div id="offlineBanner" class="offline-banner" role="status" aria-live="polite">
@@ -87,13 +89,14 @@
 <header class="app-header" id="appHeader">
   <div class="app-header-inner">
     <a href="/" class="brand-link" aria-label="<%= t('nav.inicio_aria') %>">
-      <img class="logo logo-ink" src="/img/logo-ink.webp" alt="AquaTrip" width="120" height="62" />
-      <img class="logo logo-light" src="/img/logo-light.webp" alt="" aria-hidden="true" width="120" height="62" />
+      <img class="logo logo-ink" src="/img/logo-mark.svg" alt="AquaTrip" width="44" height="44" />
+      <img class="logo logo-light" src="/img/logo-mark-light.svg" alt="" aria-hidden="true" width="44" height="44" />
     </a>
 
     <nav class="main-nav" aria-label="<%= t('nav.principal') %>">
       <a href="/reservar"<%- emDestinos ? ' aria-current="page"' : '' %>><%= t('nav.destinos') %></a>
       <a href="/#categorias"><%= t('nav.experiencias') %></a>
+      <a href="/comunidade"<%- atual('/comunidade') %>><%= t('comunidade.nav') %></a>
       <a href="/#como"><%= t('nav.como') %></a>
       <a href="/parceiros"<%- atual('/parceiros') %>><%= t('nav.parceiros') %></a>
     </nav>
@@ -126,11 +129,14 @@
           </button>
           <div class="shared-profile-dropdown" id="sharedProfileDropdown" hidden>
             <p class="profile-dropdown-greeting"><%= t('nav.ola', { nome: primeiroNome }) %></p>
+            <a href="/meu-perfil"><i data-lucide="circle-user-round"></i> <%= t('comunidade.meu_perfil') %></a>
+            <a href="/criar_experiencia"><i data-lucide="circle-plus"></i> <%= t('comunidade.criar') %></a>
             <a href="/perfil_editado"><i data-lucide="user-round"></i> <%= t('conta.minha_conta') %></a>
             <a href="/minhas-reservas"><i data-lucide="calendar-check"></i> <%= t('conta.minhas_reservas') %></a>
             <a href="/ingressos"><i data-lucide="ticket"></i> <%= t('conta.ingressos') %></a>
             <a href="/viagens"><i data-lucide="map"></i> <%= t('conta.diario') %></a>
             <a href="/configuracoes"><i data-lucide="settings-2"></i> <%= t('conta.configuracoes') %></a>
+            <a href="/feedback"><i data-lucide="message-square-warning"></i> <%= t('comunidade.feedback_link') %></a>
             <% if (u.role === 'ADMIN') { %>
               <a href="/admin"><i data-lucide="settings"></i> <%= t('conta.painel_admin') %></a>
               <a href="/admin/auditoria"><i data-lucide="scroll-text"></i> <%= t('conta.auditoria') %></a>
@@ -160,6 +166,7 @@
     <ul class="drawer-main">
       <li><a href="/reservar"<%- emDestinos ? ' aria-current="page"' : '' %>><%= t('nav.destinos') %></a></li>
       <li><a href="/#categorias"><%= t('nav.experiencias') %></a></li>
+      <li><a href="/comunidade"<%- atual('/comunidade') %>><%= t('comunidade.nav') %></a></li>
       <li><a href="/#como"><%= t('nav.como') %></a></li>
       <li><a href="/parceiros"<%- atual('/parceiros') %>><%= t('nav.parceiros') %></a></li>
     </ul>
@@ -173,10 +180,13 @@
       <section class="drawer-account" aria-label="<%= t('nav.conta') %>">
         <p class="drawer-greeting"><span class="avatar-mini" aria-hidden="true"><%= primeiroNome.charAt(0).toUpperCase() %></span><%= t('nav.ola', { nome: primeiroNome }) %></p>
         <ul class="drawer-list">
+          <li><a href="/meu-perfil"><i data-lucide="circle-user-round"></i> <%= t('comunidade.meu_perfil') %></a></li>
+          <li><a href="/criar_experiencia"><i data-lucide="circle-plus"></i> <%= t('comunidade.criar') %></a></li>
           <li><a href="/perfil_editado"><i data-lucide="user-round"></i> <%= t('conta.minha_conta') %></a></li>
           <li><a href="/minhas-reservas"><i data-lucide="calendar-check"></i> <%= t('conta.minhas_reservas') %></a></li>
           <li><a href="/ingressos"><i data-lucide="ticket"></i> <%= t('conta.ingressos') %></a></li>
           <li><a href="/viagens"><i data-lucide="map"></i> <%= t('conta.diario') %></a></li>
+          <li><a href="/feedback"><i data-lucide="message-square-warning"></i> <%= t('comunidade.feedback_link') %></a></li>
           <% if (u.role === 'ADMIN') { %>
             <li><a href="/admin"><i data-lucide="settings"></i> <%= t('conta.painel_admin') %></a></li>
             <li><a href="/admin/auditoria"><i data-lucide="scroll-text"></i> <%= t('conta.auditoria') %></a></li>
@@ -339,5 +349,41 @@
     <button id="cmpSavePreferences" class="btn-primary" type="button"><%= t('cmp.salvar') %></button>
   </div>
 </div>
+
+<% if (!semDock) { %>
+<!-- ASSISTENTE VIRTUAL (IA): botão flutuante + janela de conversa -->
+<div class="aq-bot" id="aqBot">
+  <button class="aq-bot-fab" id="aqBotFab" type="button" aria-expanded="false" aria-controls="aqBotPanel" aria-label="<%= t('assistente.abrir') %>">
+    <img src="/img/logo-mark-light.svg" alt="" width="30" height="30">
+    <span class="aq-bot-fab-txt"><%= t('assistente.fab') %></span>
+  </button>
+  <section class="aq-bot-panel" id="aqBotPanel" role="dialog" aria-labelledby="aqBotTitle" hidden>
+    <header class="aq-bot-head">
+      <img src="/img/logo-mark-light.svg" alt="" width="36" height="36">
+      <div>
+        <h2 id="aqBotTitle"><%= t('assistente.titulo') %></h2>
+        <p id="aqBotSub"><%= t('assistente.sub') %></p>
+      </div>
+      <button class="icon-btn" type="button" id="aqBotClear" aria-label="<%= t('assistente.limpar') %>" title="<%= t('assistente.limpar') %>"><i data-lucide="rotate-ccw"></i></button>
+      <button class="icon-btn" type="button" id="aqBotClose" aria-label="<%= t('assistente.fechar') %>"><i data-lucide="x"></i></button>
+    </header>
+    <ol class="aq-bot-log" id="aqBotLog" aria-live="polite" aria-relevant="additions">
+      <li class="aq-msg aq-msg-bot"><p><%= t('assistente.boas_vindas') %></p></li>
+    </ol>
+    <div class="aq-bot-sugs" id="aqBotSugs">
+      <button type="button" class="aq-sug"><%= t('assistente.sug1') %></button>
+      <button type="button" class="aq-sug"><%= t('assistente.sug2') %></button>
+      <button type="button" class="aq-sug"><%= t('assistente.sug3') %></button>
+    </div>
+    <form class="aq-bot-form" id="aqBotForm" data-fk-busy="off" data-fk-off>
+      <label for="aqBotInput" class="sr-only"><%= t('assistente.campo') %></label>
+      <textarea id="aqBotInput" rows="1" maxlength="800" placeholder="<%= t('assistente.placeholder') %>" enterkeyhint="send"></textarea>
+      <button type="submit" class="aq-bot-send" id="aqBotSend" aria-label="<%= t('assistente.enviar') %>"><i data-lucide="arrow-up"></i></button>
+    </form>
+    <p class="aq-bot-note"><%= t('assistente.aviso') %></p>
+  </section>
+</div>
+<script src="/js/assistente.js" defer></script>
+<% } %>
 
 <script src="/js/app-shell.js" defer></script>

@@ -139,10 +139,13 @@ async function countLiveBookings(userId) {
   const { rows } = await db.query(
     `SELECT COUNT(*) AS n
      FROM bookings b JOIN service_slots s ON s.id = b.slot_id
-     WHERE b.user_id = ?
+     JOIN services sv ON sv.id = s.service_id
+     -- Inclui quem vai numa experiência que a pessoa CRIOU: anonimizar
+     -- o organizador deixaria participantes sem viagem.
+     WHERE (b.user_id = ? OR sv.creator_user_id = ?)
        AND ((b.status = 'CONFIRMED' AND s.starts_at > NOW())
             OR (b.status = 'PENDING' AND b.expires_at > NOW()))`,
-    [userId]
+    [userId, userId]
   );
   return rows[0].n;
 }
@@ -203,7 +206,7 @@ async function anonymizeUser(userId, { hashInutilizavel }) {
 
     // Fotos enviadas pela pessoa e ainda sem vínculo (ex.: recusadas).
     const { rows: soltas } = await client.query(
-      `SELECT id, storage_key FROM media WHERE uploaded_by = ? AND purpose = 'REVIEW'`,
+      `SELECT id, storage_key FROM media WHERE uploaded_by = ? AND purpose IN ('REVIEW', 'AVATAR', 'EXPERIENCE')`,
       [userId]
     );
     if (soltas.length) {
@@ -215,6 +218,23 @@ async function anonymizeUser(userId, { hashInutilizavel }) {
     }
 
     await client.query(`DELETE FROM reviews WHERE user_id = ?`, [userId]);
+    // Rede social: texto livre e vínculos identificam a pessoa.
+    await client.query(`UPDATE users SET bio = NULL, avatar_media_id = NULL, last_seen_at = NULL WHERE id = ?`, [userId]);
+    await client.query(`DELETE FROM experience_comments WHERE user_id = ?`, [userId]);
+    await client.query(`DELETE FROM experience_likes WHERE user_id = ?`, [userId]);
+    await client.query(`DELETE FROM experience_interests WHERE user_id = ?`, [userId]);
+    await client.query(`DELETE FROM user_follows WHERE follower_id = ? OR followee_id = ?`, [userId, userId]);
+    await client.query(`DELETE FROM experience_reports WHERE reporter_id = ?`, [userId]);
+    await client.query(`DELETE FROM platform_feedback WHERE user_id = ?`, [userId]);
+    // Experiências que a pessoa criou saem do ar (histórico de reservas
+    // de terceiros continua íntegro) e perdem o texto livre.
+    await client.query(
+      `UPDATE services SET active = FALSE, moderation_status = 'BANNED',
+         moderation_reason = 'Conta do criador anonimizada', trip_info = NULL,
+         description = 'Experiência removida.'
+       WHERE creator_user_id = ?`,
+      [userId]
+    );
     // Candidatura de parceiro não aprovada: sem obrigação de guarda.
     await client.query(
       `DELETE FROM partners WHERE user_id = ? AND status IN ('PENDING', 'REJECTED')`,

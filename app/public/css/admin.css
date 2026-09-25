@@ -73,6 +73,8 @@ body {
   display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700;
 }
 
+img.logo-icon { width: 40px; height: 40px; background: none; border-radius: 0; }
+
 .logo-text { display: block; font-size: 15px; font-weight: 640; letter-spacing: -0.02em; color: var(--deep-ink); line-height: 1.2; }
 .logo-sub { display: block; font-family: var(--mono); font-size: 10px; color: var(--deep-ink-2); text-transform: uppercase; letter-spacing: 1px; }
 
@@ -777,3 +779,67 @@ dialog .modal--wide { width: min(760px, 94vw); max-height: 88vh; overflow-y: aut
 /* Ícones Lucide no painel */
 .admin-wrap svg.lucide { width: 18px; height: 18px; stroke-width: 1.8; flex: 0 0 auto; }
 .logo-icon svg.lucide { width: 20px; height: 20px; }
+
+/* ---------- Plataforma agora, comunidade e reclamações ---------- */
+.adm-sub { margin: 0 0 .75rem; font-size: 1rem; }
+.adm-metrics { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.live-dot {
+  display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--success);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 60%, transparent); animation: live-pulso 2s ease-out infinite;
+  vertical-align: 1px;
+}
+@keyframes live-pulso { 70% { box-shadow: 0 0 0 7px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+@media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
+.adm-check { font-size: var(--text-sm); white-space: nowrap; align-items: center; }
+.link-btn { border: 0; background: none; padding: 0; color: var(--accent-ink); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.adm-lgpd { display: flex; gap: 8px; align-items: center; padding: 8px 12px; border-radius: var(--radius-sm); background: var(--warning-soft); color: var(--warning); }
+.adm-lgpd svg { width: 16px; height: 16px; flex: 0 0 auto; }
+.adm-dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 20px; margin: 1rem 0; }
+.adm-dl dt { font-size: var(--text-xs); color: var(--ink-soft); font-weight: 600; }
+.adm-dl dd { font-size: var(--text-sm); overflow-wrap: anywhere; }
+.adm-h3 { font-size: .95rem; margin: 1rem 0 .5rem; }
+.adm-mini-list { list-style: none; display: grid; gap: 10px; font-size: var(--text-sm); max-height: 50vh; overflow-y: auto; }
+.adm-mini-list li { padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); line-height: 1.5; }
+.adm-mini-list .btn { margin-top: 6px; }
+@media (max-width: 720px) {
+  .metrics:not(.adm-metrics) { grid-template-columns: repeat(2, 1fr); }
+  .metrics-3 { grid-template-columns: 1fr; }
+  .search-bar { flex-wrap: wrap; }
+}
+#section-comunidade .search-bar { flex-wrap: wrap; }
+#com-busca { flex: 1 1 260px; min-width: 0; }
+#com-status { flex: 0 0 auto; width: auto; }
+
+/* ---------- Celular e tablet: o menu lateral vira barra no topo ----------
+   Antes o painel não tinha nenhuma regra responsiva: no celular o menu
+   ocupava metade da tela e cortava o conteúdo. */
+@media (max-width: 900px) {
+  .admin-wrap { flex-direction: column; }
+  .main { overflow: visible; min-width: 0; }
+  .sidebar { width: 100%; position: sticky; top: 0; z-index: 20; }
+  .sidebar-header { padding: .75rem 1rem; border-bottom: 0; }
+  .sidebar-nav {
+    display: flex; gap: 4px; padding: 0 .75rem .6rem; overflow-x: auto; scrollbar-width: none;
+    -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity;
+  }
+  .sidebar-nav::-webkit-scrollbar { display: none; }
+  .nav-label { display: none; }
+  .nav-item {
+    width: auto; flex: 0 0 auto; min-height: 40px; padding: 0 .9rem; border-left: 0;
+    border-radius: 999px; white-space: nowrap; scroll-snap-align: start;
+  }
+  .nav-item.active { border-left-color: transparent; }
+  .topbar { padding: 0 1rem; height: 52px; }
+  .content { padding: 1rem; overflow: visible; }
+  .metrics:not(.adm-metrics) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .adm-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metric-card { padding: .85rem 1rem; min-width: 0; }
+  .metric-value { font-size: 1.35rem; overflow-wrap: anywhere; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .req-head { flex-wrap: wrap; }
+  .req-actions .btn { min-height: 40px; }
+  .adm-check { white-space: normal; }
+}
+@media (max-width: 420px) {
+  .metrics-3 { grid-template-columns: 1fr; }
+}

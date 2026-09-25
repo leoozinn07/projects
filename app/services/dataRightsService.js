@@ -48,7 +48,7 @@ async function exportUserData(userId, req = null) {
     await Promise.all([
       db.query(
         `SELECT id, name, email, role, status, suspended_until, suspended_reason,
-                email_verified_at, last_login_at, created_at
+                email_verified_at, last_login_at, created_at, bio
          FROM users WHERE id = ?`,
         [userId]
       ),
@@ -113,6 +113,32 @@ async function exportUserData(userId, req = null) {
       ),
     ]);
 
+  const [experienciasCriadas, comentarios, curtidas, seguindo, seguidores, interesses, feedbacks, denuncias] = await Promise.all([
+    db.query(
+      `SELECT title, location, category, price_cents, description, trip_info, active, moderation_status, created_at
+       FROM services WHERE creator_user_id = ? ORDER BY created_at DESC`, [userId]),
+    db.query(
+      `SELECT sv.title AS experiencia, c.body AS texto, c.status, c.created_at
+       FROM experience_comments c JOIN services sv ON sv.id = c.service_id
+       WHERE c.user_id = ? ORDER BY c.created_at DESC`, [userId]),
+    db.query(
+      `SELECT sv.title AS experiencia, l.created_at FROM experience_likes l JOIN services sv ON sv.id = l.service_id
+       WHERE l.user_id = ? ORDER BY l.created_at DESC`, [userId]),
+    // De outras pessoas só o nome público: é o que já aparece no perfil delas.
+    db.query(`SELECT u.name, f.created_at FROM user_follows f JOIN users u ON u.id = f.followee_id WHERE f.follower_id = ?`, [userId]),
+    db.query(`SELECT COUNT(*) AS n FROM user_follows WHERE followee_id = ?`, [userId]),
+    db.query(
+      `SELECT sv.title AS experiencia, i.created_at FROM experience_interests i JOIN services sv ON sv.id = i.service_id
+       WHERE i.user_id = ?`, [userId]),
+    db.query(
+      `SELECT kind, rating, subject, message, status, admin_response, responded_at, created_at
+       FROM platform_feedback WHERE user_id = ? ORDER BY created_at DESC`, [userId]),
+    db.query(
+      `SELECT sv.title AS experiencia, r.reason, r.details, r.status, r.created_at
+       FROM experience_reports r JOIN services sv ON sv.id = r.service_id WHERE r.reporter_id = ?`, [userId]),
+  ]);
+  const { nomeExibido } = require("./reviewService");
+
   if (req) {
     await auditService.log(AuditAction.DATA_EXPORTED, {
       req,
@@ -143,6 +169,16 @@ async function exportUserData(userId, req = null) {
     diario_de_viagens: viagens.rows,
     avaliacoes: avaliacoes.rows,
     cadastro_de_parceiro: parceiro.rows[0] || null,
+    comunidade: {
+      experiencias_criadas: experienciasCriadas.rows,
+      comentarios: comentarios.rows,
+      curtidas: curtidas.rows,
+      interesses: interesses.rows,
+      seguindo: seguindo.rows.map((r) => ({ nome: nomeExibido(r.name), desde: r.created_at })),
+      total_de_seguidores: Number(seguidores.rows[0].n),
+      denuncias_enviadas: denuncias.rows,
+    },
+    reclamacoes_e_avaliacoes_do_aquatrip: feedbacks.rows,
     registros_de_acesso: acessos.rows,
   };
 }

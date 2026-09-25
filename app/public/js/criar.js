@@ -1,455 +1,242 @@
-/**
- * AquaTrip — Criar Experiência
- * Validação front-end completa + simulação de validação back-end
- */
+/* ==============================================================
+   AquaTrip — Criar / editar experiência da comunidade
+   ==============================================================
+   Antes: validação "simulada" que não gravava nada. Agora:
+   POST/PUT em /api/comunidade/experiencias, erros do servidor
+   mostrados no campo certo, fotos enviadas uma a uma depois de a
+   experiência existir, prévia ao vivo e gestão (pausar, pessoas).
+   Todo texto vindo do servidor passa por escHTML / textContent.
+   ============================================================== */
+(function () {
+  "use strict";
+  const form = document.getElementById("cxForm");
+  if (!form) return;
+  const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || "";
+  const t = (k, v, p) => (window.AQ ? window.AQ.t(k, v, p) : p);
+  const $ = (id) => document.getElementById(id);
+  const esc = window.escHTML || ((s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])));
+  const icones = () => window.lucide && window.lucide.createIcons();
 
-'use strict';
+  const editandoId = form.dataset.id || null;
+  const maxFotos = Number(form.dataset.maxFotos) || 6;
+  let fotosNovas = []; // File[] ainda não enviados
 
-/* ══════════════════════════════════════════
-   CONFIG
-══════════════════════════════════════════ */
-const CONFIG = {
-  name:        { min: 6,  max: 80  },
-  description: { min: 30, max: 600 },
-  goal:        { min: 100, max: 1_000_000 },
-  capacity:    { min: 1,  max: 500 },
-  location:    { min: 4,  max: 100 },
-  images:      { maxFiles: 6, maxMb: 5, accept: ['image/jpeg', 'image/png', 'image/webp'] },
-};
-
-/* ══════════════════════════════════════════
-   STATE
-══════════════════════════════════════════ */
-let uploadedFiles = []; // File[] em memória
-
-/* ══════════════════════════════════════════
-   UTILS
-══════════════════════════════════════════ */
-const $ = (sel, ctx = document) => ctx.querySelector(sel);
-const $$ = (sel, ctx = document) => [...ctx.querySelectorAll(sel)];
-
-function formatBRL(value) {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency', currency: 'BRL', minimumFractionDigits: 2,
-  }).format(value);
-}
-
-function setError(inputEl, errorId, msg) {
-  const errEl = document.getElementById(errorId);
-  if (!errEl) return;
-  errEl.textContent = msg;
-  if (msg) {
-    inputEl?.classList.add('error');
-    inputEl?.classList.remove('valid');
-    inputEl?.setAttribute('aria-invalid', 'true');
-  } else {
-    inputEl?.classList.remove('error');
-    inputEl?.setAttribute('aria-invalid', 'false');
-  }
-}
-
-function setValid(inputEl) {
-  inputEl?.classList.add('valid');
-  inputEl?.classList.remove('error');
-  inputEl?.setAttribute('aria-invalid', 'false');
-}
-
-/* ══════════════════════════════════════════
-   VALIDAÇÕES INDIVIDUAIS (front-end)
-══════════════════════════════════════════ */
-function validateName() {
-  const el  = $('#exp-name');
-  const val = el.value.trim();
-  if (!val)                                return setError(el, 'exp-name-error', 'O nome é obrigatório.'), false;
-  if (val.length < CONFIG.name.min)        return setError(el, 'exp-name-error', `Mínimo ${CONFIG.name.min} caracteres.`), false;
-  if (val.length > CONFIG.name.max)        return setError(el, 'exp-name-error', `Máximo ${CONFIG.name.max} caracteres.`), false;
-  if (/[<>"']/.test(val))                  return setError(el, 'exp-name-error', 'Caracteres inválidos no nome.'), false;
-  setError(el, 'exp-name-error', ''); setValid(el); return true;
-}
-
-function validateDescription() {
-  const el  = $('#exp-description');
-  const val = el.value.trim();
-  if (!val)                                    return setError(el, 'exp-description-error', 'A descrição é obrigatória.'), false;
-  if (val.length < CONFIG.description.min)     return setError(el, 'exp-description-error', `Mínimo ${CONFIG.description.min} caracteres.`), false;
-  if (val.length > CONFIG.description.max)     return setError(el, 'exp-description-error', `Máximo ${CONFIG.description.max} caracteres.`), false;
-  setError(el, 'exp-description-error', ''); setValid(el); return true;
-}
-
-function validateCategory() {
-  const checked = $('input[name="category"]:checked');
-  const errEl   = document.getElementById('exp-category-error');
-  if (!checked) { if (errEl) errEl.textContent = 'Selecione o tipo de experiência.'; return false; }
-  if (errEl) errEl.textContent = '';
-  return true;
-}
-
-function validateGoal() {
-  const el  = $('#exp-goal');
-  const val = parseFloat(el.value);
-  if (!el.value)                                return setError(el, 'exp-goal-error', 'Informe o valor da meta.'), false;
-  if (isNaN(val) || val < CONFIG.goal.min)      return setError(el, 'exp-goal-error', `Mínimo ${formatBRL(CONFIG.goal.min)}.`), false;
-  if (val > CONFIG.goal.max)                    return setError(el, 'exp-goal-error', `Máximo ${formatBRL(CONFIG.goal.max)}.`), false;
-  setError(el, 'exp-goal-error', ''); setValid(el); return true;
-}
-
-function validateCapacity() {
-  const el  = $('#exp-capacity');
-  const val = parseInt(el.value, 10);
-  if (!el.value)                                  return setError(el, 'exp-capacity-error', 'Informe a capacidade.'), false;
-  if (isNaN(val) || val < CONFIG.capacity.min)    return setError(el, 'exp-capacity-error', `Mínimo ${CONFIG.capacity.min} participante.`), false;
-  if (val > CONFIG.capacity.max)                  return setError(el, 'exp-capacity-error', `Máximo ${CONFIG.capacity.max} participantes.`), false;
-  setError(el, 'exp-capacity-error', ''); setValid(el); return true;
-}
-
-function validateDate() {
-  const el  = $('#exp-date');
-  const val = el.value;
-  if (!val) return setError(el, 'exp-date-error', 'Informe a data prevista.'), false;
-  const chosen  = new Date(val + 'T00:00:00');
-  const minDate = new Date();
-  minDate.setDate(minDate.getDate() + 7); // pelo menos 7 dias à frente
-  if (chosen < minDate) return setError(el, 'exp-date-error', 'A data deve ser ao menos 7 dias no futuro.'), false;
-  setError(el, 'exp-date-error', ''); setValid(el); return true;
-}
-
-function validateImages() {
-  const errEl = document.getElementById('exp-images-error');
-  if (uploadedFiles.length === 0) {
-    if (errEl) errEl.textContent = 'Adicione pelo menos 1 imagem.';
-    return false;
-  }
-  if (errEl) errEl.textContent = '';
-  return true;
-}
-
-function validateLocation() {
-  const el  = $('#exp-location');
-  const val = el.value.trim();
-  if (!val)                                  return setError(el, 'exp-location-error', 'Informe o destino.'), false;
-  if (val.length < CONFIG.location.min)      return setError(el, 'exp-location-error', `Mínimo ${CONFIG.location.min} caracteres.`), false;
-  if (val.length > CONFIG.location.max)      return setError(el, 'exp-location-error', `Máximo ${CONFIG.location.max} caracteres.`), false;
-  setError(el, 'exp-location-error', ''); setValid(el); return true;
-}
-
-function validateDuration() {
-  const el = $('#exp-duration');
-  if (!el.value) return setError(el, 'exp-duration-error', 'Selecione a duração.'), false;
-  setError(el, 'exp-duration-error', ''); setValid(el); return true;
-}
-
-/* ══════════════════════════════════════════
-   VALIDAÇÃO COMPLETA (todos os campos)
-══════════════════════════════════════════ */
-function validateAll() {
-  const results = [
-    validateName(),
-    validateDescription(),
-    validateCategory(),
-    validateGoal(),
-    validateCapacity(),
-    validateDate(),
-    validateImages(),
-    validateLocation(),
-    validateDuration(),
-  ];
-  return results.every(Boolean);
-}
-
-/* ══════════════════════════════════════════
-   SIMULAÇÃO BACK-END
-   Representa o que a API retornaria.
-══════════════════════════════════════════ */
-async function mockBackendValidation(payload) {
-  // Simula latência de rede (600-1200 ms)
-  await new Promise(r => setTimeout(r, 600 + Math.random() * 600));
-
-  const errors = {};
-
-  // Regras de negócio do servidor ─────────
-  // 1. Nome: proibido palavras reservadas
-  const forbidden = ['admin', 'aquatrip', 'sistema', 'teste'];
-  if (forbidden.some(w => payload.name.toLowerCase().includes(w))) {
-    errors.name = 'O nome contém termos não permitidos.';
-  }
-
-  // 2. Meta: deve ser múltiplo de R$10
-  if (payload.goal % 10 !== 0) {
-    errors.goal = 'A meta deve ser múltipla de R$ 10,00.';
-  }
-
-  // 3. Imagens: no mínimo 1 (o front já exige, mas o back confirma)
-  if (!payload.hasImages) {
-    errors.images = 'Envie pelo menos uma imagem.';
-  }
-
-  // 4. Categoria: deve ser valor aceito
-  const allowed = ['aquario','praia','caiaque','scuba','snorkel','vela','pesca','expedicao'];
-  if (!allowed.includes(payload.category)) {
-    errors.category = 'Categoria inválida.';
-  }
-
-  if (Object.keys(errors).length) {
-    return { ok: false, errors };
-  }
-  return { ok: true, id: `EXP-${Date.now()}` };
-}
-
-/* ══════════════════════════════════════════
-   IMAGENS — upload & preview
-══════════════════════════════════════════ */
-function addFiles(files) {
-  const errEl = document.getElementById('exp-images-error');
-  if (errEl) errEl.textContent = '';
-
-  for (const file of files) {
-    if (uploadedFiles.length >= CONFIG.images.maxFiles) {
-      if (errEl) errEl.textContent = `Máximo de ${CONFIG.images.maxFiles} imagens.`;
-      break;
-    }
-    if (!CONFIG.images.accept.includes(file.type)) {
-      if (errEl) errEl.textContent = 'Formato inválido. Use JPG, PNG ou WEBP.';
-      continue;
-    }
-    if (file.size > CONFIG.images.maxMb * 1024 * 1024) {
-      if (errEl) errEl.textContent = `"${file.name}" ultrapassa ${CONFIG.images.maxMb} MB.`;
-      continue;
-    }
-    // Evita duplicatas pelo nome+tamanho
-    const isDup = uploadedFiles.some(f => f.name === file.name && f.size === file.size);
-    if (isDup) continue;
-
-    uploadedFiles.push(file);
-    renderImagePreview(file, uploadedFiles.length - 1);
-  }
-}
-
-function renderImagePreview(file, index) {
-  const grid = $('#image-preview');
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const li = document.createElement('li');
-    li.dataset.index = index;
-
-    const img = document.createElement('img');
-    img.src = e.target.result;
-    img.alt = file.name;
-
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'remove-img';
-    btn.setAttribute('aria-label', `Remover ${file.name}`);
-    btn.textContent = '×';
-    btn.addEventListener('click', () => removeImage(index));
-
-    li.append(img, btn);
-    grid.append(li);
+  /* ---------- Mapeia campo do servidor -> elemento ---------- */
+  const CAMPOS = {
+    title: "cxTitle", titulo: "cxTitle", description: "cxDesc", location: "cxLoc", category: "cxCat",
+    categoria: "cxCat", date: "cxDate", data: "cxDate", time: "cxTime", capacity: "cxCap", vagas: "cxCap",
+    preco: "cxPreco", tripInfo: "cxInfo",
   };
-  reader.readAsDataURL(file);
-}
-
-function removeImage(index) {
-  uploadedFiles.splice(index, 1);
-  // Re-render completo para manter os índices corretos
-  const grid = $('#image-preview');
-  grid.innerHTML = '';
-  uploadedFiles.forEach((f, i) => renderImagePreview(f, i));
-}
-
-/* ══════════════════════════════════════════
-   DRAG & DROP
-══════════════════════════════════════════ */
-function initDragDrop() {
-  const zone = $('#upload-zone');
-
-  zone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    zone.classList.add('drag-over');
-  });
-
-  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
-
-  zone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    zone.classList.remove('drag-over');
-    addFiles([...e.dataTransfer.files]);
-  });
-
-  // Keyboard: Enter/Space abre o input nativo
-  zone.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      $('#exp-images').click();
+  function mostrarErro(campo, msg) {
+    const id = CAMPOS[campo];
+    if (id === "cxCat") {
+      $("cxCatErr").textContent = msg;
+      return document.querySelector('input[name="category"]');
     }
-  });
-}
-
-/* ══════════════════════════════════════════
-   CONTADOR DE CARACTERES
-══════════════════════════════════════════ */
-function initCharCount() {
-  const textarea = $('#exp-description');
-  const counter  = $('#char-count');
-  if (!textarea || !counter) return;
-  textarea.addEventListener('input', () => {
-    counter.textContent = textarea.value.length;
-  });
-}
-
-/* ══════════════════════════════════════════
-   PRÉVIA DA META
-══════════════════════════════════════════ */
-function initGoalPreview() {
-  const goalInput = $('#exp-goal');
-  const display   = $('#goal-display');
-  const bar       = $('#goal-bar');
-  if (!goalInput || !display) return;
-
-  goalInput.addEventListener('input', () => {
-    const val = parseFloat(goalInput.value) || 0;
-    display.textContent = formatBRL(val);
-
-    // Barra animada: representa "quanto já definiu" vs teto visual de 50 000
-    const pct = Math.min((val / 50_000) * 100, 100);
-    if (bar) bar.value = pct;
-  });
-}
-
-/* ══════════════════════════════════════════
-   DATA MÍNIMA
-══════════════════════════════════════════ */
-function setMinDate() {
-  const el = $('#exp-date');
-  if (!el) return;
-  const min = new Date();
-  min.setDate(min.getDate() + 7);
-  el.min = min.toISOString().split('T')[0];
-}
-
-/* ══════════════════════════════════════════
-   SUBMIT
-══════════════════════════════════════════ */
-async function handleSubmit(e) {
-  e.preventDefault();
-
-  const statusEl = $('#submit-status');
-  const btn      = $('#submit-btn');
-
-  // 1. Validação front-end
-  if (!validateAll()) {
-    statusEl.textContent = 'Corrija os erros acima antes de continuar.';
-    // Scroll para o primeiro erro visível
-    const firstErr = document.querySelector('.field-error:not(:empty), #exp-category-error:not(:empty)');
-    firstErr?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    return;
+    const el = id && $(id);
+    if (el && window.AQForm) window.AQForm.erroCampo(el, msg);
+    return el;
   }
 
-  statusEl.textContent = '';
+  /* ---------- Validação local (espelha o servidor) ---------- */
+  function validar() {
+    window.AQForm && window.AQForm.limparErros(form);
+    const erros = [];
+    const v = (id) => $(id).value.trim();
+    if (v("cxTitle").length < 6) erros.push(["title", t("cx_err_titulo", null, "O título precisa ter pelo menos 6 caracteres.")]);
+    if (v("cxDesc").length < 30) erros.push(["description", t("cx_err_desc", null, "Descreva a experiência com pelo menos 30 caracteres.")]);
+    if (!form.querySelector('input[name="category"]:checked')) erros.push(["category", t("cx_err_cat", null, "Escolha o tipo de experiência.")]);
+    if (v("cxLoc").length < 3) erros.push(["location", t("cx_err_destino", null, "Informe o destino.")]);
+    if (!v("cxDate")) erros.push(["date", t("cx_err_data", null, "Escolha a data.")]);
+    if (!v("cxTime")) erros.push(["time", t("cx_err_hora", null, "Escolha o horário.")]);
+    const cap = Number(v("cxCap"));
+    if (!Number.isInteger(cap) || cap < 1 || cap > 100) erros.push(["capacity", t("cx_err_vagas", null, "Informe de 1 a 100 vagas.")]);
+    if (v("cxPreco") && !$("cxPreco").checkValidity()) erros.push(["preco", t("cx_err_preco", null, "Use só números, ex.: 150,00.")]);
+    erros.forEach(([c, m]) => mostrarErro(c, m));
+    return erros;
+  }
 
-  // 2. Estado de carregamento
-  btn.disabled = true;
-  btn.classList.add('loading');
-  btn.querySelector('.btn-text').textContent = 'Enviando';
+  function dados() {
+    return {
+      title: $("cxTitle").value.trim(),
+      description: $("cxDesc").value.trim(),
+      category: form.querySelector('input[name="category"]:checked')?.value,
+      location: $("cxLoc").value.trim(),
+      date: $("cxDate").value,
+      time: $("cxTime").value,
+      capacity: Number($("cxCap").value),
+      preco: $("cxPreco").value.trim(),
+      tripInfo: $("cxInfo").value.trim(),
+    };
+  }
 
-  // 3. Monta payload
-  const payload = {
-    name:        $('#exp-name').value.trim(),
-    description: $('#exp-description').value.trim(),
-    category:    $('input[name="category"]:checked')?.value,
-    goal:        parseFloat($('#exp-goal').value),
-    capacity:    parseInt($('#exp-capacity').value, 10),
-    date:        $('#exp-date').value,
-    location:    $('#exp-location').value.trim(),
-    duration:    $('#exp-duration').value,
-    hasImages:   uploadedFiles.length > 0,
-    imageCount:  uploadedFiles.length,
-  };
+  async function api(metodo, url, corpo) {
+    const res = await fetch(url, {
+      method: metodo,
+      headers: { Accept: "application/json", "Content-Type": "application/json", "X-CSRF-Token": CSRF },
+      body: corpo ? JSON.stringify(corpo) : undefined,
+    });
+    if (res.status === 401) { location.href = "/login?redirect=" + encodeURIComponent(location.pathname + location.search); throw new Error("login"); }
+    const j = res.status === 204 ? {} : await res.json().catch(() => ({}));
+    if (!res.ok) { const e = new Error(j.error || t("erro_tentar", null, "Não foi possível concluir.")); e.campo = j.campo; e.status = res.status; throw e; }
+    return j;
+  }
 
-  // 4. Validação back-end (simulada)
-  try {
-    const result = await mockBackendValidation(payload);
+  async function enviarFoto(id, arquivo) {
+    const fd = new FormData();
+    fd.append("imagem", arquivo);
+    const res = await fetch(`/api/comunidade/experiencias/${encodeURIComponent(id)}/fotos`, {
+      method: "POST", headers: { Accept: "application/json", "X-CSRF-Token": CSRF }, body: fd,
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(j.error || "falha");
+    return j;
+  }
 
-    if (!result.ok) {
-      // Mapeia erros do servidor de volta para os campos
-      const fieldMap = {
-        name:     { input: '#exp-name',     errId: 'exp-name-error' },
-        goal:     { input: '#exp-goal',     errId: 'exp-goal-error' },
-        images:   { input: null,            errId: 'exp-images-error' },
-        category: { input: null,            errId: 'exp-category-error' },
-      };
+  /* ---------- Envio ---------- */
+  const status = $("cxStatus");
+  function aviso(msg, tipo) {
+    status.textContent = msg || "";
+    status.className = "form-status" + (tipo ? " is-" + tipo : "");
+  }
 
-      for (const [field, msg] of Object.entries(result.errors)) {
-        const map = fieldMap[field];
-        if (map) {
-          const inputEl = map.input ? $(map.input) : null;
-          setError(inputEl, map.errId, msg);
-        }
-      }
-
-      statusEl.textContent = 'O servidor recusou alguns dados. Veja os erros acima.';
-      btn.disabled = false;
-      btn.classList.remove('loading');
-      btn.querySelector('.btn-text').textContent = 'Publicar experiência';
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    aviso("");
+    const erros = validar();
+    if (erros.length) {
+      aviso(t("cx_corrija", null, "Revise os campos destacados."), "error");
+      const primeiro = form.querySelector(".is-invalid") || form.querySelector('input[name="category"]');
+      primeiro && primeiro.focus();
       return;
     }
+    const botao = $("cxSubmit");
+    window.AQForm.ocupado(botao, true);
+    try {
+      const corpo = dados();
+      const r = editandoId
+        ? await api("PUT", `/api/comunidade/experiencias/${encodeURIComponent(editandoId)}`, corpo)
+        : await api("POST", "/api/comunidade/experiencias", corpo);
+      const id = r.id || editandoId;
+      const slug = r.slug || form.dataset.slug;
 
-    // 5. Sucesso
-    const dialog = $('#success-dialog');
-    if (dialog?.showModal) {
-      dialog.showModal();
+      const falhas = [];
+      for (const [i, f] of fotosNovas.entries()) {
+        aviso(t("cx_enviando_foto", { n: i + 1, total: fotosNovas.length }, `Enviando foto ${i + 1} de ${fotosNovas.length}...`));
+        try { await enviarFoto(id, f); } catch (e) { falhas.push(`${f.name}: ${e.message}`); }
+      }
+      fotosNovas = [];
+      aviso("");
+
+      if (editandoId) {
+        aviso(falhas.length ? falhas.join(" · ") : t("cx_salvo", null, "Alterações salvas."), falhas.length ? "error" : "success");
+        if (!falhas.length) setTimeout(() => location.reload(), 700);
+        return;
+      }
+      $("cxDoneVer").href = "/reservar/" + encodeURIComponent(slug);
+      if (falhas.length) $("cxDoneText").textContent = t("cx_fotos_falharam", null, "Algumas fotos não foram enviadas: ") + falhas.join(" · ");
+      const dlg = $("cxDone");
+      dlg.showModal ? dlg.showModal() : dlg.setAttribute("open", "");
+    } catch (e) {
+      if (e.message === "login") return;
+      const el = e.campo && mostrarErro(e.campo.split(".")[0], e.message);
+      aviso(e.message, "error");
+      if (el && el.focus) el.focus();
+    } finally {
+      window.AQForm.ocupado(botao, false);
     }
+  });
 
-  } catch (err) {
-    console.error(err);
-    statusEl.textContent = 'Erro de conexão. Tente novamente.';
-    btn.disabled = false;
-    btn.classList.remove('loading');
-    btn.querySelector('.btn-text').textContent = 'Publicar experiência';
+  /* ---------- Fotos: prévia local antes de enviar ---------- */
+  const inputFotos = $("cxFotos");
+  const lista = $("cxThumbs");
+  function totalFotos() { return lista.querySelectorAll(".cx-thumb").length; }
+
+  inputFotos.addEventListener("change", () => {
+    const arquivos = [...inputFotos.files];
+    inputFotos.value = "";
+    for (const f of arquivos) {
+      if (totalFotos() >= maxFotos) { aviso(t("cx_limite_fotos", { n: maxFotos }, `Máximo de ${maxFotos} fotos.`), "error"); break; }
+      if (!/^image\/(jpeg|png|webp)$/.test(f.type)) { aviso(t("cx_formato", { nome: f.name }, `${f.name}: use JPG, PNG ou WebP.`), "error"); continue; }
+      if (f.size > 5 * 1024 * 1024) { aviso(t("cx_grande", { nome: f.name }, `${f.name}: maior que 5 MB.`), "error"); continue; }
+      fotosNovas.push(f);
+      const li = document.createElement("li");
+      li.className = "cx-thumb";
+      li.innerHTML = `<img alt=""><span class="cx-badge cx-badge-nova">${esc(t("cx_nova", null, "Nova"))}</span>` +
+        `<button type="button" class="icon-btn cx-thumb-del" aria-label="${esc(t("cx_remover", null, "Remover foto"))}"><i data-lucide="x"></i></button>`;
+      // data: e não blob: — a CSP do site (img-src) não libera blob:.
+      const leitor = new FileReader();
+      leitor.onload = () => { li.querySelector("img").src = leitor.result; atualizarPrevia(); };
+      leitor.readAsDataURL(f);
+      li.querySelector("button").addEventListener("click", () => {
+        fotosNovas = fotosNovas.filter((x) => x !== f);
+        li.remove();
+        atualizarPrevia();
+      });
+      lista.appendChild(li);
+    }
+    icones();
+    atualizarPrevia();
+  });
+
+  // Fotos já salvas (edição): remover de verdade.
+  lista.addEventListener("click", async (ev) => {
+    const b = ev.target.closest("[data-remover]");
+    if (!b || !editandoId) return;
+    if (!confirm(t("cx_confirma_remover", null, "Remover esta foto?"))) return;
+    try {
+      await api("DELETE", `/api/comunidade/experiencias/${encodeURIComponent(editandoId)}/fotos/${encodeURIComponent(b.dataset.remover)}`);
+      b.closest("li").remove();
+      atualizarPrevia();
+    } catch (e) { aviso(e.message, "error"); }
+  });
+
+  /* ---------- Prévia ao vivo ---------- */
+  const CAPAS = { praia: "/img/praia.webp", mergulho: "/img/mergulhador.webp", caiaque: "/img/praia.webp", pesca: "/img/mata.webp", expedicao: "/img/baleia.webp", aquario: "/img/santos.webp" };
+  function atualizarPrevia() {
+    const d = dados();
+    $("pvTitle").textContent = d.title || t("cx_pv_titulo", null, "Título da experiência");
+    $("pvLoc").textContent = d.location || t("cx_pv_destino", null, "Destino");
+    const preco = Number(String(d.preco || "0").replace(/\./g, "").replace(",", "."));
+    $("pvPreco").textContent = preco > 0 ? (window.AQ ? window.AQ.brl(preco) : `R$ ${preco}`) : t("cx_gratuita", null, "Gratuita");
+    $("pvVagas").textContent = d.capacity ? t("cx_pv_vagas", { n: d.capacity }, `${d.capacity} vagas`) : "--";
+    $("pvData").textContent = d.date ? new Date(d.date + "T12:00:00").toLocaleDateString(window.AQ ? window.AQ.intl : "pt-BR", { day: "2-digit", month: "short" }) + (d.time ? " · " + d.time : "") : "--";
+    const primeira = lista.querySelector(".cx-thumb img[src]");
+    $("pvImg").src = primeira ? primeira.src : (CAPAS[d.category] || "/img/praia.webp");
   }
-}
+  form.addEventListener("input", atualizarPrevia);
+  form.addEventListener("change", atualizarPrevia);
+  atualizarPrevia();
 
-/* ══════════════════════════════════════════
-   VALIDAÇÃO AO SAIR DO CAMPO (blur)
-══════════════════════════════════════════ */
-function initBlurValidation() {
-  $('#exp-name')?.addEventListener('blur', validateName);
-  $('#exp-description')?.addEventListener('blur', validateDescription);
-  $('#exp-goal')?.addEventListener('blur', validateGoal);
-  $('#exp-capacity')?.addEventListener('blur', validateCapacity);
-  $('#exp-date')?.addEventListener('blur', validateDate);
-  $('#exp-location')?.addEventListener('blur', validateLocation);
-  $('#exp-duration')?.addEventListener('change', validateDuration);
+  // Data mínima: amanhã (o servidor exige pelo menos 1 hora à frente).
+  const hoje = new Date();
+  $("cxDate").min = new Date(hoje.getTime() - hoje.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 
-  $$('input[name="category"]').forEach(r =>
-    r.addEventListener('change', validateCategory)
-  );
-}
+  /* ---------- Gestão (edição) ---------- */
+  const toggle = $("cxToggle");
+  if (toggle) {
+    toggle.addEventListener("click", async () => {
+      const publicar = toggle.dataset.publicada !== "1";
+      window.AQForm.ocupado(toggle, true);
+      try {
+        await api("POST", `/api/comunidade/experiencias/${encodeURIComponent(editandoId)}/publicada`, { publicada: publicar });
+        toggle.dataset.publicada = publicar ? "1" : "0";
+        toggle.textContent = publicar ? t("cx_pausar", null, "Pausar (tirar da vitrine)") : t("cx_republicar", null, "Publicar de novo");
+        aviso(publicar ? t("cx_publicada", null, "Experiência publicada.") : t("cx_pausada", null, "Experiência pausada. Quem já confirmou continua com a vaga."), "success");
+      } catch (e) { aviso(e.message, "error"); }
+      finally { window.AQForm.ocupado(toggle, false); }
+    });
+  }
 
-/* ══════════════════════════════════════════
-   INIT
-══════════════════════════════════════════ */
-document.addEventListener('DOMContentLoaded', () => {
-  setMinDate();
-  initCharCount();
-  initGoalPreview();
-  initDragDrop();
-  initBlurValidation();
-
-  // File input change
-  $('#exp-images')?.addEventListener('change', (e) => {
-    addFiles([...e.target.files]);
-    e.target.value = ''; // reset para permitir re-upload do mesmo arquivo
-  });
-
-  // Form submit
-  $('#experience-form')?.addEventListener('submit', handleSubmit);
-
-  // Fecha dialog ao clicar fora
-  $('#success-dialog')?.addEventListener('click', (e) => {
-    const rect = e.target.getBoundingClientRect();
-    const outsideClick =
-      e.clientX < rect.left || e.clientX > rect.right ||
-      e.clientY < rect.top  || e.clientY > rect.bottom;
-    if (outsideClick) e.target.close();
-  });
-});
+  const pessoas = $("cxPeople");
+  if (pessoas) {
+    api("GET", `/api/comunidade/experiencias/${encodeURIComponent(pessoas.dataset.id)}/pessoas`).then((r) => {
+      const item = (p, extra) => `<li><a href="/usuarios/${encodeURIComponent(p.id)}">${esc(p.nome)}</a>${extra ? ` <span class="field-help">${esc(extra)}</span>` : ""}</li>`;
+      pessoas.innerHTML =
+        `<h3>${esc(t("cx_participantes", { n: r.participantes.length }, `Participantes (${r.participantes.length})`))}</h3>` +
+        (r.participantes.length ? `<ul>${r.participantes.map((p) => item(p, t("cx_vagas_n", { n: p.vagas }, `${p.vagas} vaga(s)`))).join("")}</ul>` : `<p class="field-help">${esc(t("cx_ninguem", null, "Ninguém confirmou ainda."))}</p>`) +
+        `<h3>${esc(t("cx_interessados", { n: r.interessados.length }, `Interessados (${r.interessados.length})`))}</h3>` +
+        (r.interessados.length ? `<ul>${r.interessados.map((p) => item(p)).join("")}</ul>` : `<p class="field-help">${esc(t("cx_ninguem_interesse", null, "Ninguém marcou interesse ainda."))}</p>`);
+    }).catch(() => { pessoas.innerHTML = `<p class="field-help">${esc(t("erro_tentar", null, "Não foi possível carregar."))}</p>`; });
+  }
+})();

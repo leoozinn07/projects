@@ -101,7 +101,7 @@ const painel = tratar(async (req, res) => {
 
 const usuarios = tratar(async (req, res) => {
   const busca = typeof req.query.busca === "string" ? req.query.busca.slice(0, 120) : null;
-  const status = ["ACTIVE", "SUSPENDED"].includes(req.query.status) ? req.query.status : null;
+  const status = ["ACTIVE", "SUSPENDED", "BANNED"].includes(req.query.status) ? req.query.status : null;
   res.json({ usuarios: await adminService.listUsers({ busca, status }) });
 });
 
@@ -223,6 +223,92 @@ const transacoes = tratar(async (req, res) => {
   });
 });
 
+/* ---------- Banimento, perfil completo, comunidade e feedback ---------- */
+
+const feedbackService = require("../services/feedbackService");
+
+const motivoSchema = z.object({ motivo: z.string().trim().min(5, "Informe o motivo (mínimo 5 caracteres).").max(300) });
+const moderacaoSchema = z.object({
+  status: z.enum(["ACTIVE", "SUSPENDED", "BANNED"], { message: "Estado inválido." }),
+  motivo: z.string().trim().max(300).optional().nullable(),
+});
+const comentarioSchema = z.object({ ocultar: z.boolean(), motivo: z.string().trim().max(300).optional().nullable() });
+const feedbackRespostaSchema = z.object({
+  status: z.enum(["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"], { message: "Status inválido." }),
+  resposta: z.string().trim().min(2, "Resposta muito curta.").max(2000).optional().nullable(),
+});
+
+const banir = tratar(async (req, res) => {
+  if (!idValido(req, res)) return;
+  const parsed = motivoSchema.safeParse(req.body || {});
+  if (!parsed.success) return erroValidacao(res, parsed);
+  const usuario = await adminService.banUser({ adminId: req.session.user.id, userId: req.params.id, motivo: parsed.data.motivo, req });
+  res.json({ usuario });
+});
+
+const usuarioDetalhe = tratar(async (req, res) => {
+  if (!idValido(req, res)) return;
+  res.set("Cache-Control", "no-store");
+  res.json({ usuario: await adminService.userDetail({ adminId: req.session.user.id, userId: req.params.id, req }) });
+});
+
+const comunidade = tratar(async (req, res) => {
+  const busca = typeof req.query.busca === "string" ? req.query.busca.trim().slice(0, 120) || null : null;
+  const status = ["ACTIVE", "SUSPENDED", "BANNED"].includes(req.query.status) ? req.query.status : null;
+  res.json({
+    experiencias: await adminService.listCommunityServices({ busca, status, comDenuncia: req.query.denuncias === "1" }),
+  });
+});
+
+const comunidadeDetalhe = tratar(async (req, res) => {
+  if (!idValido(req, res)) return;
+  res.json(await adminService.experienceModerationDetail(req.params.id));
+});
+
+const moderarExperiencia = tratar(async (req, res) => {
+  if (!idValido(req, res)) return;
+  const parsed = moderacaoSchema.safeParse(req.body || {});
+  if (!parsed.success) return erroValidacao(res, parsed);
+  res.json(await adminService.moderateExperience({
+    adminId: req.session.user.id, serviceId: req.params.id, status: parsed.data.status, motivo: parsed.data.motivo, req,
+  }));
+});
+
+const arquivarDenuncias = tratar(async (req, res) => {
+  if (!idValido(req, res)) return;
+  res.json(await adminService.dismissReports({ adminId: req.session.user.id, serviceId: req.params.id, req }));
+});
+
+const moderarComentario = tratar(async (req, res) => {
+  if (!idValido(req, res)) return;
+  const parsed = comentarioSchema.safeParse(req.body || {});
+  if (!parsed.success) return erroValidacao(res, parsed);
+  res.json(await adminService.moderateComment({
+    adminId: req.session.user.id, commentId: req.params.id, ocultar: parsed.data.ocultar, motivo: parsed.data.motivo, req,
+  }));
+});
+
+const feedbacks = tratar(async (req, res) => {
+  res.json(await feedbackService.listarAdmin({
+    status: typeof req.query.status === "string" ? req.query.status : null,
+    kind: typeof req.query.tipo === "string" ? req.query.tipo : null,
+  }));
+});
+
+const responderFeedback = async (req, res, next) => {
+  if (!idValido(req, res)) return;
+  const parsed = feedbackRespostaSchema.safeParse(req.body || {});
+  if (!parsed.success) return erroValidacao(res, parsed);
+  try {
+    res.json(await feedbackService.responder({
+      adminId: req.session.user.id, id: req.params.id, status: parsed.data.status, resposta: parsed.data.resposta ?? null, req,
+    }));
+  } catch (err) {
+    if (err instanceof feedbackService.FeedbackError) return res.status(err.status).json({ error: err.message, codigo: err.code });
+    next(err);
+  }
+};
+
 module.exports = {
   CATEGORIAS,
   painel,
@@ -238,4 +324,13 @@ module.exports = {
   criarHorarios,
   capacidadeHorario,
   removerHorario,
+  banir,
+  usuarioDetalhe,
+  comunidade,
+  comunidadeDetalhe,
+  moderarExperiencia,
+  arquivarDenuncias,
+  moderarComentario,
+  feedbacks,
+  responderFeedback,
 };

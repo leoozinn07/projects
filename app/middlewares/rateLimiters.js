@@ -99,4 +99,33 @@ const contactLimiter = rateLimit({
   }),
 });
 
-module.exports = { loginLimiter, writeLimiter, webhookLimiter, contactLimiter };
+/**
+ * Interações sociais (curtir, seguir, comentar, interesse). Separado do
+ * writeLimiter: curtir várias experiências seguidas não pode consumir a
+ * cota de quem vai reservar. Por conta, não por IP.
+ */
+const socialLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: scale(150),
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req, res) => req.session?.user?.id || ipKeyGenerator(req, res),
+  handler: limitHandler("Você fez muitas interações em pouco tempo. Aguarde alguns minutos."),
+});
+
+/**
+ * Assistente virtual: cada mensagem custa uma chamada paga à API de IA.
+ * Freio curto por minuto aqui; a cota diária fica no chatbotService.
+ */
+const chatLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: scale(8),
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req, res) => req.session?.user?.id || ipKeyGenerator(req, res),
+  handler: (req, res) => res.status(429).json({ error: "Muitas mensagens seguidas. Espere um minuto e tente de novo." }),
+});
+
+module.exports = {
+  socialLimiter,
+  chatLimiter, loginLimiter, writeLimiter, webhookLimiter, contactLimiter };

@@ -44,6 +44,14 @@ async function resetDatabase() {
     "data_requests",
     "contact_messages",
     "partners",
+    "service_photos",
+    "experience_likes",
+    "experience_comments",
+    "user_follows",
+    "experience_interests",
+    "experience_reports",
+    "platform_feedback",
+    "chat_usage",
   ];
 
   const placeholders = candidates.map(() => "?").join(", ");
