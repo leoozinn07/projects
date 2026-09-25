@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="<%= locals.htmlLang || 'pt-BR' %>">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#eef6f8" />
+  <%
+    const todas = !cfg;
+    const titulo = todas ? t('home.cat_todas') : t('home.pagina_titulo.' + cfg.categoria, null, cfg.titulo);
+    const chamada = todas ? t('home.cat_todas_chamada') : t('home.pagina_chamada.' + cfg.categoria, null, cfg.chamada);
+    seo.titulo = titulo + ' | AquaTrip';
+    seo.descricao = todas
+      ? t('home.cat_todas_seo')
+      : t('home.cat_seo', { titulo: titulo, chamada: chamada }) + (experiencias.length ? ' ' + t('home.cat_seo_n', { n: experiencias.length }) : '');
+    if (experiencias[0] && experiencias[0].cover_key) seo.imagem = urlAbsoluta('/media/' + experiencias[0].cover_key);
+    const total = todas ? experiencias.length : outras.reduce(function (a, o) { return a + o.n; }, experiencias.length);
+  %>
+  <title><%= seo.titulo %></title>
+  <%- include('../partials/seo') %>
+  <link rel="stylesheet" href="/css/catalogo.css" />
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+<%- include('../partials/header') %>
+
+<main id="main-content" class="catalogo">
+  <div class="container">
+    <header class="page-head">
+      <nav class="crumbs" aria-label="<%= t('home.crumbs_aria') %>">
+        <a href="/"><%= t('dock.inicio') %></a><i data-lucide="chevron-right"></i>
+        <% if (todas) { %><span><%= t('home.dest_titulo_curto') %></span><% } else { %><a href="/reservar"><%= t('home.dest_titulo_curto') %></a><i data-lucide="chevron-right"></i><span><%= titulo %></span><% } %>
+      </nav>
+      <h1 class="display h-xl" id="catalogo-titulo"><%= titulo %></h1>
+      <p class="lead"><%= chamada %></p>
+    </header>
+
+    <nav class="chips" aria-label="<%= t('home.cats_aria') %>">
+      <a class="chip" href="/reservar<%= qs %>" data-base="/reservar"<%- todas ? ' aria-current="page"' : '' %>><%= t('home.cat_todas') %> <span class="c"><%= total %></span></a>
+      <% categoriasNav.forEach(function (o) { %>
+        <a class="chip" href="<%= o.rota %><%= qs %>" data-base="<%= o.rota %>"<%- (!todas && o.rota === '/' + rota) ? ' aria-current="page"' : '' %>><%= o.titulo %> <span class="c"><%= o.n %></span></a>
+      <% }); %>
+    </nav>
+
+    <% if (locals.error) { %>
+      <p class="form-alert form-alert-error" role="alert" style="margin-top:24px"><%= error %></p>
+    <% } %>
+
+    <% if (!experiencias.length) { %>
+      <!-- Estado vazio: melhor dizer a verdade do que encher de exemplo. -->
+      <section class="empty catalog-empty">
+        <img src="<%= todas ? '/img/noronha-hero.webp' : cfg.imagem %>" alt="" loading="lazy" />
+        <div class="empty-body">
+          <h2 class="h-m"><% if (todas) { %><%= t('home.vazio_geral') %><% } else { %><%= t('home.vazio_categoria', { categoria: categoriaRotulo(cfg.categoria).toLowerCase() }) %><% } %></h2>
+          <p><%= t('home.vazio_cadastrando') %> <% if (outras && outras.some(function (o) { return o.n > 0; })) { %><%= t('home.vazio_enquanto_isso') %><% } %></p>
+          <ul class="empty-links">
+            <% (outras || []).filter(function (o) { return o.n > 0; }).forEach(function (o) { %>
+              <li><a class="chip" href="<%= o.rota %>"><%= o.titulo %> <span class="c"><%= o.n %></span></a></li>
+            <% }); %>
+          </ul>
+          <div><a class="btn-primary" href="/parceiros"><%= t('home.organiza_cta') %></a></div>
+        </div>
+      </section>
+    <% } else { %>
+      <!-- FILTROS: moram na URL (?q=&vagas=1&max=&ordem=), valem sem JS
+           e o catalogo.js aplica ao vivo. Bottom sheet no celular,
+           barra na tela larga. -->
+      <form class="catalog-filters" id="catalogFilters" method="GET" action="<%= todas ? '/reservar' : '/' + rota %>" role="search">
+        <div class="catalog-search">
+          <div class="search-box">
+            <i data-lucide="search"></i>
+            <label for="catQ" class="sr-only"><%= t('home.busca_label') %></label>
+            <input type="search" id="catQ" name="q" value="<%= filtros.q %>" placeholder="<%= t('home.busca_label') %>" autocomplete="off" enterkeyhint="search">
+          </div>
+          <label for="catOrdem" class="sr-only"><%= t('home.ordenar') %></label>
+          <select id="catOrdem" name="ordem" class="sort-select">
+            <option value="proximas"<%= filtros.ordem === 'proximas' ? ' selected' : '' %>><%= t('home.ordem_proximas') %></option>
+            <option value="preco"<%= filtros.ordem === 'preco' ? ' selected' : '' %>><%= t('home.ordem_preco_asc') %></option>
+            <option value="preco_desc"<%= filtros.ordem === 'preco_desc' ? ' selected' : '' %>><%= t('home.ordem_preco_desc') %></option>
+            <option value="nome"<%= filtros.ordem === 'nome' ? ' selected' : '' %>><%= t('home.ordem_nome') %></option>
+          </select>
+        </div>
+
+        <div class="filter-bar">
+          <button class="filter-trigger-btn" type="button" data-open-sheet="filterSheet">
+            <i data-lucide="sliders-horizontal"></i> <%= t('home.filtros') %>
+            <span class="filter-count-badge" id="filterCountBadge"<%- (filtros.vagas || filtros.max) ? '' : ' hidden' %>><%= (filtros.vagas ? 1 : 0) + (filtros.max ? 1 : 0) %></span>
+          </button>
+          <span class="results-count" aria-live="polite"><%= t('home.resultados_n', { n: visiveis }) %></span>
+        </div>
+
+        <div id="filterSheet" class="sheet filter-sheet" data-sheet role="dialog" aria-modal="true" aria-labelledby="filterSheetTitle" hidden>
+          <div class="sheet-grabber" aria-hidden="true"></div>
+          <div class="sheet-head">
+            <h2 id="filterSheetTitle"><%= t('home.filtros') %></h2>
+            <button class="icon-btn" type="button" data-close-sheet aria-label="<%= t('home.fechar_filtros') %>"><i data-lucide="x"></i></button>
+          </div>
+          <div class="sheet-body">
+            <label class="switch-row" for="only-available">
+              <input type="checkbox" id="only-available" name="vagas" value="1"<%= filtros.vagas ? ' checked' : '' %> /> <%= t('home.so_com_vagas') %>
+            </label>
+            <% if (experiencias.length > 1) { %>
+              <div class="price-filter">
+                <label for="price-range"><%= t('home.preco_maximo') %></label>
+                <div class="price-row">
+                  <input type="range" id="price-range" class="price-slider" name="max"
+                         min="0" max="<%= precoMax %>" step="<%= precoMax > 500 ? 50 : 10 %>" value="<%= filtros.max ? Math.min(filtros.max, precoMax) : precoMax %>" />
+                  <output class="price-output" for="price-range"><%= t('home.ate_valor', { v: (filtros.max ? Math.min(filtros.max, precoMax) : precoMax).toLocaleString(locals.intl || 'pt-BR') }) %></output>
+                </div>
+              </div>
+            <% } %>
+            <button type="submit" class="btn-ghost btn-sm filter-apply"><%= t('home.aplicar') %></button>
+            <span class="results-count results-count--wide" aria-hidden="true"><%= t('home.resultados_n', { n: visiveis }) %></span>
+          </div>
+          <div class="sheet-foot">
+            <button id="clear-filters-btn" class="btn-ghost" type="button"><%= t('home.limpar_filtros') %></button>
+            <button class="btn-primary" type="submit" data-close-sheet><%= t('home.ver_n', { n: visiveis }) %></button>
+          </div>
+        </div>
+      </form>
+
+      <ol class="grid-cards" id="cards-grid">
+        <% experiencias.forEach(function (e, i) { %>
+          <li class="card-item" data-price="<%= Math.round(e.price_cents / 100) %>" data-available="<%= e.proxima_data ? 1 : 0 %>"
+              data-next="<%= e.proxima_data ? new Date(e.proxima_data).getTime() : '' %>" data-title="<%= e.title %>" data-search="<%= e.busca %>"<%= e.visivel ? '' : ' hidden' %>>
+            <%- include('../partials/exp-card', { e: e, full: true, meta: true, eager: i < 2 }) %>
+          </li>
+        <% }); %>
+      </ol>
+      <div class="no-results" id="no-results"<%= visiveis ? ' hidden' : '' %> aria-live="polite">
+        <p class="lead"><%= t('home.nenhuma_com_filtros') %></p>
+        <button type="button" class="btn-ghost" data-clear-filters><%= t('home.limpar_filtros') %></button>
+      </div>
+    <% } %>
+
+    <p class="note catalog-note">
+      <%= t('home.nota_catalogo') %>
+    </p>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>
+<script src="/js/catalogo.js" defer></script>
+</body>
+</html>

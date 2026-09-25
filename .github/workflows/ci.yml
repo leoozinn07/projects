@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test:
+    name: Testes
+    runs-on: ubuntu-latest
+
+    # MySQL real, não mock: os testes cobrem transação e FOR UPDATE —
+    # coisas que um banco falso não reproduz. (A proteção de "só um
+    # pagamento ativo por reserva" que antes vinha de um índice único
+    # parcial do Postgres agora vive na camada de aplicação — o InnoDB
+    # não permite recriar aquele índice com coluna gerada + FK em
+    # cascata; ver bookingService.startPayment().)
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: aquatrip_test
+          MYSQL_USER: aquatrip
+          MYSQL_PASSWORD: aquatrip_dev_pw
+          MYSQL_ROOT_PASSWORD: root_dev_pw
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h localhost -u aquatrip -paquatrip_dev_pw"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      # As tabelas de fuso horário não vêm carregadas na imagem oficial
+      # do MySQL — sem elas, CONVERT_TZ(..., 'America/Sao_Paulo') devolve
+      # NULL e os testes de fuso horário falham silenciosamente.
+      - name: Carregar tabelas de fuso horário no MySQL
+        run: |
+          docker exec $(docker ps -q -f ancestor=mysql:8.0) sh -c \
+            "mysql_tzinfo_to_sql /usr/share/zoneinfo | mysql -uroot -proot_dev_pw mysql"
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Checar sintaxe
+        run: |
+          for f in app.js server.js app/**/*.js database/*.js; do
+            node --check "$f" || exit 1
+          done
+
+      - name: Rodar migrations no banco de teste
+        run: npm run db:migrate:test
+
+      - name: Testes
+        run: npm test
+
+      - name: Cobertura
+        run: npx jest --runInBand --forceExit --coverage --coverageReporters=text-summary
+
+  auditoria:
+    name: Auditoria de dependências
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      # Falha o build em vulnerabilidade alta ou crítica. Supply chain
+      # é vetor real: uma dependência comprometida entra direto no
+      # bundle que roda no navegador do cliente.
+      - run: npm audit --audit-level=high

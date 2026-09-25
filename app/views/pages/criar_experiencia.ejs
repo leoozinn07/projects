@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Criar Experiência | AquaTrip</title>
+  <link rel="stylesheet" href="/css/criar.css" />
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+
+<%- include('../partials/header') %>
+
+  <!-- ===== INTRO ===== -->
+  <section class="page-intro-section">
+    <div class="page-intro-inner">
+      <a href="/" class="breadcrumb-link">← Voltar</a>
+      <span class="eyebrow">Comece agora</span>
+      <h1>Criar experiência</h1>
+      <p class="hero-subtitle">Publique um roteiro para que outras pessoas descubram e financiem essa experiência pelo Brasil.</p>
+    </div>
+  </section>
+
+  <!-- ===== MAIN ===== -->
+  <main id="main-content">
+
+    <!-- Form section -->
+    <section class="form-section" aria-labelledby="form-heading">
+      <h2 id="form-heading" class="sr-only">Formulário de criação</h2>
+
+      <form id="experience-form" class="experience-form" novalidate>
+
+  
+        <fieldset class="form-step" id="step-identity">
+          <legend class="step-legend">
+            <span class="step-num" aria-hidden="true">01</span>
+            Identidade da experiência
+          </legend>
+
+          <label class="field-label" for="exp-name">
+            Nome da experiência
+            <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input
+            type="text"
+            id="exp-name"
+            name="name"
+            class="field-input"
+            placeholder="Ex: Mergulho ao amanhecer em Bonito"
+            minlength="6"
+            maxlength="80"
+            required
+            aria-describedby="exp-name-hint exp-name-error"
+          />
+          <span id="exp-name-hint" class="field-hint">Entre 6 e 80 caracteres.</span>
+          <span id="exp-name-error" class="field-error" role="alert" aria-live="polite"></span>
+
+          <label class="field-label" for="exp-description">
+            Descrição
+            <span class="required" aria-hidden="true">*</span>
+          </label>
+          <textarea
+            id="exp-description"
+            name="description"
+            class="field-input field-textarea"
+            placeholder="Conte o que torna essa experiência única: o lugar, as sensações, o que os participantes vão viver..."
+            minlength="30"
+            maxlength="600"
+            required
+            aria-describedby="exp-description-hint exp-description-error"
+          ></textarea>
+          <span id="exp-description-hint" class="field-hint">
+            <span id="char-count">0</span>/600 caracteres. Mínimo 30.
+          </span>
+          <span id="exp-description-error" class="field-error" role="alert" aria-live="polite"></span>
+        </fieldset>
+
+       
+        <fieldset class="form-step" id="step-category">
+          <legend class="step-legend">
+            <span class="step-num" aria-hidden="true">02</span>
+            Tipo de experiência
+            <span class="required" aria-hidden="true">*</span>
+          </legend>
+          <span id="exp-category-error" class="field-error" role="alert" aria-live="polite"></span>
+
+          <ul class="category-grid" aria-describedby="exp-category-error">
+            <li>
+              <label class="category-card" for="cat-aquario">
+                <input type="radio" id="cat-aquario" name="category" value="aquario" required />
+                <span class="card-inner" aria-hidden="true">
+                  <span class="card-icon"></span>
+                  <span class="card-label">Aquário</span>
+                  <span class="card-sub">Visita guiada &amp; imersão</span>
+                </span>
+              </label>
+            </li>
+            <li>
+              <label class="category-card" for="cat-praia">
+                <input type="radio" id="cat-praia" name="category" value="praia" />
+                <span class="card-inner" aria-hidden="true">
+                  <span class="card-icon"></span>
+                  <span class="card-label">Praia</span>
+                  <span class="card-sub">Sol, areia &amp; mar aberto</span>
+                </span>
+              </label>
+            </li>
+            <li>
+              <label class="category-card" for="cat-caiaque">
+                <input type="radio" id="cat-caiaque" name="category" value="caiaque" />
+                <span class="card-inner" aria-hidden="true">
+                  <span class="card-icon"></span>
+                  <span class="card-label">Caiaque</span>
+                  <span class="card-sub">Remo &amp; exploração</span>
+                </span>
+              </label>
+            </li>
+
+            <li>
+              <label class="category-card" for="cat-pesca">
+                <input type="radio" id="cat-pesca" name="category" value="pesca" />
+                <span class="card-inner" aria-hidden="true">
+                  <span class="card-icon"></span>
+                  <span class="card-label">Pesca</span>
+                  <span class="card-sub">Esportiva &amp; artesanal</span>
+                </span>
+              </label>
+            </li>
+
+            <li>
+              <label class="category-card" for="cat-scuba">
+                <input type="radio" id="cat-scuba" name="category" value="scuba" />
+                <span class="card-inner" aria-hidden="true">
+                  <span class="card-icon"></span>
+                  <span class="card-label">Scuba</span>
+                  <span class="card-sub">Mergulho com equipamento</span>
+                </span>
+              </label>
+            </li>
+          </ul>
+        </fieldset>
+
+       
+        <fieldset class="form-step" id="step-goal">
+          <legend class="step-legend">
+            <span class="step-num" aria-hidden="true">03</span>
+            Meta &amp; capacidade
+          </legend>
+
+          <label class="field-label" for="exp-goal">
+            Valor da meta (R$)
+            <span class="required" aria-hidden="true">*</span>
+          </label>
+          <span id="exp-goal-hint" class="field-hint">Valor mínimo arrecadado para a experiência acontecer.</span>
+          <input
+            type="number"
+            id="exp-goal"
+            name="goal"
+            class="field-input goal-input"
+            placeholder="0,00"
+            min="100"
+            max="1000000"
+            step="0.01"
+            required
+            aria-describedby="exp-goal-hint exp-goal-error"
+          />
+          <span id="exp-goal-error" class="field-error" role="alert" aria-live="polite"></span>
+
+          <label class="field-label" for="exp-capacity">
+            Capacidade máxima de participantes
+            <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input
+            type="number"
+            id="exp-capacity"
+            name="capacity"
+            class="field-input"
+            placeholder="Ex: 20"
+            min="1"
+            max="500"
+            step="1"
+            required
+            aria-describedby="exp-capacity-error"
+          />
+          <span id="exp-capacity-error" class="field-error" role="alert" aria-live="polite"></span>
+
+          <label class="field-label" for="exp-date">
+            Data prevista
+            <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input
+            type="date"
+            id="exp-date"
+            name="date"
+            class="field-input"
+            required
+            aria-describedby="exp-date-error"
+          />
+          <span id="exp-date-error" class="field-error" role="alert" aria-live="polite"></span>
+
+          <!-- Goal preview -->
+          <aside class="goal-preview" aria-live="polite" aria-label="Prévia da meta">
+            <header class="goal-preview-header">
+              <span class="goal-label">Meta configurada</span>
+              <span class="goal-amount" id="goal-display">R$ 0,00</span>
+            </header>
+            <progress class="goal-bar" id="goal-bar" value="0" max="100" aria-hidden="true"></progress>
+            <p class="goal-note">A viagem só acontece quando 100% da meta for atingida.</p>
+          </aside>
+        </fieldset>
+
+        <!-- Step 4: Images -->
+        <fieldset class="form-step" id="step-images">
+          <legend class="step-legend">
+            <span class="step-num" aria-hidden="true">04</span>
+            Imagens da experiência
+            <span class="required" aria-hidden="true">*</span>
+          </legend>
+          <span id="exp-images-hint" class="field-hint">Adicione entre 1 e 6 imagens (JPG, PNG ou WEBP). Máx. 5 MB cada.</span>
+          <span id="exp-images-error" class="field-error" role="alert" aria-live="polite"></span>
+
+          <label class="upload-zone" for="exp-images" id="upload-zone" tabindex="0" role="button"
+            aria-describedby="exp-images-hint exp-images-error">
+            <input
+              type="file"
+              id="exp-images"
+              name="images"
+              class="upload-input"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+            />
+            <span class="upload-icon" aria-hidden="true">📷</span>
+            <strong class="upload-cta">Clique ou arraste imagens aqui</strong>
+            <span class="upload-sub">JPG, PNG, WEBP • até 5 MB cada • máx. 6 fotos</span>
+          </label>
+
+          <ul class="image-preview-grid" id="image-preview" aria-label="Imagens adicionadas"></ul>
+        </fieldset>
+
+        <!-- Step 5: Location -->
+        <fieldset class="form-step" id="step-location">
+          <legend class="step-legend">
+            <span class="step-num" aria-hidden="true">05</span>
+            Localização
+          </legend>
+
+          <label class="field-label" for="exp-location">
+            Destino / local
+            <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input
+            type="text"
+            id="exp-location"
+            name="location"
+            class="field-input"
+            placeholder="Ex: Bonito, MS, Rio da Prata"
+            minlength="4"
+            maxlength="100"
+            required
+            aria-describedby="exp-location-error"
+          />
+          <span id="exp-location-error" class="field-error" role="alert" aria-live="polite"></span>
+
+          <label class="field-label" for="exp-duration">
+            Duração
+            <span class="required" aria-hidden="true">*</span>
+          </label>
+          <select id="exp-duration" name="duration" class="field-input field-select" required aria-describedby="exp-duration-error">
+            <option value="" disabled selected>Selecione a duração</option>
+            <option value="half-day">Meio dia (até 4h)</option>
+            <option value="full-day">Dia inteiro (até 8h)</option>
+            <option value="weekend">Final de semana (2 dias)</option>
+            <option value="3-days">3 dias / 2 noites</option>
+            <option value="week">Semana completa</option>
+            <option value="custom">Personalizado</option>
+          </select>
+          <span id="exp-duration-error" class="field-error" role="alert" aria-live="polite"></span>
+        </fieldset>
+
+        <!-- Submit area -->
+        <footer class="form-footer">
+          <p class="submit-note" aria-live="polite" id="submit-status"></p>
+          <button type="submit" class="btn-submit" id="submit-btn">
+            <span class="btn-text">Publicar experiência</span>
+            <span class="btn-icon" aria-hidden="true">→</span>
+          </button>
+        </footer>
+
+      </form>
+    </section>
+  </main>
+
+  <dialog class="success-dialog" id="success-dialog">
+    <div class="success-inner">
+      <span class="success-emoji" aria-hidden="true">🌊</span>
+      <h2>Experiência enviada!</h2>
+      <p>Sua experiência foi recebida e entrará em análise antes de ficar visível para outras pessoas.</p>
+      <a class="btn-success" href="/">Voltar para o início</a>
+    </div>
+  </dialog>
+
+  <%- include('../partials/footer') %>
+
+  <script src="/js/criar.js"></script>
+</body>
+</html>

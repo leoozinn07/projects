@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="<%= locals.htmlLang || 'pt-BR' %>">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#050d1a">
+  <title><%= t('auth.recuperar_seo_titulo') %></title>
+  <link rel="stylesheet" href="/css/reservas.css">
+  <link rel="stylesheet" href="/css/recuperacao.css">
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+
+<%- include('../partials/header') %>
+
+<main id="main-content" class="booking-main">
+  <div class="container">
+    <div class="auth-card">
+      <h1><%= t('auth.recuperar_titulo') %></h1>
+
+      <% if (enviado) { %>
+        <p class="form-alert form-alert-success" role="status">
+          <%= t('auth.recuperar_enviado') %>
+        </p>
+        <p class="booking-sub">
+          <%= t('auth.recuperar_validade') %>
+        </p>
+        <a class="btn-ghost" href="/login"><%= t('auth.voltar_login') %></a>
+      <% } else { %>
+        <p class="booking-sub">
+          <%= t('auth.recuperar_instrucao') %>
+        </p>
+
+        <% if (error) { %>
+          <p class="form-alert form-alert-error" role="alert"><%= tm(error) %></p>
+        <% } %>
+
+        <form action="/esqueci-senha" method="POST" novalidate>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <label for="email"><%= t('auth.email_label') %></label>
+          <input type="email" id="email" name="email" required autocomplete="email"
+                 placeholder="seu@email.com">
+          <button type="submit" class="btn-primary btn-block"><%= t('auth.enviar_link_recuperacao') %></button>
+        </form>
+
+        <p class="auth-links">
+          <a href="/login"><%= t('auth.voltar_login') %></a> ·
+          <a href="/cadastro"><%= t('auth.criar_conta') %></a>
+        </p>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>
+</body>
+</html>

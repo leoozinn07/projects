@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="<%= locals.htmlLang || 'pt-BR' %>">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#050d1a" />
+  <meta name="robots" content="noindex" />
+  <title><%= t('comprovante.seo_titulo') %></title>
+  <link rel="stylesheet" href="/css/reservas.css" />
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+
+<%- include('../partials/header') %>
+
+<main id="main-content" class="booking-main">
+  <div class="container">
+    <article class="receipt">
+      <header class="receipt-head">
+        <h1><%= t('comprovante.titulo') %></h1>
+        <p>
+          <span class="status-badge status-<%= booking.status %>">
+            <%= booking.status === 'CONFIRMED' ? t('status.reserva.CONFIRMED') : t('status.reserva.REFUNDED') %>
+          </span>
+        </p>
+        <p class="receipt-code"><%= booking.id %></p>
+      </header>
+
+      <dl>
+        <div class="summary-row"><dt><%= t('checkout.experiencia_label') %></dt><dd><%= booking.service_title %></dd></div>
+        <div class="summary-row"><dt><%= t('checkout.local_label') %></dt><dd><%= booking.service_location || t('home.brasil') %></dd></div>
+        <div class="summary-row">
+          <dt><%= t('checkout.data_label') %></dt>
+          <dd><%= fmt.dataHoraExtenso(booking.starts_at) %></dd>
+        </div>
+        <div class="summary-row"><dt><%= t('exp.pessoas') %></dt><dd><%= booking.quantity %></dd></div>
+        <% if (payment) { %>
+          <div class="summary-row">
+            <dt><%= t('comprovante.metodo_label') %></dt>
+            <dd>
+              <%= payment.method === 'PIX' ? 'PIX'
+                : payment.method === 'CREDIT_CARD' ? t('checkout.credito')
+                : t('checkout.debito') %>
+              <% if (payment.display_data && payment.display_data.lastFour) { %>
+                •••• <%= payment.display_data.lastFour %>
+              <% } %>
+            </dd>
+          </div>
+          <% if (payment.paid_at) { %>
+            <div class="summary-row">
+              <dt><%= t('comprovante.pago_em_label') %></dt>
+              <dd><%= fmt.dataHora(payment.paid_at) %></dd>
+            </div>
+          <% } %>
+        <% } %>
+      </dl>
+
+      <div class="summary-total">
+        <span><%= t('comprovante.total_pago_label') %></span>
+        <strong>R$ <%= (booking.amount_cents / 100).toFixed(2).replace('.', ',') %></strong>
+      </div>
+
+      <% if (payment && payment.display_data && payment.display_data.simulated) { %>
+        <p class="sim-banner" style="margin-top:1.2rem">
+          <span><strong><%= t('comprovante.sim_titulo') %></strong>
+          <%= t('comprovante.sim_texto') %></span>
+        </p>
+      <% } %>
+
+      <div class="booking-actions">
+        <a class="btn-ghost" href="/minhas-reservas"><%= t('reservas.titulo') %></a>
+      </div>
+    </article>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>
+</body>
+</html>

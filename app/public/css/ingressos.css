@@ -1,0 +1,57 @@
+/* ==============================================================
+   AquaTrip · Meus ingressos
+   Cada ingresso é um bilhete: canhoto de água funda à esquerda,
+   picote, e os dados do passeio à direita.
+   ============================================================== */
+.stats { display: flex; flex-wrap: wrap; gap: 12px 48px; margin-bottom: 24px; }
+.stat { display: grid; }
+.stat-num { font-size: clamp(2.4rem, 5vw, 3.4rem); font-weight: 640; letter-spacing: -0.05em; line-height: 1; font-variant-numeric: tabular-nums; }
+.stat-num--valid { color: var(--accent-ink); }
+.stat-lbl { color: var(--ink-2); font-size: .9rem; }
+
+.tabs { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin-bottom: 24px; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  flex: 0 0 auto; min-height: 44px; padding: 0 16px; border-radius: var(--radius-pill);
+  border: 1px solid var(--line-strong); background: transparent; color: var(--ink); cursor: pointer; font-weight: 520;
+  transition: background-color 200ms ease, color 200ms ease, transform 160ms var(--ease-out);
+}
+.tab:active { transform: scale(0.97); }
+.tab.active { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+.list { display: grid; gap: 16px; }
+.empty { padding: 32px; border: 1px dashed var(--line-strong); border-radius: var(--radius-xl); color: var(--ink-2); display: grid; gap: 12px; justify-items: start; }
+
+.ticket {
+  display: grid; grid-template-columns: 120px auto 1fr; border-radius: var(--radius-xl); overflow: hidden;
+  background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow);
+}
+@media (min-width: 700px) { .ticket { grid-template-columns: 170px auto 1fr; } }
+.ticket-panel {
+  position: relative; display: grid; align-content: space-between; justify-items: start; gap: 12px; padding: 20px;
+  background: radial-gradient(120% 80% at 20% 0%, rgba(92, 225, 230, .35), transparent 60%), linear-gradient(170deg, var(--d4), var(--d6));
+  color: var(--deep-ink);
+}
+.ticket-panel--exp { background: radial-gradient(120% 80% at 20% 0%, rgba(92, 225, 230, .25), transparent 60%), linear-gradient(170deg, #0f5d86, var(--d5)); }
+.ticket-panel__icon { width: 30px; height: 30px; stroke-width: 1.5; color: var(--bio); }
+.ticket-panel__pill { font-family: var(--mono); font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; padding: 4px 9px; border-radius: var(--radius-pill); border: 1px solid var(--deep-line); }
+.ticket-panel__dots, .ticket-panel__notch { display: none; }
+.ticket-divider { width: 0; border-left: 2px dashed var(--line-strong); margin-block: 14px; }
+.ticket-body { padding: clamp(16px, 2.4vw, 24px); display: grid; gap: 14px; min-width: 0; }
+.ticket-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.ticket-header hgroup { display: grid; gap: 2px; min-width: 0; }
+.ticket-title { font-size: clamp(1.15rem, 2vw, 1.45rem); letter-spacing: -0.03em; line-height: 1.15; }
+.ticket-sub { color: var(--ink-2); font-size: .9rem; }
+.ticket .badge { flex: 0 0 auto; }
+.ticket .badge svg { width: 14px; height: 14px; }
+.badge--valid { background: var(--success-soft); color: var(--success); }
+.badge--used  { background: var(--surface-2); color: var(--ink-2); }
+.badge--exp   { background: var(--warning-soft); color: var(--warning); }
+.ticket-meta { list-style: none; display: flex; flex-wrap: wrap; gap: 8px 20px; color: var(--ink-2); font-size: .9rem; }
+.ticket-meta li { display: inline-flex; align-items: center; gap: 6px; }
+.ticket-meta svg { width: 15px; height: 15px; }
+.ticket-meta address { font-style: normal; }
+.ticket-footer { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.barcode { display: flex; align-items: flex-end; gap: 2px; margin: 0; opacity: .8; }
+.barcode b { display: block; background: var(--ink); }
+.ticket-code { font-family: var(--mono); font-size: .85rem; letter-spacing: .06em; color: var(--ink-2); }

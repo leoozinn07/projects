@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="<%= locals.htmlLang || 'pt-BR' %>">
+<head>
+  <meta charset="UTF-8">
+  <meta name="csrf-token" content="<%= csrfToken %>">
+  <meta name="robots" content="noindex">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= t('avaliacao.seo_titulo') %></title>
+  <link rel="stylesheet" href="/css/avaliacao.css">
+  <script src="/js/theme.js"></script>
+</head>
+
+<body>
+
+  <%- include('../partials/header') %>
+
+  <section class="tudo">
+
+    <main>
+
+      <a href="/minhas-reservas" class="breadcrumb-link"><%= t('avaliacao.breadcrumb') %></a>
+
+      <header class="review-context">
+        <p class="review-kicker kicker"><%= t('avaliacao.kicker') %></p>
+        <h1><%= reserva.title %></h1>
+        <p><%= t('avaliacao.subtitulo', { data: fmt.data(reserva.starts_at) }) %></p>
+      </header>
+      <input type="hidden" id="booking-id" value="<%= reserva.id %>">
+
+      <section aria-labelledby="lbl-stars">
+        <h2 id="lbl-stars"><%= t('avaliacao.nota_titulo') %></h2>
+
+        <nav class="stars-row" role="group" aria-label="<%= t('avaliacao.selecione_aria') %>">
+
+          <button type="button" data-val="1" aria-label="<%= t('avaliacao.estrela_aria_um', { n: 1 }) %>">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path class="star-empty"
+                d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </button>
+
+          <button type="button" data-val="2" aria-label="<%= t('avaliacao.estrela_aria_outros', { n: 2 }) %>">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path class="star-empty"
+                d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </button>
+
+          <button type="button" data-val="3" aria-label="<%= t('avaliacao.estrela_aria_outros', { n: 3 }) %>">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path class="star-empty"
+                d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </button>
+
+          <button type="button" data-val="4" aria-label="<%= t('avaliacao.estrela_aria_outros', { n: 4 }) %>">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path class="star-empty"
+                d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </button>
+
+          <button type="button" data-val="5" aria-label="<%= t('avaliacao.estrela_aria_outros', { n: 5 }) %>">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path class="star-empty"
+                d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </button>
+
+        </nav>
+
+        <output id="star-label">
+          <%= t('avaliacao.toque_estrelas') %>
+        </output>
+
+        <strong class="err" id="star-error">
+          <%= t('avaliacao.erro_estrela') %>
+        </strong>
+      </section>
+
+      <hr>
+
+      <section aria-labelledby="lbl-title">
+        <h2 id="lbl-title"><%= t('avaliacao.titulo_label') %> <em class="optional"><%= t('avaliacao.opcional') %></em></h2>
+
+        <label for="review-title">
+          <%= t('avaliacao.resuma') %>
+        </label>
+
+        <input
+          type="text"
+          id="review-title"
+          placeholder="<%= t('avaliacao.titulo_placeholder') %>"
+          maxlength="80"
+        >
+
+        <small>
+          <span id="title-count">0</span>/80
+        </small>
+
+        <strong class="err" id="title-error">
+          <%= t('avaliacao.erro_titulo') %>
+        </strong>
+      </section>
+
+      <hr>
+
+      <section aria-labelledby="lbl-body">
+        <h2 id="lbl-body"><%= t('avaliacao.conte_titulo') %> <em class="optional"><%= t('avaliacao.opcional') %></em></h2>
+
+        <label for="review-text">
+          <%= t('avaliacao.conte_label') %>
+        </label>
+
+        <textarea
+          id="review-text"
+          placeholder="<%= t('avaliacao.texto_placeholder') %>"
+          maxlength="800"
+        ></textarea>
+
+        <small>
+          <span id="text-count">0</span>/800
+        </small>
+
+        <strong class="err" id="text-error">
+          <%= t('avaliacao.erro_texto') %>
+        </strong>
+      </section>
+
+
+
+      <button
+        type="submit"
+        id="submit-btn"
+        class="btn-primary btn-lg"
+      >
+        <%= t('avaliacao.enviar') %>
+      </button>
+
+      <section class="review-photos" aria-labelledby="lbl-fotos">
+        <h2 id="lbl-fotos"><%= t('avaliacao.fotos_titulo') %> <em class="optional"><%= t('avaliacao.fotos_opcional') %></em></h2>
+        <p class="photo-rules">
+          <%= t('avaliacao.fotos_regras') %>
+        </p>
+        <input type="file" id="fotos" accept="image/jpeg,image/png,image/webp" multiple aria-describedby="fotos-info">
+        <p class="photo-info" id="fotos-info"><%= t('avaliacao.fotos_info') %></p>
+        <ul class="photo-previews" id="fotos-preview" aria-live="polite"></ul>
+      </section>
+
+      <p class="err" id="server-error" role="alert" hidden></p>
+
+      <p
+        class="success"
+        id="success-banner"
+        role="status"
+        aria-live="polite"
+        hidden
+      >
+        <%= t('avaliacao.sucesso') %>
+      </p>
+
+    </main>
+
+  </section>
+
+  <%- include('../partials/footer') %>
+
+  <script src="/js/avaliacao.js" defer></script>
+
+</body>
+</html>

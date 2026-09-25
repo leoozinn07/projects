@@ -1,0 +1,33 @@
+/* ==============================================================
+   AquaTrip · Contato
+   Texto à esquerda, formulário à direita. Rótulo acima de cada
+   campo, erro abaixo (contato.js liga .visivel/.invalido).
+   ============================================================== */
+.contato-grid { display: grid; gap: clamp(28px, 5vw, 72px); padding-block: clamp(12px, 3vw, 40px) 0; align-items: start; }
+@media (min-width: 960px) { .contato-grid { grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); } }
+.contato-intro { display: grid; gap: 18px; align-content: start; }
+@media (min-width: 960px) { .contato-intro { position: sticky; top: calc(var(--header-h) + 48px); } }
+.contato-facts { list-style: none; display: grid; gap: 12px; margin-top: 10px; padding-top: 18px; border-top: 1px solid var(--line); }
+.contato-facts li { display: flex; gap: 12px; align-items: flex-start; color: var(--ink-2); }
+.contato-facts svg { width: 19px; height: 19px; flex: 0 0 auto; margin-top: 2px; color: var(--accent-ink); }
+
+.contato-form { position: relative; border-radius: var(--radius-xl); }
+.contato-form form { display: grid; gap: 18px; }
+.contato-form section { display: grid; gap: 8px; }
+.contato-form label { margin: 0; }
+.contato-form textarea { min-height: 170px; }
+.contato-form .btn-primary { justify-self: start; margin-top: 4px; }
+
+.inputs.invalido { border-color: var(--danger); box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger) 16%, transparent); }
+.inputs.valido { border-color: color-mix(in srgb, var(--success) 60%, var(--line-strong)); }
+.span-required { display: none; font-size: .82rem; color: var(--danger); }
+.span-required.visivel { display: block; }
+.textarea-footer { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.contador { margin-left: auto; font-family: var(--mono); font-size: .78rem; color: var(--ink-2); }
+.contador.quase { color: var(--warning); }
+.contador.limite { color: var(--danger); }
+
+.toast { display: none; padding: 14px 16px; border-radius: var(--radius); font-size: .95rem; margin-bottom: 18px; }
+.toast.sucesso { display: block; background: var(--success-soft); color: var(--success); border: 1px solid var(--success-line); }
+.toast.erro-geral { display: block; background: var(--danger-soft); color: var(--danger); border: 1px solid var(--danger-line); }
+.hp-field { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }

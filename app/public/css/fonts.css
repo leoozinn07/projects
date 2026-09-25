@@ -1,0 +1,36 @@
+/* ==============================================================
+   AquaTrip · Fontes auto-hospedadas
+   ==============================================================
+   Servidas do próprio domínio (LGPD: nada de Google Fonts, que
+   compartilharia o IP do visitante antes do consentimento).
+
+   Inter variável com eixo de tamanho óptico (opsz 14 a 32): nos
+   títulos gigantes o navegador usa o desenho "Display", mais
+   fechado; no texto corrido, o desenho de leitura. Uma família,
+   dois comportamentos. IBM Plex Mono entra só em números de
+   instrumento: profundidade, coordenadas, contagens.
+
+   Subset latin cobre o português inteiro (á, ç, ã, õ, ê).
+   ============================================================== */
+@font-face {
+  font-family: "Inter AT";
+  src: url("/fonts/inter-latin-opsz-normal.woff2") format("woff2-variations"),
+       url("/fonts/inter-latin-opsz-normal.woff2") format("woff2");
+  font-weight: 100 900; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Inter AT";
+  src: url("/fonts/inter-latin-opsz-italic.woff2") format("woff2-variations"),
+       url("/fonts/inter-latin-opsz-italic.woff2") format("woff2");
+  font-weight: 100 900; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: "Plex Mono AT";
+  src: url("/fonts/ibm-plex-mono-latin-400-normal.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Plex Mono AT";
+  src: url("/fonts/ibm-plex-mono-latin-500-normal.woff2") format("woff2");
+  font-weight: 500; font-style: normal; font-display: swap;
+}

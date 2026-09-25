@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="<%= locals.htmlLang || 'pt-BR' %>">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#eef6f8">
+  <% seo.titulo = t('auth.cadastro_seo_titulo'); seo.descricao = t('auth.cadastro_seo_desc') %>
+  <title><%= seo.titulo %></title>
+  <%- include('../partials/seo') %>
+  <link rel="stylesheet" href="/css/auth.css">
+  <script src="/js/theme.js"></script>
+  <script src="/js/validacao.js" defer></script>
+</head>
+<body class="auth-page">
+<%- include('../partials/headercadastro') %>
+
+<main id="main-content" class="auth">
+  <div class="auth-grid">
+    <section class="auth-form" aria-labelledby="t-cad">
+      <a href="/" class="breadcrumb-link"><i data-lucide="arrow-left"></i> <%= t('auth.voltar') %></a>
+      <h1 class="display" id="t-cad"><%= t('auth.criar_conta') %></h1>
+      <p class="lead"><%= t('auth.cadastro_lead') %></p>
+
+      <% if (typeof error !== 'undefined' && error) { %>
+        <p class="form-alert form-alert-error" role="alert"><%= tm(error) %></p>
+      <% } %>
+
+      <form id="form" action="/cadastro" method="POST" novalidate>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <section class="field">
+          <label for="nome"><%= t('auth.nome_label') %></label>
+          <input type="text" id="nome" name="nome" class="inputs required" required autocomplete="name">
+          <span class="span-required field-error"><%= t('auth.nome_minimo') %></span>
+        </section>
+        <section class="field">
+          <label for="email"><%= t('auth.email_label') %></label>
+          <input type="email" id="email" name="email" placeholder="voce@email.com" class="inputs required" required autocomplete="email">
+          <span class="span-required field-error"><%= t('auth.email_invalido') %></span>
+        </section>
+        <section class="field">
+          <label for="senha"><%= t('auth.senha_label') %></label>
+          <input type="password" id="senha" name="senha" class="inputs required" required autocomplete="new-password" aria-describedby="senha-ajuda">
+          <span class="field-help" id="senha-ajuda"><%= t('auth.senha_ajuda') %></span>
+          <span class="span-required field-error"><%= t('auth.senha_minima') %></span>
+        </section>
+        <section class="field">
+          <label for="confirma-senha"><%= t('auth.confirme_senha') %></label>
+          <input type="password" id="confirma-senha" name="confirma-senha" class="inputs required" required autocomplete="new-password">
+          <span class="span-required field-error"><%= t('auth.senhas_nao_coincidem') %></span>
+        </section>
+        <section class="field">
+          <label class="check-row" for="aceite">
+            <input type="checkbox" id="aceite" name="aceite" class="required" required>
+            <span><%- t('auth.aceite_html') %></span>
+          </label>
+          <span class="span-required field-error"><%= t('auth.aceite_obrigatorio') %></span>
+        </section>
+        <button type="submit" class="btn-primary btn-lg btn-block"><%= t('auth.criar_conta') %></button>
+      </form>
+      <p class="auth-switch"><%= t('auth.ja_tem_conta') %> <a href="/login"><%= t('auth.entrar') %></a></p>
+    </section>
+    <aside class="auth-visual is-deep" aria-hidden="true">
+      <img src="/img/raia.webp" alt="" decoding="async">
+      <div class="auth-visual-copy">
+        <p class="kicker"><%= t('auth.cadastro_kicker') %></p>
+        <p class="auth-visual-title"><%= t('auth.cadastro_visual_titulo') %></p>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>
+</body>
+</html>

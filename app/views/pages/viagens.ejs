@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="<%= locals.htmlLang || 'pt-BR' %>">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= t('viagens.titulo_pagina') %></title>
+  <link rel="stylesheet" href="/css/viagens.css" />
+  <meta name="csrf-token" content="<%= csrfToken %>">
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+
+<%- include('../partials/header') %>
+  <main id="main-content" class="at-wrap container">
+
+    <!-- Header -->
+    <header class="at-header">
+      <h1 class="at-title display h-l"><%= t('viagens.titulo') %></h1>
+      <p class="at-subtitle" id="at-subtitle"><%= t('viagens.carregando') %></p>
+      <button type="button" class="btn-primary at-add" data-open-sheet="tripSheet"><%= t('viagens.registrar') %></button>
+    </header>
+
+    <!-- Estatísticas -->
+    <section class="at-stats" aria-label="<%= t('viagens.resumo_aria') %>">
+      <section class="at-stat">
+        <section class="at-stat-val" id="s-v">0</section>
+        <section class="at-stat-label"><%= t('viagens.stat_viagens') %></section>
+      </section>
+      <section class="at-stat">
+        <section class="at-stat-val" id="s-p">0</section>
+        <section class="at-stat-label"><%= t('viagens.stat_regioes') %></section>
+      </section>
+      <section class="at-stat">
+        <section class="at-stat-val" id="s-d">0</section>
+        <section class="at-stat-label"><%= t('viagens.stat_dias') %></section>
+      </section>
+    </section>
+
+    <!-- Timeline de viagens -->
+    <div id="at-timeline" aria-live="polite" aria-label="<%= t('viagens.timeline_aria') %>"></div>
+
+  </main>
+
+
+  <!-- Registrar viagem: usa o bottom sheet do app shell -->
+  <div id="tripSheet" class="sheet" data-sheet role="dialog" aria-modal="true" aria-labelledby="tripSheetTitle" hidden>
+    <div class="sheet-grabber" aria-hidden="true"></div>
+    <div class="sheet-head">
+      <h2 id="tripSheetTitle"><%= t('viagens.registrar') %></h2>
+      <button class="icon-btn" type="button" data-close-sheet aria-label="<%= t('viagens.fechar_aria') %>"><i data-lucide="x"></i></button>
+    </div>
+    <form id="tripForm" class="sheet-body trip-form" novalidate>
+      <p class="form-alert form-alert-error" id="tripErro" role="alert" hidden></p>
+
+      <div>
+        <label for="t-place"><%= t('viagens.lugar_label') %></label>
+        <input id="t-place" name="place" required maxlength="160" placeholder="<%= t('viagens.lugar_placeholder') %>">
+      </div>
+      <div>
+        <label for="t-region"><%= t('viagens.estado_label') %></label>
+        <input id="t-region" name="region" maxlength="120" placeholder="<%= t('viagens.estado_placeholder') %>">
+      </div>
+      <div class="trip-form-row">
+        <div>
+          <label for="t-start"><%= t('viagens.ida_label') %></label>
+          <input id="t-start" name="startsOn" type="date">
+        </div>
+        <div>
+          <label for="t-end"><%= t('viagens.volta_label') %></label>
+          <input id="t-end" name="endsOn" type="date">
+        </div>
+      </div>
+      <fieldset class="trip-rating">
+        <legend><%= t('viagens.como_foi') %></legend>
+        <% for (let i = 1; i <= 5; i++) { %>
+          <label><input type="radio" name="rating" value="<%= i %>"> <%= i %> ★</label>
+        <% } %>
+      </fieldset>
+      <div>
+        <label for="t-tags"><%= t('viagens.etiquetas_label') %> <small><%= t('viagens.etiquetas_hint') %></small></label>
+        <input id="t-tags" name="tags" maxlength="200" placeholder="<%= t('viagens.etiquetas_placeholder') %>">
+      </div>
+      <div>
+        <label for="t-notes"><%= t('viagens.anotacoes_label') %></label>
+        <textarea id="t-notes" name="notes" maxlength="2000" placeholder="<%= t('viagens.anotacoes_placeholder') %>"></textarea>
+      </div>
+      <p class="trip-privacy"><%= t('viagens.privacidade') %></p>
+      <button type="submit" class="btn-primary btn-block"><%= t('viagens.salvar') %></button>
+    </form>
+  </div>
+
+  <%- include('../partials/footer') %>
+
+  <!-- Script -->
+  <script src="/js/escape.js"></script>
+  <script src="/js/viagens.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,27 @@
+/* ==============================================================
+   AquaTrip · Minha conta (/perfil_editado)
+   ============================================================== */
+.conta-head { display: grid; gap: 20px; align-items: end; padding-block: clamp(12px, 3vw, 40px) 28px; border-bottom: 1px solid var(--line); }
+@media (min-width: 860px) { .conta-head { grid-template-columns: auto 1fr auto; gap: 28px; } }
+.conta-avatar {
+  width: clamp(84px, 10vw, 120px); aspect-ratio: 1; border-radius: 50%; margin: 0; display: grid; place-items: center;
+  background: radial-gradient(80% 80% at 30% 20%, var(--bio), #1b7fae 70%, var(--d5)); color: #f2fbfd;
+  font-size: clamp(2.4rem, 4vw, 3.4rem); font-weight: 680; letter-spacing: -0.04em;
+}
+.conta-id { display: grid; gap: 8px; }
+.conta-email { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; color: var(--ink-2); }
+.conta-desde { font-size: .88rem; color: var(--ink-2); }
+.conta-numeros { list-style: none; display: flex; flex-wrap: wrap; gap: 12px 48px; padding-block: 28px; }
+.conta-numeros strong { display: block; font-size: clamp(2.6rem, 5vw, 3.8rem); font-weight: 640; letter-spacing: -0.05em; line-height: 1; font-variant-numeric: tabular-nums; }
+.conta-numeros span { color: var(--ink-2); font-size: .92rem; }
+.conta-links { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
+.conta-links a {
+  display: grid; gap: 6px; align-content: start; padding: 22px; border-radius: var(--radius-lg);
+  background: var(--surface); border: 1px solid var(--line); color: var(--ink); text-decoration: none;
+  transition: border-color 200ms ease, transform 160ms var(--ease-out);
+}
+.conta-links a:hover { border-color: var(--line-strong); color: var(--ink); text-decoration: none; }
+.conta-links a:active { transform: scale(0.985); }
+.conta-links svg { width: 24px; height: 24px; color: var(--accent-ink); margin-bottom: 10px; stroke-width: 1.6; }
+.conta-links strong { font-size: 1.1rem; letter-spacing: -0.02em; }
+.conta-links span { font-size: .88rem; color: var(--ink-2); }

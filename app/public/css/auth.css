@@ -1,0 +1,44 @@
+/* ==============================================================
+   AquaTrip · Entrar e criar conta
+   Tela dividida: formulário na superfície, água funda ao lado.
+   No celular, só o formulário.
+   ============================================================== */
+.auth { padding-inline: var(--gutter); }
+.auth-grid {
+  max-width: 1320px; margin-inline: auto; display: grid; gap: 24px; align-items: stretch;
+  min-height: calc(100svh - var(--header-h) - var(--header-gap) * 2 - 24px);
+}
+@media (min-width: 960px) { .auth-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); } }
+
+.auth-form {
+  width: 100%; max-width: 440px; margin-inline: auto; display: grid; gap: 18px; align-content: center;
+  padding-block: clamp(16px, 4vw, 56px);
+}
+.auth-form h1 { font-size: clamp(2.6rem, 6vw, 4.6rem); }
+.auth-form .lead { margin-top: -4px; }
+.auth-form form { display: grid; gap: 18px; margin-top: 6px; }
+.auth-form .field { gap: 8px; }
+.auth-form label { margin: 0; }
+.field-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.field-top a { font-size: .88rem; font-weight: 500; }
+.auth-form .btn-block { margin-top: 6px; }
+.auth-switch { color: var(--ink-2); padding-top: 18px; border-top: 1px solid var(--line); }
+
+/* Erros de validação (validacao.js) */
+.span-required { display: none; }
+.span-required.is-on { display: block; }
+.inputs.is-invalid { border-color: var(--danger); box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger) 16%, transparent); }
+
+.auth-visual {
+  display: none; position: relative; overflow: hidden; border-radius: var(--radius-xl);
+  background: var(--d5); isolation: isolate; min-height: 560px;
+}
+.auth-visual img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
+.auth-visual::after {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(0deg, rgba(3, 23, 42, .85) 0%, rgba(3, 23, 42, .15) 55%, rgba(3, 23, 42, 0) 100%);
+}
+.auth-visual-copy { position: absolute; left: clamp(24px, 3vw, 44px); right: clamp(24px, 3vw, 44px); bottom: clamp(24px, 3vw, 44px); display: grid; gap: 12px; }
+.auth-visual-title { font-size: clamp(2.2rem, 3.8vw, 3.8rem); font-weight: 640; letter-spacing: -0.05em; line-height: .95; color: var(--deep-ink); max-width: 14ch; }
+@media (min-width: 960px) { .auth-visual { display: block; margin-block: 12px 24px; } }
+.auth-page .site-footer { margin-top: 40px; }

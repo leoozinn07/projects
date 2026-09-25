@@ -1,0 +1,141 @@
+/* ==============================================================
+   AquaTrip · Reserva, checkout, comprovante, minhas reservas
+   Telas de tarefa: calmas, na superfície, com o que importa
+   (valor, data, status) sempre legível. Nada aqui se move além
+   do retorno de toque.
+   ============================================================== */
+.booking-main { padding-block: clamp(8px, 2vw, 24px) clamp(40px, 6vw, 80px); }
+.booking-main > .container > h1 { font-size: clamp(2.2rem, 5vw, 4rem); letter-spacing: -0.055em; line-height: .95; margin-block: clamp(16px, 3vw, 40px) 12px; }
+.booking-sub { color: var(--ink-2); margin-bottom: 20px; }
+.empty-state { display: grid; gap: 10px; justify-items: start; padding: clamp(24px, 4vw, 44px); border: 1px dashed var(--line-strong); border-radius: var(--radius-xl); }
+.empty-state .booking-sub { margin: 0 0 8px; }
+
+/* Aviso de modo simulado: impossível de confundir com pagamento real */
+.sim-banner {
+  display: block; padding: 14px 18px; margin-bottom: 24px;
+  background: var(--warning-soft); border: 1px solid var(--warning-line); border-radius: var(--radius);
+  color: var(--warning); font-size: .92rem;
+}
+.sim-banner strong { display: block; margin-bottom: 2px; }
+
+/* ---------- Horários (fluxo antigo, mantido para outras telas) ---------- */
+.slot-list { display: grid; gap: 8px; list-style: none; margin-bottom: 24px; }
+.slot-option {
+  display: flex; align-items: center; gap: 12px; min-height: var(--tap-min); padding: 12px 14px; margin: 0;
+  background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--radius); font-weight: 400; cursor: pointer;
+}
+.slot-option:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.slot-option input { width: 18px; height: 18px; min-height: 0; flex-shrink: 0; }
+.slot-when { display: block; font-weight: 600; font-size: .95rem; }
+.slot-left { display: block; color: var(--ink-2); font-size: .82rem; }
+.qty-row { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 24px; }
+.qty-row input { width: 96px; }
+
+/* ---------- Checkout ---------- */
+.checkout-grid { display: grid; gap: 24px; align-items: start; }
+@media (min-width: 900px) { .checkout-grid { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); } }
+.summary-card, .pay-card {
+  padding: clamp(20px, 3vw, 32px); border: 1px solid var(--line); border-radius: var(--radius-xl); background: var(--surface);
+}
+.summary-card { background: var(--surface-2); border-color: transparent; }
+@media (min-width: 900px) { .summary-card { position: sticky; top: calc(var(--header-h) + 40px); } }
+.summary-card h2, .pay-card h2 { font-size: 1.35rem; letter-spacing: -0.03em; margin-bottom: 16px; }
+.summary-row { display: flex; justify-content: space-between; gap: 16px; padding-block: 10px; font-size: .95rem; }
+.summary-row + .summary-row { border-top: 1px solid var(--line); }
+.summary-row dt { color: var(--ink-2); }
+.summary-row dd { font-weight: 600; text-align: right; }
+.summary-total { display: flex; align-items: baseline; justify-content: space-between; margin-top: 12px; padding-top: 14px; border-top: 1px solid var(--line-strong); }
+.summary-total strong { font-size: 2rem; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+
+/* ---------- Status: cor + rótulo escrito (WCAG 1.4.1) ---------- */
+.status-badge {
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border: 1px solid transparent;
+  border-radius: var(--radius-pill); font-size: .8rem; font-weight: 600; white-space: nowrap;
+}
+.status-PENDING   { background: var(--warning-soft); border-color: var(--warning-line); color: var(--warning); }
+.status-CONFIRMED,
+.status-APPROVED  { background: var(--success-soft); border-color: var(--success-line); color: var(--success); }
+.status-REJECTED,
+.status-CANCELLED { background: var(--danger-soft);  border-color: var(--danger-line);  color: var(--danger); }
+.status-EXPIRED   { background: var(--surface-2);    border-color: var(--line-strong);  color: var(--ink-2); }
+.status-REFUNDED  { background: var(--info-soft);    border-color: var(--brand-line);   color: var(--info); }
+
+/* ---------- Pagamento ---------- */
+.method-list { display: grid; gap: 8px; list-style: none; margin-bottom: 18px; }
+.method-option {
+  display: flex; align-items: center; gap: 14px; min-height: 60px; padding: 12px 16px; margin: 0;
+  background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--radius); font-weight: 400; cursor: pointer;
+  transition: border-color 200ms ease, background-color 200ms ease, transform 160ms var(--ease-out);
+}
+.method-option:active { transform: scale(0.99); }
+.method-option:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.method-option input { width: 18px; height: 18px; min-height: 0; }
+.method-name { display: block; font-weight: 600; }
+.method-hint { display: block; color: var(--ink-2); font-size: .85rem; }
+.card-fields { display: grid; gap: 14px; margin-bottom: 18px; }
+.method-option:has(input:disabled) { opacity: .5; cursor: not-allowed; }
+/* Formulário do Mercado Pago: reserva altura para não pular o layout
+   enquanto os iframes carregam. */
+.card-brick { min-height: 360px; }
+.card-brick:has(> div) { min-height: 0; }
+.brick-loading {
+  display: grid; place-items: center; min-height: 360px; margin: 0;
+  border: 1px dashed var(--line-strong); border-radius: var(--radius-lg);
+  color: var(--ink-2); font-size: .9rem; text-align: center; padding: 16px;
+  animation: brick-pulse 1.6s ease-in-out infinite;
+}
+@keyframes brick-pulse { 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .brick-loading { animation: none; } }
+#payButton[aria-busy="true"] { opacity: .7; cursor: progress; }
+.pci-note { padding: 12px 14px; background: var(--accent-soft); border-radius: var(--radius); color: var(--ink-2); font-size: .9rem; margin-bottom: 16px; }
+
+/* ---------- PIX ---------- */
+.pix-box { text-align: center; }
+.pix-qr { width: 200px; height: 200px; margin: 0 auto 18px; padding: 10px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius-lg); }
+.pix-code {
+  width: 100%; min-height: 84px; padding: 12px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius);
+  font-family: var(--mono); font-size: .78rem; color: var(--ink-2); word-break: break-all; resize: vertical;
+}
+.pix-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+@media (min-width: 560px) { .pix-actions { flex-direction: row; justify-content: center; } }
+
+/* ---------- Minhas reservas ---------- */
+.booking-list { display: grid; gap: 12px; list-style: none; }
+.booking-item { padding: clamp(18px, 2.4vw, 26px); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); }
+.booking-item header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 6px; }
+.booking-item h2 { font-size: 1.35rem; letter-spacing: -0.03em; }
+.booking-item .meta { color: var(--ink-2); font-size: .92rem; }
+.booking-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+
+/* ---------- Comprovante ---------- */
+.receipt {
+  max-width: 560px; margin: clamp(16px, 3vw, 40px) auto 0; padding: clamp(24px, 4vw, 40px);
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-xl); box-shadow: var(--shadow-lg);
+}
+.receipt-head { display: grid; gap: 8px; justify-items: center; text-align: center; padding-bottom: 18px; border-bottom: 1px dashed var(--line-strong); margin-bottom: 14px; }
+.receipt-head h1 { font-size: clamp(1.8rem, 4vw, 2.4rem); letter-spacing: -0.045em; }
+.receipt-code { font-family: var(--mono); font-size: .78rem; color: var(--ink-2); word-break: break-all; }
+
+@media print {
+  .app-header, .bottom-nav, .site-footer, .booking-actions, .skip-link, .cmp-sheet { display: none !important; }
+  body { padding: 0; background: #fff; }
+  .receipt { border: 0; box-shadow: none; }
+}
+
+/* ---------- Painel de simulação (dev) ---------- */
+.sim-panel { margin-top: 18px; padding: 16px; background: var(--surface-2); border: 1px dashed var(--line-strong); border-radius: var(--radius); }
+.sim-panel h3 { font-size: .9rem; color: var(--ink-2); margin-bottom: 10px; font-weight: 600; }
+.sim-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.sim-panel button {
+  min-height: 40px; padding-inline: 14px; border: 1px solid var(--line-strong); border-radius: var(--radius-pill);
+  background: var(--surface); font-size: .88rem; font-weight: 500; cursor: pointer; transition: transform 160ms var(--ease-out), border-color 200ms ease;
+}
+.sim-panel button:hover { border-color: var(--accent); color: var(--accent-ink); }
+.sim-panel button:active { transform: scale(0.97); }
+
+/* Minhas reservas: fotos da avaliação */
+.fotos-painel { margin-top: 12px; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2); }
+.fotos-painel ul { display: flex; flex-wrap: wrap; gap: 12px; list-style: none; margin-bottom: 12px; }
+.fotos-painel li { display: grid; gap: 4px; width: 112px; font-size: .78rem; }
+.fotos-painel img { width: 112px; height: 84px; object-fit: cover; border-radius: var(--radius-sm); }
+.foto-st-PENDING { color: var(--warning); } .foto-st-APPROVED { color: var(--success); } .foto-st-REJECTED { color: var(--danger); }

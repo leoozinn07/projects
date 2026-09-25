@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#050d1a" />
+  <meta name="robots" content="noindex" />
+  <title>Trilha de auditoria | AquaTrip</title>
+  <link rel="stylesheet" href="/css/reservas.css" />
+  <link rel="stylesheet" href="/css/auditoria.css" />
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+
+<%- include('../partials/header') %>
+
+<main id="main-content" class="booking-main">
+  <div class="container">
+    <h1>Trilha de auditoria</h1>
+    <p class="booking-sub">
+      <%= total %> evento(s) registrado(s). Quem fez o quê, quando e de qual IP.
+    </p>
+
+    <form method="GET" action="/admin/auditoria" class="audit-filter">
+      <label for="action">Filtrar por ação</label>
+      <select id="action" name="action">
+        <option value="">Todas</option>
+        <% actions.forEach(function (a) { %>
+          <option value="<%= a %>" <%= filtroAtual === a ? 'selected' : '' %>><%= a %></option>
+        <% }); %>
+      </select>
+      <button type="submit" class="btn-primary">Aplicar</button>
+      <% if (filtroAtual) { %>
+        <a class="btn-secondary" href="/admin/auditoria">Limpar</a>
+      <% } %>
+    </form>
+
+    <% if (!events.length) { %>
+      <p class="booking-sub">Nenhum evento encontrado.</p>
+    <% } else { %>
+      <div class="audit-table-wrap">
+        <table class="audit-table">
+          <caption class="sr-only">Eventos de auditoria do sistema</caption>
+          <thead>
+            <tr>
+              <th scope="col">Quando</th>
+              <th scope="col">Ação</th>
+              <th scope="col">Usuário</th>
+              <th scope="col">IP</th>
+              <th scope="col">Detalhes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% events.forEach(function (e) { %>
+              <tr>
+                <td>
+                  <time datetime="<%= new Date(e.created_at).toISOString() %>">
+                    <%= fmt.dataHora(e.created_at) %>
+                  </time>
+                </td>
+                <td><span class="audit-action audit-action--<%= e.action.split('_')[0].toLowerCase() %>"><%= e.action %></span></td>
+                <td><%= e.user_email || '-' %></td>
+                <td class="audit-ip"><%= e.ip_address || '-' %></td>
+                <td>
+                  <% if (e.metadata) { %>
+                    <details>
+                      <summary>ver</summary>
+                      <pre><%= JSON.stringify(e.metadata, null, 2) %></pre>
+                    </details>
+                  <% } else { %>-<% } %>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+
+      <% if (totalPages > 1) { %>
+        <nav class="audit-pagination" aria-label="Paginação da auditoria">
+          <% if (page > 1) { %>
+            <a class="btn-ghost" href="/admin/auditoria?page=<%= page - 1 %><%= filtroAtual ? '&action=' + filtroAtual : '' %>">← Anterior</a>
+          <% } %>
+          <span>Página <%= page %> de <%= totalPages %></span>
+          <% if (page < totalPages) { %>
+            <a class="btn-ghost" href="/admin/auditoria?page=<%= page + 1 %><%= filtroAtual ? '&action=' + filtroAtual : '' %>">Próxima →</a>
+          <% } %>
+        </nav>
+      <% } %>
+    <% } %>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>
+</body>
+</html>

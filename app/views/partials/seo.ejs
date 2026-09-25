@@ -1,0 +1,20 @@
+<%# Metadados de busca e compartilhamento. Valores vêm de res.locals.seo
+    (padrão em middlewares/seo.js; controllers sobrescrevem). %>
+<meta name="description" content="<%= seo.descricao %>">
+<link rel="canonical" href="<%= seo.canonica %>">
+<meta property="og:site_name" content="AquaTrip">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:type" content="<%= seo.tipo %>">
+<meta property="og:title" content="<%= seo.titulo %>">
+<meta property="og:description" content="<%= seo.descricao %>">
+<meta property="og:url" content="<%= seo.canonica %>">
+<meta property="og:image" content="<%= seo.imagem %>">
+<meta name="twitter:card" content="summary_large_image">
+<% if (seo.jsonld) { %>
+<%# Dados estruturados. JSON dentro de <script>: todo "<" vira \u003c — sem
+    isso, um "</script>" num título encerraria a tag (o mesmo erro que quebrou
+    o preview). ld+json não é executado, então a CSP não o bloqueia. %>
+<script type="application/ld+json"><%- JSON.stringify(seo.jsonld).replace(/</g, '\\u003c') %></script>
+<% } %>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/img/apple-touch-icon.png">

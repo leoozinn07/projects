@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="<%= locals.htmlLang || 'pt-BR' %>">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#eef6f8" />
+  <title><%= seo.titulo %></title>
+  <%- include('../partials/seo') %>
+  <link rel="stylesheet" href="/css/experiencia.css" />
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+
+<%- include('../partials/header') %>
+
+<%
+  const c = capaDe(service);
+  const sc = aquaScore(service.slug);
+  const precoFmt = (service.price_cents / 100).toFixed(2).replace('.', ',');
+  const rotas = { praia: '/praias', mergulho: '/mergulho', caiaque: '/caiaque', pesca: '/pesca', expedicao: '/expedicoes', aquario: '/aquarios' };
+  const logado = typeof user !== 'undefined' && user;
+%>
+
+<main id="main-content" class="xp">
+  <div class="container">
+    <nav class="crumbs" aria-label="<%= t('home.crumbs_aria') %>">
+      <a href="/"><%= t('dock.inicio') %></a><i data-lucide="chevron-right"></i>
+      <a href="/reservar"><%= t('home.dest_titulo_curto') %></a><i data-lucide="chevron-right"></i>
+      <% if (rotas[service.category]) { %><a href="<%= rotas[service.category] %>"><%= categoriaRotulo(service.category) %></a><i data-lucide="chevron-right"></i><% } %>
+      <span aria-current="page"><%= service.title %></span>
+    </nav>
+
+    <figure class="xp-hero">
+      <img src="<%= c.src %>" alt="<%= c.alt %>" fetchpriority="high">
+      <% if (c.ilustrativa) { %><figcaption><%= t('exp.imagem_ilustrativa') %></figcaption><% } %>
+    </figure>
+
+    <div class="xp-layout">
+      <div class="xp-main">
+        <h1 class="xp-title"><%= service.title %></h1>
+        <p class="xp-meta">
+          <span><i data-lucide="map-pin"></i> <%= service.location || t('home.brasil') %></span>
+          <span><i data-lucide="waves"></i> <%= categoriaRotulo(service.category) %></span>
+          <%# Quem presta o serviço (CDC, art. 31): parceiro ou o próprio AquaTrip. %>
+          <span class="service-operador"><i data-lucide="badge-check"></i> <%= t('exp.operado_por') %> <strong><%= service.operador || 'AquaTrip' %></strong></span>
+        </p>
+
+        <% if (service.description) { %>
+          <p class="xp-desc service-desc"><%= service.description %></p>
+        <% } else { %>
+          <p class="xp-desc is-empty"><%= t('exp.sem_descricao') %></p>
+        <% } %>
+
+        <dl class="xp-facts">
+          <div><dt><%= t('exp.preco') %></dt><dd>R$ <%= precoFmt %> <%= t('home.por_pessoa') %></dd></div>
+          <div><dt><%= t('exp.horarios_com_vaga') %></dt><dd><%= slots.length ? t('exp.n_horarios', { n: slots.length }) : t('exp.nenhum_no_momento') %></dd></div>
+          <div><dt><%= t('exp.pagamento') %></dt><dd><%= t('exp.pix_ou_cartao') %></dd></div>
+          <div><dt><%= t('exp.reserva') %></dt><dd><%= t('exp.vaga_segura', { min: holdMinutes }) %></dd></div>
+        </dl>
+
+        <% if (sc) { %>
+          <section class="xp-section" aria-labelledby="t-score">
+            <h2 id="t-score"><%= t('exp.perfil_titulo') %></h2>
+            <ul class="score score--lg" aria-label="<%= t('exp.perfil_aria') %>">
+              <li><b><%= sc[0] %></b><span><%= t('home.score_aventura') %></span></li>
+              <li><b><%= sc[1] %></b><span><%= t('home.score_natureza') %></span></li>
+              <li><b><%= sc[2] %></b><span><%= t('home.score_relax') %></span></li>
+            </ul>
+            <p class="note"><%= t('exp.perfil_nota') %></p>
+          </section>
+        <% } %>
+
+        <!-- Avaliações verificadas: só de quem fez a experiência. -->
+        <section class="xp-section reviews" id="avaliacoes" aria-labelledby="t-avaliacoes">
+          <h2 id="t-avaliacoes"><%= t('exp.avaliacoes_titulo') %></h2>
+          <% if (!avaliacoes.resumo.total) { %>
+            <p class="booking-sub">
+              <%= t('exp.sem_avaliacoes') %>
+            </p>
+          <% } else { const r = avaliacoes.resumo; %>
+            <div class="reviews-summary">
+              <p class="reviews-score">
+                <strong><%= r.media.toLocaleString(locals.intl || 'pt-BR', { minimumFractionDigits: 1 }) %></strong>
+                <span aria-hidden="true" class="reviews-stars"><%= '★'.repeat(Math.round(r.media)) %><span class="off"><%= '★'.repeat(5 - Math.round(r.media)) %></span></span>
+                <span class="sr-only"><%= t('exp.nota_media', { media: r.media }) %>,</span>
+                <span class="reviews-total"><%= t(r.total === 1 ? 'home.avaliacao_uma' : 'home.avaliacao_varias', { n: r.total }) %></span>
+              </p>
+              <ul class="reviews-bars" aria-label="<%= t('exp.distribuicao_notas') %>">
+                <% [5,4,3,2,1].forEach(function (n) { const q = r['n' + n]; %>
+                  <li><span><%= n %>★</span><span class="bar"><b data-pct="<%= Math.round(q / r.total * 100) %>"></b></span><span><%= q %></span></li>
+                <% }); %>
+              </ul>
+            </div>
+            <ul class="reviews-list">
+              <% avaliacoes.avaliacoes.forEach(function (a) { %>
+                <li class="review">
+                  <p class="review-head">
+                    <span class="reviews-stars" aria-label="<%= t('exp.n_estrelas', { n: a.rating }) %>"><%= '★'.repeat(a.rating) %><span class="off"><%= '★'.repeat(5 - a.rating) %></span></span>
+                    <strong><%= a.autor %></strong>
+                    <time datetime="<%= new Date(a.created_at).toISOString() %>"><%= fmt.data(a.created_at) %></time>
+                  </p>
+                  <% if (a.title) { %><h3><%= a.title %></h3><% } %>
+                  <% if (a.body) { %><p><%= a.body %></p><% } %>
+                  <% if (a.fotos && a.fotos.length) { %>
+                    <ul class="review-photos-list" aria-label="<%= t('exp.fotos_de', { autor: a.autor }) %>">
+                      <% a.fotos.forEach(function (url, i) { %>
+                        <li><a href="<%= url %>" target="_blank" rel="noopener">
+                          <img src="<%= url %>" alt="<%= t('exp.foto_n_de', { n: i + 1, autor: a.autor }) %>" loading="lazy">
+                        </a></li>
+                      <% }); %>
+                    </ul>
+                  <% } %>
+                </li>
+              <% }); %>
+            </ul>
+          <% } %>
+        </section>
+
+        <section class="xp-section" aria-labelledby="t-quem">
+          <h2 id="t-quem"><%= t('exp.quem_organiza') %></h2>
+          <p><%= service.operador ? t('exp.operador_parceiro', { operador: service.operador }) : t('exp.operador_aquatrip') %></p>
+        </section>
+      </div>
+
+      <aside class="book" id="reservar" aria-labelledby="t-book">
+        <h2 class="sr-only" id="t-book"><%= t('exp.reservar') %></h2>
+        <p class="book-price"><strong>R$ <%= precoFmt %></strong><span><%= t('home.por_pessoa') %></span></p>
+
+        <% if (error) { %>
+          <p class="form-alert form-alert-error" role="alert"><%= error %></p>
+        <% } %>
+
+        <% if (!slots.length) { %>
+          <p class="book-empty"><%= t('exp.sem_horarios') %></p>
+          <a class="btn-ghost btn-block" href="/reservar"><%= t('exp.ver_outras') %></a>
+        <% } else { %>
+          <form action="/reservar" method="POST" id="bookForm" data-price="<%= service.price_cents %>">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <input type="hidden" name="serviceSlug" value="<%= service.slug %>">
+            <fieldset>
+              <legend><%= t('exp.escolha_data') %></legend>
+              <ul class="slots">
+                <% slots.forEach(function (slot, i) { const livre = slot.capacity - slot.taken; %>
+                  <li class="slot">
+                    <input type="radio" id="slot-<%= slot.id %>" name="slotId" value="<%= slot.id %>" data-left="<%= livre %>" required <%= i === 0 ? 'checked' : '' %>>
+                    <label for="slot-<%= slot.id %>">
+                      <b><%= fmt.diaCurto(slot.starts_at) %>, <%= fmt.hora(slot.starts_at) %></b>
+                      <small><%= t(livre === 1 ? 'exp.vaga_uma' : 'exp.vaga_varias', { n: livre }) %></small>
+                      <span class="sr-only"><%= fmt.dataHoraExtenso(slot.starts_at) %></span>
+                    </label>
+                  </li>
+                <% }); %>
+              </ul>
+            </fieldset>
+            <div class="qty">
+              <label for="quantity"><%= t('exp.pessoas') %></label>
+              <div class="stepper">
+                <button type="button" data-q="-1" aria-label="<%= t('exp.menos_uma') %>"><i data-lucide="minus"></i></button>
+                <input type="number" id="quantity" name="quantity" value="1" min="1" max="20" required inputmode="numeric">
+                <button type="button" data-q="1" aria-label="<%= t('exp.mais_uma') %>"><i data-lucide="plus"></i></button>
+              </div>
+            </div>
+            <p class="book-total"><span><%= t('exp.total') %></span><span id="bookTotal">R$ <%= precoFmt %></span></p>
+            <% if (logado) { %>
+              <button type="submit" class="btn-primary btn-lg btn-block"><%= t('exp.continuar_pagamento') %></button>
+            <% } else { %>
+              <%# Visitante vê tudo; para reservar, entra e volta para esta mesma página. %>
+              <a class="btn-primary btn-lg btn-block" href="/login?redirect=<%= encodeURIComponent('/reservar/' + service.slug) %>"><%= t('exp.entrar_reservar') %></a>
+              <p class="book-note"><%- t('exp.sem_conta_html') %></p>
+            <% } %>
+            <p class="book-note"><%= t('exp.vaga_reservada_min', { min: holdMinutes }) %></p>
+          </form>
+        <% } %>
+      </aside>
+    </div>
+  </div>
+
+  <% if (slots.length) { %>
+    <div class="book-bar" aria-hidden="true">
+      <p><strong>R$ <%= precoFmt %></strong><small><%= t('home.por_pessoa') %></small></p>
+      <a class="btn-primary" href="#reservar" tabindex="-1"><%= t('exp.escolher_data') %></a>
+    </div>
+  <% } %>
+</main>
+
+<%- include('../partials/footer') %>
+<script src="/js/barras.js" defer></script>
+<script src="/js/experiencia.js" defer></script>
+</body>
+</html>

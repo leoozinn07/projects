@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<%
+  var _i18n = (typeof __aquatripI18n !== 'undefined' && __aquatripI18n) || {};
+  var t = locals.t || _i18n.t || function (k) { return k; };
+  var tm = locals.tm || _i18n.tm || function (m) { return m; };
+%>
+<!DOCTYPE html>
+<html lang="<%= locals.htmlLang || 'pt-BR' %>">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#050d1a" />
+  <meta name="robots" content="noindex" />
+  <title><%= statusCode %> | AquaTrip</title>
+  <link rel="stylesheet" href="/css/erro.css" />
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+
+<%- include('../partials/header') %>
+
+<main id="main-content" class="error-page">
+  <div class="error-card">
+    <span class="error-code" aria-hidden="true"><%= statusCode %></span>
+    <h1><%= tm(title) %></h1>
+    <p><%= tm(message) %></p>
+    <% if (typeof requestId !== 'undefined' && requestId && statusCode >= 500) { %>
+      <p class="error-ref">
+        <%= t('erro.suporte_codigo') %> <code><%= requestId.slice(0, 8) %></code>
+      </p>
+    <% } %>
+    <div class="error-actions">
+      <a class="btn-primary" href="/"><%= t('erro.voltar_home') %></a>
+      <a class="btn-ghost" href="/contato"><%= t('erro.falar_suporte') %></a>
+    </div>
+    <% if (typeof stack !== 'undefined' && stack) { %>
+      <details class="error-stack">
+        <summary><%= t('erro.detalhes_tecnicos') %></summary>
+        <pre><%= stack %></pre>
+      </details>
+    <% } %>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>
+</body>
+</html>

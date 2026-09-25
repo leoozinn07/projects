@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Simulador de conexão com o Mercado Pago | AquaTrip</title>
+  <link rel="stylesheet" href="/css/fonts.css"><link rel="stylesheet" href="/css/design-system.css">
+  <link rel="stylesheet" href="/css/reservas.css"><link rel="stylesheet" href="/css/parceiro.css">
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+<main id="main-content" class="booking-main">
+  <div class="container parceiro-landing">
+    <p class="parceiro-aviso"><strong>SIMULADOR: ambiente de desenvolvimento.</strong>
+      Em produção, esta tela é a do próprio Mercado Pago, onde o parceiro entra na conta dele e autoriza o AquaTrip.</p>
+    <h1>Autorizar o AquaTrip a receber em seu nome?</h1>
+    <p class="booking-sub">O AquaTrip poderá criar cobranças das suas experiências na sua conta e reter a comissão combinada.</p>
+    <form method="get" action="/parceiro/mercadopago/retorno" class="parceiro-form">
+      <input type="hidden" name="state" value="<%= state %>">
+      <div class="campo">
+        <label for="conta">Número da conta de teste (simula contas diferentes)</label>
+        <input id="conta" name="conta_sim" value="1001" inputmode="numeric" pattern="\d+">
+      </div>
+      <input type="hidden" name="code" id="code" value="MOCK-CONTA-1001:<%= sufixo %>">
+      <div class="px-acoes">
+        <a class="btn-ghost" href="/parceiro/mercadopago/retorno?error=access_denied&state=<%= state %>">Cancelar</a>
+        <button type="submit" class="btn-primary">Autorizar</button>
+      </div>
+    </form>
+  </div>
+</main>
+<script src="/js/mp-simulador.js" defer></script>
+</body>
+</html>

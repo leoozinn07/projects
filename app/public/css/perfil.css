@@ -1,0 +1,57 @@
+/* ==============================================================
+   AquaTrip · Editar conta (/perfil)
+   Um cartão com capa de água funda, a inicial como avatar e os
+   formulários (nome, e-mail, senha) separados por divisórias.
+   ============================================================== */
+.perfil-wrap { max-width: 760px; display: grid; gap: 14px; padding-top: clamp(8px, 2vw, 24px); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow); }
+.cover {
+  height: clamp(120px, 18vw, 170px); position: relative;
+  background:
+    radial-gradient(80% 120% at 20% 0%, rgba(92, 225, 230, .35), transparent 60%),
+    linear-gradient(160deg, var(--d4), var(--d6));
+}
+.avatar-wrapper { position: absolute; left: clamp(20px, 4vw, 40px); bottom: -44px; }
+.avatar-ring { width: 96px; height: 96px; border-radius: 50%; padding: 4px; background: var(--surface); margin: 0; }
+.avatar-placeholder {
+  width: 100%; height: 100%; border-radius: 50%; display: grid; place-items: center;
+  background: linear-gradient(140deg, var(--bio), #2aa7cf); color: var(--on-bio);
+  font-size: 2.4rem; font-weight: 680; letter-spacing: -0.04em;
+}
+.body { padding: 64px clamp(20px, 4vw, 40px) clamp(24px, 4vw, 40px); display: grid; gap: 22px; }
+.preview-header { display: grid; gap: 4px; }
+.preview-name { font-size: clamp(1.8rem, 4vw, 2.6rem); letter-spacing: -0.045em; line-height: 1; }
+.preview-username { color: var(--ink-2); }
+.divider { border: 0; border-top: 1px solid var(--line); margin: 0; }
+.section-title { font-size: 1.25rem; letter-spacing: -0.03em; margin-bottom: 4px; }
+.profile-form { display: grid; gap: 16px; }
+.grid-2 { display: grid; gap: 16px; }
+@media (min-width: 640px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+.field { display: grid; gap: 8px; }
+.field label { margin: 0; }
+.required-mark { color: var(--danger); }
+.field-hint { font-size: .82rem; color: var(--ink-2); }
+.field-error { font-size: .82rem; color: var(--danger); min-height: 0; }
+.field-error:empty { display: none; }
+.warn-text { color: var(--warning); font-weight: 600; }
+.notice { padding: 12px 14px; border-radius: var(--radius); background: var(--accent-soft); color: var(--ink-2); font-size: .9rem; }
+.actions { display: flex; justify-content: flex-end; gap: 8px; }
+.btn-save {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 1.3rem;
+  border: 0; border-radius: var(--radius-pill); background: var(--accent); color: var(--on-accent);
+  font-weight: 600; cursor: pointer; transition: transform 160ms var(--ease-out), background-color 200ms ease;
+}
+.btn-save:hover { background: var(--accent-hover); }
+.btn-save:active { transform: scale(0.97); }
+.btn-save:disabled { opacity: .5; cursor: not-allowed; }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(var(--bottom-nav-h) + var(--safe-b) + 16px); z-index: 300;
+  transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+  padding: 12px 20px; border-radius: var(--radius-pill); background: var(--d6); color: var(--deep-ink);
+  border: 1px solid var(--deep-line); box-shadow: var(--shadow-lg); font-size: .92rem;
+  transition: transform 320ms var(--ease-drawer), opacity 200ms ease;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast.error { background: var(--danger-soft); color: var(--danger); border-color: var(--danger-line); }
+@media (min-width: 1024px) { .toast { bottom: 28px; } }

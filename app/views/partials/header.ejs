@@ -1,0 +1,343 @@
+<%# Idioma: se a view foi desenhada sem o middleware de idioma (página de
+    erro de um app sem locais), usa o português padrão. `var` porque o EJS
+    resolve nomes pelo objeto de locais primeiro e só depois por aqui. %>
+<%
+  var _i18n = (typeof __aquatripI18n !== 'undefined' && __aquatripI18n) || {};
+  var t = locals.t || _i18n.t || function (k) { return k; };
+  var tm = locals.tm || _i18n.tm || function (m) { return m; };
+  var lang = locals.lang || _i18n.lang || 'pt';
+  var idiomas = locals.idiomas || _i18n.idiomas || [];
+  var i18nCliente = locals.i18nCliente || _i18n.i18nCliente || '{}';
+%>
+<%# `user` pode não existir: a página de erro é desenhada antes dos
+    middlewares que preenchem os locais (ex.: falha do banco). %>
+<%
+  const u = locals.user || null;
+  const csrf = locals.csrfToken || '';
+  const caminho = (locals.seo && locals.seo.canonica) ? String(locals.seo.canonica).replace(/^https?:\/\/[^/]+/, '') : '';
+  const atual = function (href) { return caminho === href || (href !== '/' && caminho.indexOf(href + '/') === 0) ? ' aria-current="page"' : ''; };
+  const categorias = ['/praias', '/mergulho', '/caiaque', '/pesca', '/expedicoes', '/aquarios'];
+  const emDestinos = caminho === '/reservar' || caminho.indexOf('/reservar/') === 0 || categorias.indexOf(caminho) > -1;
+  const primeiroNome = u && u.name ? u.name.trim().split(' ')[0] : '';
+  // Aba ativa do dock: 0 início, 1 explorar, 2 reservas, 3 conta
+  const contaRotas = ['/perfil', '/perfil_editado', '/configuracoes', '/conta', '/ingressos', '/viagens', '/login', '/cadastro'];
+  let abaDock = -1;
+  if (caminho === '/' || caminho === '') abaDock = 0;
+  else if (emDestinos) abaDock = 1;
+  else if (caminho.indexOf('/minhas-reservas') === 0 || caminho.indexOf('/reservas/') === 0 || caminho.indexOf('/avaliacao') === 0) abaDock = 2;
+  else if (contaRotas.some(function (r) { return caminho === r || caminho.indexOf(r + '/') === 0; })) abaDock = 3;
+  // Telas de tarefa (entrar, pagar) ficam sem o dock para não competir com o botão principal
+  const semDock = ['/login', '/cadastro', '/esqueci-senha', '/redefinir-senha', '/verificar-email', '/aceite-termos'].some(function (r) { return caminho.indexOf(r) === 0; }) || /^\/reservas\/[^/]+\/checkout/.test(caminho);
+%>
+<link rel="stylesheet" href="/css/fonts.css">
+<link rel="stylesheet" href="/css/design-system.css">
+<link rel="stylesheet" href="/css/mobile-shell.css">
+<link rel="stylesheet" href="/css/header.css">
+<script type="application/json" id="i18n-data"><%- i18nCliente %></script>
+<script src="/js/i18n.js"></script>
+<script src="/vendor/lucide.min.js"></script>
+
+<a class="skip-link" href="#main-content"><%= t('shell.pular') %></a>
+<div id="offlineBanner" class="offline-banner" role="status" aria-live="polite">
+  <i data-lucide="wifi-off"></i> <%= t('shell.offline') %>
+</div>
+
+<% if (locals.boasVindas) { %>
+  <%# Boas-vindas depois do login: a onda varre a tela e revela a página.
+      Animação 100% CSS; welcome.js só remove o elemento e permite pular. %>
+  <div class="welcome" id="welcome" role="status" aria-live="polite">
+    <div class="welcome-copy">
+      <p class="kicker"><%= t('welcome.kicker') %></p>
+      <p class="welcome-title"><%= t('welcome.titulo', { nome: boasVindas }) %></p>
+      <p class="welcome-sub"><%= t('welcome.sub') %></p>
+    </div>
+    <div class="welcome-wave" aria-hidden="true">
+      <svg class="welcome-crest" viewBox="0 0 1440 160" preserveAspectRatio="none"><path d="M0 80 C 180 20 360 20 540 80 S 900 140 1080 80 S 1440 20 1440 20 L1440 160 L0 160 Z"/></svg>
+      <svg class="welcome-crest welcome-crest--back" viewBox="0 0 1440 160" preserveAspectRatio="none"><path d="M0 60 C 240 120 480 120 720 60 S 1200 0 1440 60 L1440 160 L0 160 Z"/></svg>
+    </div>
+    <button type="button" class="welcome-skip" id="welcomeSkip"><%= t('welcome.pular') %></button>
+  </div>
+  <script src="/js/welcome.js" defer></script>
+<% } %>
+
+<% if (locals.pedirAceite) { %>
+  <%# Aceite obrigatório da versão vigente dos Termos e da Política %>
+  <div class="terms-gate" role="dialog" aria-modal="true" aria-labelledby="tgTitle" aria-describedby="tgText">
+    <div class="terms-card">
+      <h2 id="tgTitle"><%= t('termos_gate.titulo') %></h2>
+      <p id="tgText"><%= t('termos_gate.texto', { versao: versaoTermos }) %></p>
+      <form action="/aceite-termos" method="POST" class="terms-form">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <input type="hidden" name="redirect" value="<%= caminho || '/' %>">
+        <label class="check-row" for="tgAceite">
+          <input type="checkbox" id="tgAceite" name="aceite" required>
+          <span><%- t('termos_gate.aceite_html') %></span>
+        </label>
+        <button type="submit" class="btn-primary btn-lg btn-block"><%= t('termos_gate.continuar') %></button>
+      </form>
+      <form action="/logout" method="POST">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <button type="submit" class="btn-secondary btn-block"><%= t('termos_gate.sair') %></button>
+      </form>
+    </div>
+  </div>
+<% } %>
+
+<!-- CABEÇALHO -->
+<header class="app-header" id="appHeader">
+  <div class="app-header-inner">
+    <a href="/" class="brand-link" aria-label="<%= t('nav.inicio_aria') %>">
+      <img class="logo logo-ink" src="/img/logo-ink.webp" alt="AquaTrip" width="120" height="62" />
+      <img class="logo logo-light" src="/img/logo-light.webp" alt="" aria-hidden="true" width="120" height="62" />
+    </a>
+
+    <nav class="main-nav" aria-label="<%= t('nav.principal') %>">
+      <a href="/reservar"<%- emDestinos ? ' aria-current="page"' : '' %>><%= t('nav.destinos') %></a>
+      <a href="/#categorias"><%= t('nav.experiencias') %></a>
+      <a href="/#como"><%= t('nav.como') %></a>
+      <a href="/parceiros"<%- atual('/parceiros') %>><%= t('nav.parceiros') %></a>
+    </nav>
+
+    <div class="app-header-spacer"></div>
+
+    <button class="header-search-inline" type="button" data-open-search aria-label="<%= t('nav.buscar_aria') %>">
+      <i data-lucide="search"></i>
+      <span><%= t('nav.buscar') %></span>
+      <kbd aria-hidden="true">/</kbd>
+    </button>
+
+    <button class="icon-btn search-trigger-mobile" type="button" data-open-search aria-label="<%= t('nav.buscar_aria') %>">
+      <i data-lucide="search"></i>
+    </button>
+
+    <button class="icon-btn theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="<%= t('client.tema_para_escuro') %>">
+      <i data-lucide="sun" data-icon-light></i>
+      <i data-lucide="moon" data-icon-dark hidden></i>
+    </button>
+
+    <div class="app-header-desktop-actions">
+      <% if (!u) { %>
+        <a href="/login" class="btn-ghost btn-sm"><%= t('nav.entrar') %></a>
+        <a href="/cadastro" class="btn-primary btn-sm"><%= t('nav.criar_conta') %></a>
+      <% } else { %>
+        <div class="shared-profile-menu">
+          <button class="icon-btn shared-profile-trigger" id="sharedProfileTrigger" type="button" aria-label="<%= t('nav.perfil_aria') %>" aria-expanded="false" aria-controls="sharedProfileDropdown">
+            <span class="avatar-mini" aria-hidden="true"><%= primeiroNome.charAt(0).toUpperCase() %></span>
+          </button>
+          <div class="shared-profile-dropdown" id="sharedProfileDropdown" hidden>
+            <p class="profile-dropdown-greeting"><%= t('nav.ola', { nome: primeiroNome }) %></p>
+            <a href="/perfil_editado"><i data-lucide="user-round"></i> <%= t('conta.minha_conta') %></a>
+            <a href="/minhas-reservas"><i data-lucide="calendar-check"></i> <%= t('conta.minhas_reservas') %></a>
+            <a href="/ingressos"><i data-lucide="ticket"></i> <%= t('conta.ingressos') %></a>
+            <a href="/viagens"><i data-lucide="map"></i> <%= t('conta.diario') %></a>
+            <a href="/configuracoes"><i data-lucide="settings-2"></i> <%= t('conta.configuracoes') %></a>
+            <% if (u.role === 'ADMIN') { %>
+              <a href="/admin"><i data-lucide="settings"></i> <%= t('conta.painel_admin') %></a>
+              <a href="/admin/auditoria"><i data-lucide="scroll-text"></i> <%= t('conta.auditoria') %></a>
+            <% } %>
+            <form action="/logout" method="POST" class="logout-form">
+              <input type="hidden" name="_csrf" value="<%= csrf %>">
+              <button type="submit"><i data-lucide="log-out"></i> <%= t('conta.sair') %></button>
+            </form>
+          </div>
+        </div>
+      <% } %>
+    </div>
+
+    <%# Botão de menu do celular: duas linhas que viram um X %>
+    <button id="hamburgerBtn" class="menu-toggle hamburger-btn" type="button" aria-label="<%= t('nav.abrir_menu') %>" data-label-open="<%= t('nav.abrir_menu') %>" data-label-close="<%= t('nav.fechar_menu') %>" aria-expanded="false" aria-controls="appDrawer">
+      <span class="menu-toggle-lines" aria-hidden="true"><i></i><i></i></span>
+    </button>
+  </div>
+</header>
+
+<!-- BACKDROP compartilhado (sheets) -->
+<div id="shellBackdrop" class="shell-backdrop" hidden></div>
+
+<!-- MENU (celular e tablet): abre por baixo do cabeçalho -->
+<nav id="appDrawer" class="app-drawer" aria-label="<%= t('nav.menu') %>" hidden>
+  <div class="drawer-scroll">
+    <ul class="drawer-main">
+      <li><a href="/reservar"<%- emDestinos ? ' aria-current="page"' : '' %>><%= t('nav.destinos') %></a></li>
+      <li><a href="/#categorias"><%= t('nav.experiencias') %></a></li>
+      <li><a href="/#como"><%= t('nav.como') %></a></li>
+      <li><a href="/parceiros"<%- atual('/parceiros') %>><%= t('nav.parceiros') %></a></li>
+    </ul>
+
+    <% if (!u) { %>
+      <div class="drawer-auth">
+        <a href="/cadastro" class="btn-primary btn-lg"><%= t('nav.criar_conta') %></a>
+        <a href="/login" class="btn-ghost btn-lg"><%= t('nav.entrar') %></a>
+      </div>
+    <% } else { %>
+      <section class="drawer-account" aria-label="<%= t('nav.conta') %>">
+        <p class="drawer-greeting"><span class="avatar-mini" aria-hidden="true"><%= primeiroNome.charAt(0).toUpperCase() %></span><%= t('nav.ola', { nome: primeiroNome }) %></p>
+        <ul class="drawer-list">
+          <li><a href="/perfil_editado"><i data-lucide="user-round"></i> <%= t('conta.minha_conta') %></a></li>
+          <li><a href="/minhas-reservas"><i data-lucide="calendar-check"></i> <%= t('conta.minhas_reservas') %></a></li>
+          <li><a href="/ingressos"><i data-lucide="ticket"></i> <%= t('conta.ingressos') %></a></li>
+          <li><a href="/viagens"><i data-lucide="map"></i> <%= t('conta.diario') %></a></li>
+          <% if (u.role === 'ADMIN') { %>
+            <li><a href="/admin"><i data-lucide="settings"></i> <%= t('conta.painel_admin') %></a></li>
+            <li><a href="/admin/auditoria"><i data-lucide="scroll-text"></i> <%= t('conta.auditoria') %></a></li>
+          <% } %>
+          <li>
+            <form action="/logout" method="POST">
+              <input type="hidden" name="_csrf" value="<%= csrf %>">
+              <button type="submit" class="drawer-logout-btn"><i data-lucide="log-out"></i> <%= t('conta.sair') %></button>
+            </form>
+          </li>
+        </ul>
+      </section>
+    <% } %>
+
+    <section aria-label="<%= t('nav.explorar_cats') %>">
+      <ul class="drawer-cats">
+        <li><a href="/praias"><i data-lucide="waves"></i> <%= t('cats.praias') %></a></li>
+        <li><a href="/mergulho"><i data-lucide="anchor"></i> <%= t('cats.mergulho') %></a></li>
+        <li><a href="/caiaque"><i data-lucide="sailboat"></i> <%= t('cats.caiaque') %></a></li>
+        <li><a href="/pesca"><i data-lucide="fish"></i> <%= t('cats.pesca') %></a></li>
+        <li><a href="/expedicoes"><i data-lucide="compass"></i> <%= t('cats.expedicoes') %></a></li>
+        <li><a href="/aquarios"><i data-lucide="shell"></i> <%= t('cats.aquarios') %></a></li>
+      </ul>
+    </section>
+
+    <div class="drawer-prefs">
+      <form class="seg-form" action="/configuracoes/idioma" method="POST">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <input type="hidden" name="redirect" value="<%= caminho || '/' %>">
+        <fieldset class="seg">
+          <legend><%= t('nav.idioma') %></legend>
+          <% idiomas.forEach(function (l) { %>
+            <button type="submit" name="idioma" value="<%= l.codigo %>" lang="<%= l.codigo %>" aria-pressed="<%= l.codigo === lang %>"><%= l.codigo.toUpperCase() %><span class="sr-only"> <%= l.nome %></span></button>
+          <% }); %>
+        </fieldset>
+      </form>
+      <fieldset class="seg" data-theme-seg>
+        <legend><%= t('nav.tema') %></legend>
+        <button type="button" data-theme-set="system" aria-pressed="false"><%= t('nav.tema_sistema') %></button>
+        <button type="button" data-theme-set="light" aria-pressed="false"><%= t('nav.tema_claro') %></button>
+        <button type="button" data-theme-set="dark" aria-pressed="false"><%= t('nav.tema_escuro') %></button>
+      </fieldset>
+      <p class="drawer-links"><a href="/configuracoes"><%= t('conta.configuracoes') %></a><a href="/contato"><%= t('nav.contato') %></a></p>
+    </div>
+  </div>
+</nav>
+
+<!-- BUSCA -->
+<div id="searchOverlay" class="search-overlay" role="dialog" aria-modal="true" aria-label="<%= t('nav.buscar') %>" hidden>
+  <form class="search-overlay-head" action="/reservar" method="GET" role="search">
+    <div class="search-field" id="searchOverlayField">
+      <i data-lucide="search"></i>
+      <label for="searchOverlayInput" class="sr-only"><%= t('busca.rotulo') %></label>
+      <input id="searchOverlayInput" name="q" type="search" placeholder="<%= t('busca.placeholder') %>" autocomplete="off" enterkeyhint="search" />
+      <button id="searchClearBtn" class="search-clear-btn" type="button" aria-label="<%= t('busca.limpar') %>">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <button id="searchCloseBtn" class="btn-secondary" type="button"><%= t('busca.cancelar') %></button>
+  </form>
+  <div class="search-overlay-body">
+    <div id="searchDefaultWrap">
+      <div id="searchRecentWrap" hidden>
+        <p class="search-section-title"><%= t('busca.recentes') %></p>
+        <ul class="search-recent-list" id="searchRecentList"></ul>
+      </div>
+      <p class="search-section-title"><%= t('busca.sugestoes') %></p>
+      <div class="search-suggest-chip-row">
+        <a class="search-suggest-chip" href="/praias"><%= t('cats.praias') %></a>
+        <a class="search-suggest-chip" href="/mergulho"><%= t('cats.mergulho') %></a>
+        <a class="search-suggest-chip" href="/caiaque"><%= t('cats.caiaque') %></a>
+        <a class="search-suggest-chip" href="/pesca"><%= t('cats.pesca') %></a>
+        <a class="search-suggest-chip" href="/expedicoes"><%= t('cats.expedicoes') %></a>
+        <a class="search-suggest-chip" href="/aquarios"><%= t('cats.aquarios') %></a>
+      </div>
+    </div>
+    <div id="searchResultsWrap" hidden>
+      <p class="search-section-title"><%= t('busca.resultados') %></p>
+      <ul class="search-results-list" id="searchResultsList"></ul>
+      <a class="link-arrow" id="searchSeeAll" href="/reservar"><%= t('busca.ver_todos') %> <i data-lucide="arrow-right"></i></a>
+    </div>
+    <p id="searchEmptyState" class="search-empty" hidden><%= t('busca.vazio') %></p>
+  </div>
+</div>
+
+<% if (!semDock) { %>
+<!-- DOCK (celular): quatro destinos, indicador desliza até a aba ativa -->
+<nav id="bottomNav" class="bottom-nav" aria-label="<%= t('dock.rotulo') %>" data-active="<%= abaDock %>" style="--i:<%= Math.max(abaDock, 0) %>">
+  <span class="bottom-nav-pill" aria-hidden="true"></span>
+  <a href="/"<%- abaDock === 0 ? ' aria-current="page"' : '' %>><i data-lucide="house"></i><span><%= t('dock.inicio') %></span></a>
+  <a href="/reservar"<%- abaDock === 1 ? ' aria-current="page"' : '' %>><i data-lucide="compass"></i><span><%= t('dock.explorar') %></span></a>
+  <a href="<%= u ? '/minhas-reservas' : '/login?redirect=%2Fminhas-reservas' %>"<%- abaDock === 2 ? ' aria-current="page"' : '' %>><i data-lucide="calendar-check"></i><span><%= t('dock.reservas') %></span></a>
+  <a href="<%= u ? '/perfil_editado' : '/login' %>"<%- abaDock === 3 ? ' aria-current="page"' : '' %>>
+    <% if (u) { %><span class="avatar-mini" aria-hidden="true"><%= primeiroNome.charAt(0).toUpperCase() %></span><span><%= t('dock.conta') %></span>
+    <% } else { %><i data-lucide="user-round"></i><span><%= t('dock.entrar') %></span><% } %>
+  </a>
+</nav>
+<% } %>
+
+<!-- CMP / LGPD: banner de consentimento -->
+<div id="cmpBanner" class="sheet cmp-sheet" role="dialog" aria-modal="true" aria-labelledby="cmpTitle" hidden>
+  <div class="sheet-grabber" aria-hidden="true"></div>
+  <div class="sheet-head">
+    <h2 id="cmpTitle"><%= t('cmp.titulo') %></h2>
+  </div>
+  <div class="sheet-body">
+    <p class="cmp-text"><%- t('cmp.texto_html') %></p>
+    <div class="cmp-actions">
+      <button id="cmpRejectNonEssential" class="btn-ghost" type="button"><%= t('cmp.rejeitar') %></button>
+      <button id="cmpOpenPreferences" class="btn-ghost" type="button" data-open-sheet="cmpPreferences"><%= t('cmp.personalizar') %></button>
+      <button id="cmpAcceptAll" class="btn-primary" type="button"><%= t('cmp.aceitar') %></button>
+    </div>
+  </div>
+</div>
+
+<!-- CMP: preferências detalhadas -->
+<div id="cmpPreferences" class="sheet" data-sheet role="dialog" aria-modal="true" aria-labelledby="cmpPrefsTitle" hidden>
+  <div class="sheet-grabber" aria-hidden="true"></div>
+  <div class="sheet-head">
+    <h2 id="cmpPrefsTitle"><%= t('cmp.prefs_titulo') %></h2>
+    <button class="icon-btn" type="button" data-close-sheet aria-label="<%= t('cmp.fechar') %>">
+      <i data-lucide="x"></i>
+    </button>
+  </div>
+  <div class="sheet-body">
+    <div class="cmp-options">
+      <div class="cmp-option-row">
+        <div>
+          <h3><%= t('cmp.necessarios') %></h3>
+          <p><%= t('cmp.necessarios_txt') %></p>
+        </div>
+        <label class="switch">
+          <input type="checkbox" checked disabled aria-label="<%= t('cmp.necessarios') %>" />
+          <span class="switch-track"></span>
+        </label>
+      </div>
+      <div class="cmp-option-row">
+        <div>
+          <h3><%= t('cmp.analise') %></h3>
+          <p><%= t('cmp.analise_txt') %></p>
+        </div>
+        <label class="switch">
+          <input id="cmpAnalyticsToggle" type="checkbox" aria-label="<%= t('cmp.analise') %>" />
+          <span class="switch-track"></span>
+        </label>
+      </div>
+      <div class="cmp-option-row">
+        <div>
+          <h3><%= t('cmp.marketing') %></h3>
+          <p><%= t('cmp.marketing_txt') %></p>
+        </div>
+        <label class="switch">
+          <input id="cmpMarketingToggle" type="checkbox" aria-label="<%= t('cmp.marketing') %>" />
+          <span class="switch-track"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+  <div class="sheet-foot">
+    <button id="cmpSavePreferences" class="btn-primary" type="button"><%= t('cmp.salvar') %></button>
+  </div>
+</div>
+
+<script src="/js/app-shell.js" defer></script>

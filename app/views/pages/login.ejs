@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="<%= locals.htmlLang || 'pt-BR' %>">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#eef6f8">
+  <% seo.titulo = t('auth.login_seo_titulo'); seo.descricao = t('auth.login_seo_desc') %>
+  <title><%= seo.titulo %></title>
+  <%- include('../partials/seo') %>
+  <link rel="stylesheet" href="/css/auth.css">
+  <script src="/js/theme.js"></script>
+  <script src="/js/validacao.js" defer></script>
+</head>
+<body class="auth-page">
+<%- include('../partials/headerlogin') %>
+
+<main id="main-content" class="auth">
+  <div class="auth-grid">
+    <section class="auth-form" aria-labelledby="t-login">
+      <a href="/" class="breadcrumb-link"><i data-lucide="arrow-left"></i> <%= t('auth.voltar') %></a>
+      <h1 class="display" id="t-login"><%= t('auth.entrar') %></h1>
+      <p class="lead"><%= t('auth.login_lead') %></p>
+
+      <% if (typeof error !== 'undefined' && error) { %>
+        <p class="form-alert form-alert-error" role="alert"><%= tm(error) %></p>
+      <% } %>
+      <% if (typeof senhaAlterada !== 'undefined' && senhaAlterada) { %>
+        <p class="form-alert form-alert-success" role="status"><%= t('auth.senha_alterada') %></p>
+      <% } %>
+      <% if (typeof cadastro !== 'undefined' && cadastro === 'ok') { %>
+        <p class="form-alert form-alert-success" role="status"><%= t('auth.cadastro_ok') %></p>
+      <% } %>
+
+      <form id="form" action="/login" method="POST" novalidate>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="redirect" value="<%= typeof redirectTo !== 'undefined' ? redirectTo : '/' %>">
+
+        <section class="field">
+          <label for="email"><%= t('auth.email_label') %></label>
+          <input type="email" id="email" name="email" placeholder="voce@email.com" class="inputs required" required autocomplete="email" value="<%= locals.emailPreenchido || '' %>"<%- locals.emailPreenchido ? '' : ' autofocus' %>>
+          <span class="span-required field-error"><%= t('auth.email_invalido') %></span>
+        </section>
+
+        <section class="field">
+          <div class="field-top"><label for="senha"><%= t('auth.senha_label') %></label><a href="/esqueci-senha"><%= t('auth.esqueci_senha') %></a></div>
+          <input type="password" id="senha" name="senha" class="inputs required" required autocomplete="current-password"<%- locals.emailPreenchido ? ' autofocus' : '' %>>
+          <span class="span-required field-error"><%= t('auth.senha_minima') %></span>
+        </section>
+
+        <button type="submit" class="btn-primary btn-lg btn-block"><%= t('auth.entrar') %></button>
+      </form>
+      <p class="auth-switch"><%= t('auth.sem_conta') %> <a href="/cadastro"><%= t('auth.cadastre_se') %></a></p>
+    </section>
+    <aside class="auth-visual is-deep" aria-hidden="true">
+      <img src="/img/cardume.webp" alt="" decoding="async">
+      <div class="auth-visual-copy">
+        <p class="kicker"><%= t('auth.login_kicker') %></p>
+        <p class="auth-visual-title"><%= t('auth.login_visual_titulo') %></p>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="<%= locals.htmlLang || 'pt-BR' %>">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title><%= t('ingressos.seo_titulo') %></title>
+  <link rel="stylesheet" href="/css/ingressos.css"/>
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+
+<%- include('../partials/header') %>
+  <main class="page ingressos" id="main-content">
+    <div class="container">
+    <header class="page-head">
+      <h1 class="display h-l"><%= t('ingressos.titulo') %></h1>
+      <p class="lead"><%= t('ingressos.lead') %></p>
+    </header>
+
+    <section class="stats" aria-label="<%= t('ingressos.resumo_aria') %>">
+      <article class="stat">
+        <strong class="stat-num" data-stat="total">–</strong>
+        <span class="stat-lbl"><%= t('ingressos.total_label') %></span>
+      </article>
+      <article class="stat">
+        <strong class="stat-num stat-num--valid" data-stat="valido">–</strong>
+        <span class="stat-lbl"><%= t('ingressos.validos_label') %></span>
+      </article>
+      <article class="stat">
+        <strong class="stat-num stat-num--used" data-stat="used">–</strong>
+        <span class="stat-lbl"><%= t('ingressos.utilizados_label') %></span>
+      </article>
+    </section>
+
+    <%# Filtros montados a partir dos ingressos reais (ingressos.js):
+        Todos, Válidos, Utilizados e uma aba por categoria presente. %>
+    <nav class="tabs" id="ticketTabs" aria-label="<%= t('ingressos.filtrar_aria') %>">
+      <button type="button" class="tab active" data-filter="todos" aria-pressed="true"><%= t('ingressos.todos') %></button>
+    </nav>
+
+    <section class="list" id="list" aria-label="<%= t('ingressos.lista_aria') %>" aria-live="polite"></section>
+    </div>
+  </main>
+
+  <%- include('../partials/footer') %>
+
+  <script src="/js/escape.js"></script>
+  <script src="/js/ingressos.js"></script>
+</body>
+</html>

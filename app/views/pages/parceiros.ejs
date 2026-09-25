@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="<%= locals.htmlLang || 'pt-BR' %>">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#eef6f8">
+  <% seo.titulo = t('parceiros.seo_titulo'); seo.descricao = t('parceiros.seo_desc') %>
+  <title><%= seo.titulo %></title>
+  <%- include('../partials/seo') %>
+  <link rel="stylesheet" href="/css/parceiros-landing.css">
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+<%- include('../partials/header') %>
+
+<main id="main-content" class="pl">
+  <div class="container">
+    <nav class="crumbs" aria-label="<%= t('parceiros.crumbs_aria') %>"><a href="/"><%= t('parceiros.crumbs_inicio') %></a><i data-lucide="chevron-right"></i><span><%= t('parceiros.crumbs_atual') %></span></nav>
+
+    <header class="pl-hero">
+      <p class="kicker"><%= t('parceiros.kicker') %></p>
+      <h1><%= t('parceiros.titulo') %></h1>
+      <p class="lead"><%= t('parceiros.lead') %></p>
+      <div class="pl-cta">
+        <% if (user) { %>
+          <a class="btn-primary btn-lg" href="/parceiro"><%= t('parceiros.cta_quero') %> <i data-lucide="arrow-right" class="arrow"></i></a>
+        <% } else { %>
+          <a class="btn-primary btn-lg" href="/cadastro"><%= t('parceiros.cta_criar_conta') %> <i data-lucide="arrow-right" class="arrow"></i></a>
+          <a class="btn-ghost btn-lg" href="/login?redirect=%2Fparceiro"><%= t('parceiros.cta_ja_tenho_conta') %></a>
+        <% } %>
+      </div>
+    </header>
+
+    <ol class="pl-steps">
+      <li><span class="mono"><%= t('parceiros.passo1_rotulo') %></span><strong><%= t('parceiros.passo1_titulo') %></strong><p><%= t('parceiros.passo1_texto') %></p></li>
+      <li><span class="mono"><%= t('parceiros.passo2_rotulo') %></span><strong><%= t('parceiros.passo2_titulo') %></strong><p><%= t('parceiros.passo2_texto') %></p></li>
+      <li><span class="mono"><%= t('parceiros.passo3_rotulo') %></span><strong><%= t('parceiros.passo3_titulo') %></strong><p><%= t('parceiros.passo3_texto', { comissao }) %></p></li>
+    </ol>
+  </div>
+
+  <section class="wrap">
+    <div class="calc is-deep" aria-labelledby="t-calc" data-comissao="<%= comissao %>">
+      <div class="calc-in">
+        <h2 class="h-m" id="t-calc"><%= t('parceiros.calc_titulo') %></h2>
+        <label for="calcIn"><%= t('parceiros.calc_preco_label') %></label>
+        <output class="calc-price" id="calcPrice" for="calcIn">R$ 200</output>
+        <input type="range" id="calcIn" min="30" max="1500" step="10" value="200">
+      </div>
+      <div class="calc-split">
+        <div class="calc-bar" aria-hidden="true"><i id="calcA" style="width:<%= 100 - comissao %>%"></i><i id="calcB" style="width:<%= comissao %>%"></i></div>
+        <dl class="calc-rows">
+          <div><dt><%= t('parceiros.calc_voce_recebe') %></dt><dd id="calcYou"><%= (200 * (100 - comissao) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) %></dd></div>
+          <div><dt><%= t('parceiros.calc_comissao', { comissao }) %></dt><dd id="calcFee"><%= (200 * comissao / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) %></dd></div>
+          <div><dt><%= t('parceiros.calc_mensalidade') %></dt><dd>R$ 0,00</dd></div>
+        </dl>
+        <p class="calc-note"><%= t('parceiros.calc_nota') %></p>
+      </div>
+    </div>
+  </section>
+
+  <div class="container">
+    <p class="note pl-note"><%- t('parceiros.rodape_nota_html') %></p>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>
+<script src="/js/parceiros-landing.js" defer></script>
+</body>
+</html>

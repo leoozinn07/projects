@@ -1,0 +1,49 @@
+/* ==============================================================
+   AquaTrip · Avaliar experiência (/avaliacao/:bookingId)
+   Uma coluna, estrelas grandes, campos opcionais bem marcados.
+   Sem seletores globais: tudo preso em .tudo.
+   ============================================================== */
+.tudo { width: 100%; padding-inline: var(--gutter); }
+.tudo > main {
+  max-width: 720px; margin: clamp(8px, 2vw, 24px) auto 0; display: grid; gap: 26px;
+  padding: clamp(22px, 4vw, 44px); background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius-xl); box-shadow: var(--shadow);
+}
+.tudo .breadcrumb-link { justify-self: start; min-height: 0; }
+.review-context { display: grid; gap: 10px; }
+.review-context h1 { font-size: clamp(2rem, 4.6vw, 3.2rem); letter-spacing: -0.05em; line-height: 1; }
+.review-context p:not(.kicker) { color: var(--ink-2); }
+.tudo section { display: grid; gap: 10px; }
+.tudo h2 { font-size: 1.2rem; letter-spacing: -0.025em; }
+.tudo .optional { font-style: normal; font-weight: 500; color: var(--ink-2); font-size: .9rem; }
+.tudo hr { border: 0; border-top: 1px solid var(--line); margin: 0; }
+.tudo label { font-weight: 500; color: var(--ink-2); margin: 0; }
+.tudo small { justify-self: end; font-family: var(--mono); font-size: .78rem; color: var(--ink-2); }
+
+.stars-row { display: flex; gap: 6px; }
+.stars-row button {
+  width: 52px; height: 52px; padding: 6px; border: 0; background: none; cursor: pointer; border-radius: var(--radius);
+  transition: transform 160ms var(--ease-out), background-color 200ms ease;
+}
+.stars-row button:hover { background: var(--surface-2); }
+.stars-row button:active { transform: scale(0.9); }
+.stars-row svg { width: 100%; height: 100%; }
+.star-empty { fill: none; stroke: var(--line-strong); stroke-width: 1.5; stroke-linejoin: round; }
+.star-filled { fill: var(--accent); stroke: var(--accent); stroke-width: 1.5; stroke-linejoin: round; }
+#star-label { color: var(--ink-2); font-size: .92rem; }
+
+.err { display: none; color: var(--danger); font-size: .85rem; font-weight: 600; }
+#submit-btn { justify-self: start; }
+
+.review-photos { padding: 20px; border: 1px dashed var(--line-strong); border-radius: var(--radius-lg); }
+.photo-rules, .photo-info { font-size: .88rem; color: var(--ink-2); }
+.review-photos input[type="file"] { font-size: .92rem; }
+.review-photos input[type="file"]::file-selector-button {
+  margin-right: 12px; min-height: 40px; padding: 0 16px; border-radius: var(--radius-pill);
+  border: 1px solid var(--line-strong); background: transparent; color: var(--ink); font-weight: 600; cursor: pointer;
+}
+.photo-previews { list-style: none; display: flex; flex-wrap: wrap; gap: 10px; }
+.photo-previews img { width: 96px; height: 96px; object-fit: cover; border-radius: var(--radius-sm); }
+.photo-warn { font-size: .85rem; color: var(--warning); }
+
+.success { padding: 14px 16px; border-radius: var(--radius); background: var(--success-soft); color: var(--success); border: 1px solid var(--success-line); }

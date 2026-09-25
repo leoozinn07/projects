@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="<%= locals.htmlLang || 'pt-BR' %>">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="robots" content="noindex">
+  <title><%= t('privcentral.seo_titulo') %></title>
+  <script src="/js/theme.js"></script>
+  <link rel="stylesheet" href="/css/legal.css">
+</head>
+<body>
+
+<%- include('../partials/header') %>
+
+<main id="main-content" class="legal">
+  <div class="container">
+    <header class="privacy-head">
+      <h1><%= t('privcentral.titulo') %></h1>
+      <p>
+        <%= t('privcentral.intro') %>
+      </p>
+    </header>
+
+    <% if (notice) { %>
+      <p class="form-alert form-alert-success" role="status"><%= tm(notice) %></p>
+    <% } %>
+    <% if (error) { %>
+      <p class="form-alert form-alert-error" role="alert"><%= tm(error) %></p>
+    <% } %>
+
+    <div class="privacy-grid">
+
+      <!-- ============ CONSENTIMENTO ATUAL ============ -->
+      <section class="privacy-card" aria-labelledby="pc-consent">
+        <h2 id="pc-consent"><%= t('privcentral.autorizacoes') %></h2>
+
+        <% if (!consentimento) { %>
+          <p class="privacy-empty">
+            <%= t('privcentral.sem_escolha', { versao }) %>
+          </p>
+        <% } %>
+
+        <ul class="consent-list">
+          <li>
+            <div>
+              <strong><%= t('privcentral.necessarios') %></strong>
+              <span><%= t('privcentral.necessarios_desc') %></span>
+            </div>
+            <span class="status-badge status-CONFIRMED"><%= t('privcentral.sempre_ativo') %></span>
+          </li>
+          <li>
+            <div>
+              <strong><%= t('privcentral.metricas') %></strong>
+              <span><%= t('privcentral.metricas_desc') %></span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="pcAnalytics"
+                     <%= consentimento && consentimento.analytics ? 'checked' : '' %>>
+              <span class="switch-track"></span>
+              <span class="sr-only"><%= t('privcentral.autorizar_metricas') %></span>
+            </label>
+          </li>
+          <li>
+            <div>
+              <strong><%= t('privcentral.marketing') %></strong>
+              <span><%= t('privcentral.marketing_desc') %></span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="pcMarketing"
+                     <%= consentimento && consentimento.marketing ? 'checked' : '' %>>
+              <span class="switch-track"></span>
+              <span class="sr-only"><%= t('privcentral.autorizar_marketing') %></span>
+            </label>
+          </li>
+        </ul>
+
+        <div class="privacy-actions">
+          <button type="button" class="btn-primary" id="pcSalvar"><%= t('privcentral.salvar_preferencias') %></button>
+          <button type="button" class="btn-ghost" id="pcRevogar"><%= t('privcentral.revogar_opcional') %></button>
+        </div>
+        <p class="privacy-feedback" id="pcFeedback" role="status" aria-live="polite"></p>
+
+        <p class="privacy-note">
+          <%= t('privcentral.revogar_nota') %>
+        </p>
+      </section>
+
+      <!-- ============ SEUS DADOS ============ -->
+      <section class="privacy-card" aria-labelledby="pc-dados">
+        <h2 id="pc-dados"><%= t('privcentral.seus_dados') %></h2>
+        <p>
+          <%= t('privcentral.seus_dados_texto') %>
+        </p>
+        <p>
+          <a class="btn-primary" href="/configuracoes/privacidade/exportar">
+            <%= t('privcentral.baixar_dados') %>
+          </a>
+        </p>
+        <p class="privacy-note">
+          <%= t('privcentral.seus_dados_nota') %>
+        </p>
+      </section>
+
+      <!-- ============ SOLICITAÇÕES ============ -->
+      <section class="privacy-card privacy-card--wide" aria-labelledby="pc-solic">
+        <h2 id="pc-solic"><%= t('privcentral.outras_solicitacoes') %></h2>
+        <p>
+          <%= t('privcentral.solicitacoes_texto') %>
+        </p>
+
+        <form action="/configuracoes/privacidade/solicitacao" method="POST" class="privacy-form">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+          <div>
+            <label for="kind"><%= t('privcentral.tipo_solicitacao') %></label>
+            <select id="kind" name="kind" required>
+              <% Object.entries(tiposSolicitacao).forEach(function ([valor, rotulo]) { %>
+                <option value="<%= valor %>"><%= tm(rotulo) %></option>
+              <% }); %>
+            </select>
+          </div>
+
+          <div>
+            <label for="details"><%= t('privcentral.detalhes') %></label>
+            <textarea id="details" name="details" maxlength="2000"
+                      placeholder="<%= t('privcentral.detalhes_placeholder') %>"></textarea>
+          </div>
+
+          <button type="submit" class="btn-primary"><%= t('privcentral.enviar_solicitacao') %></button>
+        </form>
+
+        <% if (solicitacoes.length) { %>
+          <h3 class="privacy-subtitle"><%= t('privcentral.suas_solicitacoes') %></h3>
+          <ul class="request-list">
+            <% solicitacoes.forEach(function (s) { %>
+              <li>
+                <div>
+                  <strong><%= tm(tiposSolicitacao[s.kind]) || s.kind %></strong>
+                  <span><%= fmt.dataHora(s.created_at) %></span>
+                  <% if (s.response) { %><p class="request-response"><%= tm(s.response) %></p><% } %>
+                </div>
+                <span class="status-badge status-<%= s.status === 'DONE' ? 'CONFIRMED' : s.status === 'REJECTED' ? 'CANCELLED' : 'PENDING' %>">
+                  <%= s.status === 'OPEN' ? t('privcentral.status_aberta')
+                    : s.status === 'IN_PROGRESS' ? t('privcentral.status_em_analise')
+                    : s.status === 'DONE' ? t('privcentral.status_concluida') : t('privcentral.status_recusada') %>
+                </span>
+              </li>
+            <% }); %>
+          </ul>
+        <% } %>
+      </section>
+
+      <!-- ============ HISTÓRICO ============ -->
+      <section class="privacy-card privacy-card--wide" aria-labelledby="pc-hist">
+        <h2 id="pc-hist"><%= t('privcentral.historico_titulo') %></h2>
+        <p>
+          <%= t('privcentral.historico_texto') %>
+        </p>
+
+        <% if (!historico.length) { %>
+          <p class="privacy-empty"><%= t('privcentral.historico_vazio') %></p>
+        <% } else { %>
+          <div class="legal-table-wrap">
+            <table class="legal-table">
+              <caption class="sr-only"><%= t('privcentral.historico_caption') %></caption>
+              <thead>
+                <tr>
+                  <th scope="col"><%= t('privcentral.col_quando') %></th>
+                  <th scope="col"><%= t('privcentral.col_acao') %></th>
+                  <th scope="col"><%= t('privcentral.col_metricas') %></th>
+                  <th scope="col"><%= t('privcentral.col_marketing') %></th>
+                  <th scope="col"><%= t('privcentral.col_versao') %></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% historico.forEach(function (h) { %>
+                  <tr>
+                    <td><%= fmt.dataHora(h.created_at) %></td>
+                    <td>
+                      <%= h.action === 'accept_all' ? t('privcentral.acao_aceitou_tudo')
+                        : h.action === 'reject_non_essential' ? t('privcentral.acao_recusou')
+                        : h.action === 'withdrawn' ? t('privcentral.acao_revogou')
+                        : t('privcentral.acao_personalizou') %>
+                    </td>
+                    <td><%= h.analytics ? t('privcentral.sim') : t('privcentral.nao') %></td>
+                    <td><%= h.marketing ? t('privcentral.sim') : t('privcentral.nao') %></td>
+                    <td><%= h.policy_version %></td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+          <p class="privacy-note">
+            <%= t('privcentral.ip_nota') %>
+          </p>
+        <% } %>
+      </section>
+
+    </div>
+
+    <p class="privacy-footer-links">
+      <a href="/politica-de-privacidade"><%= t('privcentral.link_politica') %></a> ·
+      <a href="/termos-de-uso"><%= t('privcentral.link_termos') %></a>
+    </p>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script src="/js/privacidade.js" defer></script>
+</body>
+</html>

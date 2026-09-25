@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="<%= locals.htmlLang || 'pt-BR' %>">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#050d1a" />
+  <title><%= t('checkout.seo_titulo') %></title>
+  <link rel="stylesheet" href="/css/reservas.css" />
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+
+<%- include('../partials/header') %>
+
+<main id="main-content" class="booking-main">
+  <div class="container">
+    <h1><%= t('checkout.titulo') %></h1>
+    <p class="booking-sub"><%= t('checkout.reserva_label') %> <span class="receipt-code"><%= booking.id %></span></p>
+
+    <% if (simulated) { %>
+      <p class="sim-banner">
+        <span>
+          <strong><%= t('checkout.sim_titulo') %></strong>
+          <%= t('checkout.sim_texto') %>
+        </span>
+      </p>
+    <% } %>
+
+    <% if (error) { %>
+      <p class="form-alert form-alert-error" role="alert"><%= tm(error) %></p>
+    <% } %>
+
+    <div class="checkout-grid">
+
+      <!-- ESCOLHA DO MÉTODO / ESTADO DO PAGAMENTO -->
+      <section class="pay-card" aria-label="<%= t('checkout.pagamento_aria') %>">
+        <% if (['CANCELLED','EXPIRED'].includes(booking.status)) { %>
+          <h2><%= t('checkout.encerrada_titulo') %></h2>
+          <p class="booking-sub">
+            <%= booking.status === 'EXPIRED' ? t('checkout.prazo_terminou') : t('checkout.reserva_cancelada') %>
+            <%= t('checkout.vaga_liberada') %>
+          </p>
+          <a class="btn-primary" href="/reservar"><%= t('checkout.ver_experiencias') %></a>
+
+        <% } else if (!payment || ['REJECTED','CANCELLED','EXPIRED'].includes(payment.status)) { %>
+          <h2><%= t('checkout.como_pagar') %></h2>
+
+          <% if (payment) { %>
+            <p class="form-alert form-alert-error" role="alert">
+              <% if (motivo) { %>
+                <%= t('checkout.pagamento_nao_aprovado') %> <%= tm(motivo) %>
+              <% } else { %>
+                <%= t('checkout.tentativa_nao_concluida') %>
+                (<%= tm(({ REJECTED: 'recusada', CANCELLED: 'cancelada', EXPIRED: 'expirada' })[payment.status] || payment.status) %>).
+              <% } %>
+              <%= t('checkout.tentar_novamente') %>
+            </p>
+          <% } %>
+          <% const cartaoReal = Boolean(mp && mp.publicKey); const semCartao = Boolean(mp && !mp.publicKey); %>
+
+          <form action="/reservas/<%= booking.id %>/pagar" method="POST" id="payForm" data-modo="<%= simulated ? 'simulado' : 'real' %>">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+            <ul class="method-list">
+              <li>
+                <label class="method-option">
+                  <input type="radio" name="method" value="PIX" checked>
+                  <span>
+                    <span class="method-name">PIX</span>
+                    <span class="method-hint"><%= t('checkout.pix_hint') %></span>
+                  </span>
+                </label>
+              </li>
+              <li>
+                <label class="method-option">
+                  <input type="radio" name="method" value="CREDIT_CARD"<%= semCartao ? ' disabled' : '' %>>
+                  <span>
+                    <span class="method-name"><%= t('checkout.credito') %></span>
+                    <span class="method-hint"><%= t('checkout.credito_hint') %></span>
+                  </span>
+                </label>
+              </li>
+              <li>
+                <label class="method-option">
+                  <input type="radio" name="method" value="DEBIT_CARD"<%= semCartao ? ' disabled' : '' %>>
+                  <span>
+                    <span class="method-name"><%= t('checkout.debito') %></span>
+                    <span class="method-hint"><%= t('checkout.debito_hint') %></span>
+                  </span>
+                </label>
+              </li>
+            </ul>
+            <% if (semCartao) { %>
+              <p class="method-hint" id="cardUnavailable">
+                <%= t('checkout.cartao_indisponivel') %>
+              </p>
+            <% } %>
+
+            <div class="card-fields" id="cardFields" hidden>
+              <p class="pci-note">
+                <%= t('checkout.pci_nota') %>
+              </p>
+
+              <% if (simulated) { %>
+                <label for="cardLastFour"><%= t('checkout.ultimos4') %></label>
+                <input type="text" id="cardLastFour" name="cardLastFour"
+                       inputmode="numeric" pattern="\d{4}" maxlength="4"
+                       placeholder="1234" autocomplete="off">
+                <p class="method-hint">
+                  <%- t('checkout.sim_hint_html') %>
+                </p>
+              <% } %>
+
+              <% if (cartaoReal) { %>
+                <%# Formulário oficial do Mercado Pago: os campos de número,
+                    validade e CVV são iframes deles. Aqui só chegam o token,
+                    a bandeira, o emissor, as parcelas e o CPF do titular. %>
+                <div class="card-brick" id="cardBrick"
+                     data-public-key="<%= mp.publicKey %>"
+                     data-amount="<%= mp.amount %>"
+                     data-email="<%= mp.email %>"
+                     aria-live="polite">
+                  <p class="brick-loading" id="brickLoading"><%= t('checkout.brick_carregando') %></p>
+                </div>
+                <p class="form-alert form-alert-error" id="brickError" role="alert" hidden></p>
+                <input type="hidden" name="cardToken" id="cardToken">
+                <input type="hidden" name="paymentMethodId" id="paymentMethodId">
+                <input type="hidden" name="issuerId" id="issuerId">
+                <input type="hidden" name="docType" id="docType">
+                <input type="hidden" name="docNumber" id="docNumber">
+                <input type="hidden" name="installments" id="installmentsHidden" value="1">
+              <% } else { %>
+                <label for="installments"><%= t('checkout.parcelas') %></label>
+                <select id="installments" name="installments">
+                  <% for (let i = 1; i <= 12; i++) { %>
+                    <option value="<%= i %>">
+                      <%= t('checkout.parcela_opcao', { n: i, valor: fmt.brl(booking.amount_cents / 100 / i, true) }) %>
+                    </option>
+                  <% } %>
+                </select>
+              <% } %>
+            </div>
+
+            <button type="submit" class="btn-primary btn-block" id="payButton">
+              <%= t('checkout.pagar_btn', { valor: fmt.brl(booking.amount_cents / 100, true) }) %>
+            </button>
+          </form>
+
+        <% } else if (payment.status === 'PENDING') { %>
+          <h2>
+            <%= t('status.pagamento.PENDING') %>
+            <span class="status-badge status-PENDING"><%= t('status.pagamento.PENDING') %></span>
+          </h2>
+
+          <% if (payment.method === 'PIX' && payment.display_data) { %>
+            <div class="pix-box">
+              <% if (payment.display_data.pixQrCodeBase64) { %>
+                <img class="pix-qr" alt="<%= t('checkout.qr_alt') %>"
+                     src="data:image/png;base64,<%= payment.display_data.pixQrCodeBase64 %>">
+              <% } else { %>
+                <img class="pix-qr" id="pixQr" alt="<%= t('checkout.qr_alt') %>" src="data:,">
+              <% } %>
+
+              <label for="pixCode" class="method-hint"><%= t('checkout.copia_cola') %></label>
+              <textarea id="pixCode" class="pix-code" readonly><%= payment.display_data.pixCopiaECola || '' %></textarea>
+
+              <div class="pix-actions">
+                <button type="button" class="btn-ghost" id="copyPix"><%= t('checkout.copiar_codigo') %></button>
+              </div>
+            </div>
+          <% } else { %>
+            <p class="booking-sub">
+              <%= t('checkout.em_analise') %>
+            </p>
+          <% } %>
+
+          <% if (motivo) { %><p class="booking-sub"><%= tm(motivo).charAt(0).toUpperCase() + tm(motivo).slice(1) %></p><% } %>
+          <p class="booking-sub" id="autoRefreshNote" data-status-url="/reservas/<%= booking.id %>/status" data-status="<%= payment.status %>">
+            <%= t('checkout.verifica_status') %>
+          </p>
+
+          <% if (simulated) { %>
+            <div class="sim-panel">
+              <h3><%= t('checkout.sim_forcar_titulo') %></h3>
+              <div class="sim-buttons">
+                <button type="button" data-sim="APPROVED" data-payment="<%= payment.provider_payment_id %>"><%= t('checkout.aprovar') %></button>
+                <button type="button" data-sim="REJECTED" data-payment="<%= payment.provider_payment_id %>"><%= t('checkout.recusar') %></button>
+                <button type="button" data-sim="EXPIRED"  data-payment="<%= payment.provider_payment_id %>"><%= t('checkout.expirar') %></button>
+              </div>
+            </div>
+          <% } %>
+
+        <% } else if (payment.status === 'APPROVED') { %>
+          <h2>
+            <%= t('checkout.pagamento_aprovado_titulo') %>
+            <span class="status-badge status-APPROVED"><%= t('status.pagamento.APPROVED') %></span>
+          </h2>
+          <p class="booking-sub"><%= t('checkout.reserva_confirmada') %></p>
+          <a class="btn-primary" href="/reservas/<%= booking.id %>/comprovante"><%= t('checkout.ver_comprovante') %></a>
+
+        <% } else if (payment.status === 'REFUNDED') { %>
+          <h2>
+            <%= t('checkout.pagamento_estornado_titulo') %>
+            <span class="status-badge status-REFUNDED"><%= t('status.pagamento.REFUNDED') %></span>
+          </h2>
+          <p class="booking-sub"><%= t('checkout.valor_devolvido') %></p>
+        <% } %>
+      </section>
+
+      <!-- RESUMO -->
+      <section class="summary-card" aria-label="<%= t('checkout.resumo_aria') %>">
+        <h2><%= t('checkout.resumo') %></h2>
+        <dl>
+          <div class="summary-row"><dt><%= t('checkout.experiencia_label') %></dt><dd><%= booking.service_title %></dd></div>
+          <div class="summary-row"><dt><%= t('checkout.local_label') %></dt><dd><%= booking.service_location || t('home.brasil') %></dd></div>
+          <div class="summary-row">
+            <dt><%= t('checkout.data_label') %></dt>
+            <dd><%= fmt.dataHora(booking.starts_at) %></dd>
+          </div>
+          <div class="summary-row"><dt><%= t('exp.pessoas') %></dt><dd><%= booking.quantity %></dd></div>
+          <div class="summary-row">
+            <dt><%= t('checkout.situacao_label') %></dt>
+            <dd><span class="status-badge status-<%= booking.status %>"><%= t('status.reserva.' + booking.status) %></span></dd>
+          </div>
+        </dl>
+        <div class="summary-total">
+          <span><%= t('exp.total') %></span>
+          <strong><%= fmt.brl(booking.amount_cents / 100, true) %></strong>
+        </div>
+
+        <% if (booking.status === 'PENDING' && booking.expires_at) { %>
+          <p class="booking-sub" style="margin-top:1rem">
+            <%= t('checkout.garantida_ate') %>
+            <time datetime="<%= new Date(booking.expires_at).toISOString() %>" id="expiresAt">
+              <%= fmt.hora(booking.expires_at) %>
+            </time>.
+          </p>
+        <% } %>
+      </section>
+
+    </div>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>
+
+<% if (booking.status === 'PENDING' && mp && mp.publicKey && (!payment || ['REJECTED','CANCELLED','EXPIRED'].includes(payment.status))) { %>
+<script src="https://sdk.mercadopago.com/js/v2" defer></script>
+<% } %>
+<script src="/js/checkout.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,318 @@
+<aside class="legal-note legal-translation-notice" role="note">
+  <p>
+    <strong><%= t('legal.aviso_traducao_titulo') %></strong>
+    <%= t('legal.aviso_traducao_texto') %>
+    <a href="/configuracoes"><%= t('legal.aviso_traducao_link') %></a>
+  </p>
+</aside>
+
+    <nav class="legal-toc" aria-labelledby="toc-t">
+      <p class="legal-toc-title" id="toc-t">On this page</p>
+      <ol>
+        <li><a href="#quem">Who processes your data</a></li>
+        <li><a href="#dados">What we collect</a></li>
+        <li><a href="#bases">Why we can process it</a></li>
+        <li><a href="#cookies">Cookies and similar technologies</a></li>
+        <li><a href="#compartilhamento">Who we share it with</a></li>
+        <li><a href="#pagamento">Payment data</a></li>
+        <li><a href="#retencao">How long we keep it</a></li>
+        <li><a href="#seguranca">How we protect it</a></li>
+        <li><a href="#direitos">Your rights</a></li>
+        <li><a href="#menores">Children and teenagers</a></li>
+        <li><a href="#mudancas">Changes to this policy</a></li>
+        <li><a href="#contato">Contact</a></li>
+      </ol>
+    </nav>
+
+    <article class="legal-body">
+      <header class="legal-head">
+        <h1>Privacy Policy</h1>
+        <p class="legal-meta">
+          Version <%= versao %> · Updated on <%= atualizadoEm %>
+        </p>
+        <p class="legal-lead">
+          This policy explains what AquaTrip does with your personal data:
+          what we collect, on what legal grounds, who we share it with, and
+          how you control all of it. It is written to be understood without
+          a lawyer at your side.
+        </p>
+      </header>
+
+      <section id="quem">
+        <h2>1. Who processes your data</h2>
+        <p>
+          AquaTrip is the platform where you find and book water
+          experiences. We act as the <strong>controller</strong> of
+          sign-up, browsing, and booking data.
+        </p>
+        <p>
+          Whoever runs the experience (the partner responsible for each
+          activity) is an independent controller with respect to the data
+          they need to provide the service — for example, your name and the
+          number of people on the day of the activity.
+        </p>
+      </section>
+
+      <section id="dados">
+        <h2>2. What we collect</h2>
+
+        <h3>What you provide directly</h3>
+        <ul>
+          <li><strong>Sign-up:</strong> name and email.</li>
+          <li><strong>Password:</strong> stored only as a cryptographic hash (Argon2id). We do not have access to your password and cannot recover it — only let you create a new one.</li>
+          <li><strong>Bookings:</strong> the experience chosen, date, time, and number of people.</li>
+          <li><strong>Contact:</strong> whatever you write when reaching out to us.</li>
+          <li><strong>Reviews:</strong> the rating and text you publish about an experience you took. These remain
+            <strong>public</strong>, signed only with your first name and last initial (e.g., "Lia S.").
+            You may delete them whenever you like.</li>
+          <li><strong>Review photos:</strong> up to 3 per review. Before saving, we automatically strip
+            hidden data from the file — including the <strong>location (GPS)</strong>
+            that phones embed in photos. Each photo goes through team review and only becomes public if it is
+            approved. A rejected photo is deleted, and you receive the reason by email.</li>
+        </ul>
+
+        <h3>Collected automatically</h3>
+        <ul>
+          <li><strong>Access logs:</strong> IP address, date and time, and the action taken (login, booking, payment). We keep this for security and to be able to investigate incidents.</li>
+          <li><strong>Session:</strong> a cookie that keeps you logged in.</li>
+          <li><strong>Preferences:</strong> light/dark theme and recent searches, stored in your own browser.</li>
+        </ul>
+
+        <h3>What we do not collect</h3>
+        <ul>
+          <li>Card number, security code, or expiration date — that data goes from your browser straight to the payment provider and <strong>never passes through our servers</strong>.</li>
+          <li>Your precise location.</li>
+          <li>Sensitive data (racial or ethnic origin, religious belief, political opinion, health, biometrics).</li>
+        </ul>
+      </section>
+
+      <section id="parceiros">
+        <h2>2.1. If you are a partner (offering experiences)</h2>
+        <p>For those who register as a partner, we also process:</p>
+        <ul>
+          <li><strong>CPF or CNPJ, full name or company name:</strong> to identify who provides the service
+            and to comply with tax obligations. <strong>The CPF (Brazilian individual taxpayer ID) is never displayed publicly</strong> and appears
+            masked on screen, except to our team during registration review.</li>
+          <li><strong>Phone, city, and state:</strong> so our team can reach you. The phone number is not shown to customers.</li>
+          <li><strong>Display name:</strong> this is public — it appears on your experiences.</li>
+          <li><strong>Mercado Pago connection:</strong> when you connect your account to receive payouts, we store
+            the access credentials encrypted; we do not have access to your Mercado Pago password.</li>
+        </ul>
+        <p class="legal-note">
+          Legal basis: performance of the partnership contract and compliance with a legal obligation (LGPD art. 7, items II and V).
+          As long as there are experiences and sales tied to your registration, deleting the account depends on
+          the formal termination of the partnership, due to the legal duty to keep sales records for tax purposes.
+        </p>
+      </section>
+
+      <section id="bases">
+        <h2>3. Why we can process your data</h2>
+        <p>
+          The LGPD (Lei Geral de Proteção de Dados, Brazil's data protection law) requires a legal basis for each purpose. Ours are:
+        </p>
+        <div class="legal-table-wrap">
+          <table class="legal-table">
+            <caption class="sr-only">Legal bases by processing purpose</caption>
+            <thead>
+              <tr><th scope="col">Purpose</th><th scope="col">Legal basis</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Creating and maintaining your account</td><td>Contract performance (art. 7, V)</td></tr>
+              <tr><td>Processing bookings and payment</td><td>Contract performance (art. 7, V)</td></tr>
+              <tr><td>Sending account emails (confirmation, password reset, receipt)</td><td>Contract performance (art. 7, V)</td></tr>
+              <tr><td>Access logs and security</td><td>Legal obligation (Marco Civil da Internet, art. 15) and legitimate interest (art. 7, IX)</td></tr>
+              <tr><td>Retention of payment tax records</td><td>Legal obligation (art. 7, II)</td></tr>
+              <tr><td>Usage metrics</td><td><strong>Consent</strong> (art. 7, I) — optional</td></tr>
+              <tr><td>Marketing communications</td><td><strong>Consent</strong> (art. 7, I) — optional</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="legal-note">
+          The last two rows are the only ones that depend on your authorization.
+          Declining them does not affect your ability to use the platform, book, or pay.
+        </p>
+      </section>
+
+      <section id="cookies">
+        <h2>4. Cookies and similar technologies</h2>
+        <div class="legal-table-wrap">
+          <table class="legal-table">
+            <caption class="sr-only">Cookies used</caption>
+            <thead>
+              <tr><th scope="col">Name</th><th scope="col">Purpose</th><th scope="col">Category</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>aquatrip.sid</code></td><td>Keeps you logged in and protects forms against CSRF</td><td>Necessary</td></tr>
+              <tr><td><code>aquatrip_theme</code></td><td>Remembers whether you chose light or dark theme</td><td>Necessary</td></tr>
+              <tr><td><code>aquatrip_recent_searches</code></td><td>Your recent searches (stays only in your browser)</td><td>Necessary</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Necessary cookies do not require consent because the service does
+          not work without them. Should we ever use metrics or marketing
+          cookies, they will only be activated <strong>after</strong> your
+          explicit authorization — and you can revoke it at any time in the
+          <a href="/configuracoes/privacidade">Privacy Center</a>.
+        </p>
+      </section>
+
+      <section id="compartilhamento">
+        <h2>5. Who we share it with</h2>
+        <ul>
+          <li><strong>Payment provider:</strong> receives the data needed to process the charge. It is the provider that handles your card data.</li>
+          <li><strong>Experience partner:</strong> receives your name and booking details to run the activity.</li>
+          <li><strong>Email provider:</strong> delivers transactional messages.</li>
+          <li><strong>Infrastructure:</strong> hosting and database services.</li>
+          <li><strong>Authorities:</strong> when required by a court order or legal obligation.</li>
+        </ul>
+        <p class="legal-note">
+          <strong>We do not sell your data</strong> and we do not pass it on
+          to third-party advertisers.
+        </p>
+        <p>
+          When you open any AquaTrip page, your browser makes no request to
+          third-party domains: fonts, icons, and scripts are all served by
+          AquaTrip itself. This keeps your IP address from being shared with
+          other companies just because you visited the site.
+        </p>
+        <p>
+          If you want the current, complete list of these providers, request
+          it through the Privacy Center — the list is updated according to
+          our active contracts.
+        </p>
+      </section>
+
+      <section id="pagamento">
+        <h2>6. Payment data</h2>
+        <p>
+          This point deserves its own section because it tends to raise
+          questions.
+        </p>
+        <p>
+          Your card number, security code, and expiration date
+          <strong>never travel through AquaTrip</strong>. They go from your
+          browser directly to the payment provider, which returns a
+          reference code. That code, along with the last four digits and the
+          card brand, is what we store — enough for you to recognize the
+          purchase, not enough for any charge.
+        </p>
+        <p>
+          For PIX payments, we store only the charge identifier generated by
+          the provider.
+        </p>
+      </section>
+
+      <section id="retencao">
+        <h2>7. How long we keep it</h2>
+        <div class="legal-table-wrap">
+          <table class="legal-table">
+            <caption class="sr-only">Retention periods</caption>
+            <thead><tr><th scope="col">Data</th><th scope="col">Period</th></tr></thead>
+            <tbody>
+              <tr><td>Account and registration</td><td>As long as the account exists</td></tr>
+              <tr><td>Bookings and payments</td><td>5 years after the transaction (tax and statute-of-limitations period)</td></tr>
+              <tr><td>Access logs</td><td>6 months (Marco Civil da Internet, art. 15)</td></tr>
+              <tr><td>Consent records</td><td>As long as the processing lasts, plus 5 years (as evidence)</td></tr>
+              <tr><td>Email and password tokens</td><td>Until used or expired; cleared after 7 days</td></tr>
+              <tr><td>Messages sent through the contact form</td><td>As long as needed to respond and follow up. You may request deletion at any time.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="legal-note">
+          For that reason, requesting account deletion does not erase your
+          payment history: there is a legal obligation to retain it. What we
+          do is <strong>anonymize</strong> it: your name and email are
+          removed, your travel journal and contact messages are deleted, and
+          the payment records that must be kept stop pointing to you. The
+          confirmation reaches your email before this happens — after that,
+          the address no longer exists in the system.
+        </p>
+      </section>
+
+      <section id="seguranca">
+        <h2>8. How we protect it</h2>
+        <ul>
+          <li>Passwords hashed with Argon2id — we do not store the password itself.</li>
+          <li>Encrypted connection and security headers (CSP, HSTS).</li>
+          <li>Account lockout after repeated failed login attempts.</li>
+          <li>Audit trail of sensitive actions, with minimized data.</li>
+          <li>Administrative access restricted by role and logged.</li>
+          <li>Email links with short validity and single use.</li>
+        </ul>
+        <p class="legal-note">
+          No system is unbreakable. In the event of an incident with
+          meaningful risk, we will notify you and the ANPD (Autoridade
+          Nacional de Proteção de Dados, Brazil's National Data Protection
+          Authority) as required by LGPD art. 48.
+        </p>
+      </section>
+
+      <section id="direitos">
+        <h2>9. Your rights</h2>
+        <p>At any time, you may:</p>
+        <ul>
+          <li>Confirm whether we process your data and access it</li>
+          <li>Correct incomplete or outdated data</li>
+          <li>Request anonymization, blocking, or deletion of unnecessary data</li>
+          <li>Request portability</li>
+          <li>Find out who we share your data with</li>
+          <li>Withdraw consent</li>
+          <li>Object to processing based on legitimate interest</li>
+        </ul>
+        <p>
+          <a class="btn-primary" href="/configuracoes/privacidade">Go to the Privacy Center</a>
+        </p>
+        <p class="legal-note">
+          Access and portability requests are handled instantly: you
+          download a file with everything we have. Other requests are
+          logged and answered within 15 days.
+        </p>
+      </section>
+
+      <section id="menores">
+        <h2>10. Children and teenagers</h2>
+        <p>
+          The platform is intended for people 18 and older. We do not
+          knowingly collect data from minors without the specific consent of
+          at least one parent or legal guardian (LGPD art. 14). If we
+          identify such a case, we delete the data.
+        </p>
+      </section>
+
+      <section id="mudancas">
+        <h2>11. Changes to this policy</h2>
+        <p>
+          This policy carries a version number. When we change something
+          that affects your choices, the version number increases and the
+          consent notice appears again — because your earlier authorization
+          was given to a different text. The history of your decisions
+          stays in the Privacy Center.
+        </p>
+      </section>
+
+      <section id="contato">
+        <h2>12. Contact</h2>
+        <p>
+          Data Protection Officer (DPO):
+          <a href="mailto:<%= encarregado %>"><%= encarregado %></a>
+        </p>
+        <p>
+          You may also file a complaint with the ANPD (Autoridade Nacional
+          de Proteção de Dados, Brazil's National Data Protection
+          Authority).
+        </p>
+      </section>
+
+      <aside class="legal-disclaimer">
+        <strong>Note about this document</strong>
+        <p>
+          This text accurately describes what the system actually does — it
+          was written from the code's real behavior, not from a boilerplate
+          template. Even so, it <strong>does not replace legal
+          review</strong>. Before operating commercially, submit it to a
+          lawyer, who will add the company's legal name, tax ID (CNPJ),
+          address, and the contractual terms specific to your business.
+        </p>
+      </aside>
+    </article>

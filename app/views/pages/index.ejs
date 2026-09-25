@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="<%= locals.htmlLang || 'pt-BR' %>">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#03172a">
+  <% seo.titulo = t('home.seo_titulo'); seo.descricao = t('home.seo_desc') %>
+  <title><%= seo.titulo %></title>
+  <%- include('../partials/seo') %>
+  <script src="/js/theme.js"></script>
+  <script src="/js/intro-gate.js"></script>
+  <link rel="preload" href="/fonts/inter-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/img/noronha-hero.webp" as="image" fetchpriority="high">
+  <link rel="stylesheet" href="/css/index.css">
+</head>
+<body data-hero-header class="home">
+
+<%- include('../partials/header') %>
+
+<!-- ============================================================
+     ABERTURA · o logo enche de água e a cortina de mar sobe.
+     Só na primeira visita da sessão; home.js decide.
+     ============================================================ -->
+<div class="intro" id="intro" aria-hidden="true" hidden style="--logo:url('/img/logo-mask.png')">
+  <button class="intro-skip" type="button" id="introSkip" tabindex="-1"><%= t('home.pular') %></button>
+  <div class="intro-stage">
+    <div class="intro-ghost"></div>
+    <div class="intro-fill"><div class="intro-water" id="introWater"></div></div>
+    <img class="intro-logo" id="introLogo" src="/img/logo-light.webp" alt="">
+  </div>
+  <div class="intro-curtain"></div>
+</div>
+
+<!-- ============================================================
+     PROFUNDÍMETRO · índice da página em metros
+     ============================================================ -->
+<aside class="depth" id="depth" aria-label="<%= t('home.secoes_aria') %>">
+  <div class="depth-read" aria-hidden="true"><span id="depthRead">0,0</span> m</div>
+  <ol class="depth-scale" id="depthScale"></ol>
+</aside>
+
+<main id="main-content">
+
+  <!-- SUPERFÍCIE -->
+  <section class="hero" id="superficie" data-hero data-depth="0" data-label="Superfície">
+    <div class="hero-media"><img id="heroImg" src="/img/noronha-hero.webp" alt="<%= t('home.hero_alt') %>" fetchpriority="high"></div>
+    <p class="hero-coords"><%= t('home.hero_local') %><br>3°51′S 32°25′W</p>
+    <div class="hero-inner">
+      <h1 aria-label="<%= t('home.hero_titulo') %>">
+        <span class="line" aria-hidden="true"><span><%= t('home.hero_titulo_l1') %></span></span>
+        <span class="line" aria-hidden="true"><span><em><%= t('home.hero_titulo_agua') %></em> <%= t('home.hero_titulo_l2') %></span></span>
+      </h1>
+      <div class="hero-foot">
+        <p><%= t('home.hero_sub') %></p>
+        <div class="hero-cta">
+          <a class="btn btn-primary btn-lg" href="/reservar"><%= t('home.explorar') %> <i data-lucide="arrow-right" class="arrow"></i></a>
+          <a class="btn btn-ghost btn-lg" href="/parceiros"><%= t('home.seja_parceiro') %></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CATEGORIAS · slides horizontais -->
+  <section class="cats" id="categorias" data-depth="6" data-label="Experiências" aria-labelledby="t-cats">
+    <div class="cats-pin" id="catsPin">
+      <div class="cats-track" id="catsTrack">
+        <div class="cats-intro">
+          <h2 class="display h-xl" id="t-cats"><%= t('home.cats_titulo') %></h2>
+          <p class="lead"><%= t('home.cats_sub') %></p>
+        </div>
+        <% categorias.forEach(function (c, i) { %>
+          <a class="cat" href="<%= c.rota %>">
+            <div class="cat-media">
+              <img src="<%= c.imagem %>" alt="" loading="<%= i < 2 ? 'eager' : 'lazy' %>" decoding="async">
+              <p class="cat-name" aria-hidden="true"><%= categoriaRotulo(c.chave).split(' ')[0] %></p>
+            </div>
+            <div class="cat-foot">
+              <p><strong><%= categoriaRotulo(c.chave) %>.</strong> <%= t('home.cat_chamada.' + c.chave) %></p>
+              <span class="cat-count"><%= c.n ? t('home.cat_n', { n: c.n }) : t('home.em_breve') %></span>
+            </div>
+          </a>
+        <% }); %>
+      </div>
+    </div>
+  </section>
+
+  <!-- DESTINOS · carrossel arrastável -->
+  <section class="dest" id="destinos" data-depth="12" data-label="Destinos" aria-labelledby="t-dest">
+    <div class="wrap dest-head">
+      <h2 class="display h-l" id="t-dest"><%= t('home.dest_titulo') %></h2>
+      <div class="carousel-ctrl">
+        <div class="carousel-progress" aria-hidden="true"><b id="carBar"></b></div>
+        <button class="icon-btn" type="button" id="carPrev" aria-label="<%= t('home.dest_anteriores') %>" aria-controls="carousel"><i data-lucide="arrow-left"></i></button>
+        <button class="icon-btn" type="button" id="carNext" aria-label="<%= t('home.dest_proximos') %>" aria-controls="carousel"><i data-lucide="arrow-right"></i></button>
+      </div>
+    </div>
+    <% if (destaques.length) { %>
+      <div class="carousel" id="carousel" tabindex="0" role="region" aria-label="<%= t('home.dest_regiao_aria') %>">
+        <% destaques.forEach(function (e) { %>
+          <%- include('../partials/exp-card', { e: e }) %>
+        <% }); %>
+        <a class="exp-card exp-card--end" href="/reservar">
+          <p class="h-m"><%= t('home.ver_todas') %></p>
+          <span class="link-arrow"><%= t('home.abrir_catalogo') %> <i data-lucide="arrow-right"></i></span>
+        </a>
+      </div>
+      <p class="wrap dest-note"><%= t('home.dest_nota') %></p>
+    <% } else { %>
+      <div class="wrap"><p class="lead"><%- t('home.dest_vazio_html') %></p></div>
+    <% } %>
+  </section>
+
+  <div class="thermo" aria-hidden="true"><span><%= t('home.termoclina') %></span></div>
+
+  <!-- VIVA · faixa tipográfica -->
+  <section class="viva is-deep" id="viva" data-depth="20" data-label="Viva" aria-labelledby="t-viva">
+    <div class="wrap viva-head">
+      <h2 class="display h-xl" id="t-viva"><%= t('home.viva_titulo') %></h2>
+      <p class="lead"><%= t('home.viva_sub') %></p>
+    </div>
+    <div class="marquee" id="marquee" aria-hidden="true">
+      <div class="marquee-group">
+        <span class="marquee-item"><%= t('home.viva_1') %> <span class="marquee-pill"><img src="/img/raia.webp" alt="" loading="lazy"></span></span>
+        <span class="marquee-item"><%= t('home.viva_2') %> <span class="marquee-pill"><img src="/img/baleia.webp" alt="" loading="lazy"></span></span>
+        <span class="marquee-item"><%= t('home.viva_3') %> <span class="marquee-pill"><img src="/img/tubarao.webp" alt="" loading="lazy"></span></span>
+        <span class="marquee-item"><%= t('home.viva_4') %> <span class="marquee-pill"><img src="/img/cardume.webp" alt="" loading="lazy"></span></span>
+      </div>
+    </div>
+    <ul class="sr-only"><li><%= t('home.viva_1') %></li><li><%= t('home.viva_2') %></li><li><%= t('home.viva_3') %></li><li><%= t('home.viva_4') %></li></ul>
+  </section>
+
+  <!-- MAPA · Brasil pontilhado -->
+  <section class="mapa is-deep" id="mapa" data-depth="28" data-label="Mapa" aria-labelledby="t-mapa">
+    <div class="wrap mapa-grid">
+      <div class="mapa-fig">
+        <svg class="mapa-svg" viewBox="0 0 700 640" role="img" aria-labelledby="mapaDesc">
+          <title id="mapaDesc"><%= t('home.mapa_desc') %></title>
+          <%- include('../partials/mapa-brasil') %>
+          <g id="pins">
+            <% lugares.filter(function (l) { return l.xy; }).forEach(function (l) {
+                 const esq = l.xy[0] > 560 || l.nome.indexOf('Santos') === 0 || l.nome.indexOf('Manaus') === 0;
+                 const dy = l.nome.indexOf('Ubatuba') === 0 ? -12 : l.nome.indexOf('Ilhabela') === 0 ? 24 : l.xy[0] > 560 ? 30 : 5; %>
+              <g class="pin" data-place="<%= l.nome %>">
+                <circle class="ring" cx="<%= l.xy[0] %>" cy="<%= l.xy[1] %>" r="7"/>
+                <circle class="core" cx="<%= l.xy[0] %>" cy="<%= l.xy[1] %>" r="6"/>
+                <text x="<%= esq ? l.xy[0] - 14 : l.xy[0] + 14 %>" y="<%= l.xy[1] + dy %>" text-anchor="<%= esq ? 'end' : 'start' %>"><%= l.nome.split(',')[0] %></text>
+              </g>
+            <% }); %>
+          </g>
+        </svg>
+      </div>
+      <div>
+        <h2 class="display h-l" id="t-mapa"><%= t('home.mapa_titulo') %></h2>
+        <p class="lead mapa-lead"><%= t('home.mapa_sub') %></p>
+        <ul class="mapa-list" id="mapaList">
+          <% lugares.forEach(function (l) { %>
+            <li><button type="button" data-place="<%= l.nome %>" aria-pressed="false">
+              <strong><%= l.nome %></strong>
+              <span class="n"><%= t('home.lugar_n', { n: l.n }) %></span>
+              <% if (l.coord) { %><span class="mono"><%= l.coord %> · <%= l.sub %></span><% } %>
+            </button></li>
+          <% }); %>
+        </ul>
+        <p class="mapa-note"><%= t('home.mapa_nota') %></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMO FUNCIONA · cartões que se empilham -->
+  <section class="como is-deep" id="como" data-depth="34" data-label="Como funciona" aria-labelledby="t-como">
+    <div class="wrap">
+      <div class="como-head">
+        <h2 class="display h-l" id="t-como"><%= t('home.como_titulo') %></h2>
+        <p class="lead"><%= t('home.como_sub') %></p>
+      </div>
+      <ol class="stack">
+        <li class="step" style="--i:0">
+          <div class="step-top"><span class="step-n"><%= t('home.passo', { n: 1 }) %></span><i data-lucide="compass"></i></div>
+          <h3><%= t('home.passo1_titulo') %></h3>
+          <p><%= t('home.passo1_txt') %></p>
+        </li>
+        <li class="step" style="--i:1">
+          <div class="step-top"><span class="step-n"><%= t('home.passo', { n: 2 }) %></span><i data-lucide="calendar-days"></i></div>
+          <h3><%= t('home.passo2_titulo') %></h3>
+          <p><%= t('home.passo2_txt') %></p>
+        </li>
+        <li class="step" style="--i:2">
+          <div class="step-top"><span class="step-n"><%= t('home.passo', { n: 3 }) %></span><i data-lucide="shield-check"></i></div>
+          <h3><%= t('home.passo3_titulo') %></h3>
+          <p><%= t('home.passo3_txt') %></p>
+        </li>
+        <li class="step" style="--i:3">
+          <div class="step-top"><span class="step-n"><%= t('home.passo', { n: 4 }) %></span><i data-lucide="waves"></i></div>
+          <h3><%= t('home.passo4_titulo') %></h3>
+          <p><%= t('home.passo4_txt') %></p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- PARCEIROS -->
+  <section class="parc is-deep" id="parceiro-bloco" data-depth="38" data-label="Parceiros" aria-labelledby="t-parc">
+    <div class="wrap">
+      <div class="parc-media" id="parcMedia"><img src="/img/mergulhador.webp" alt="<%= t('home.parc_alt') %>" loading="lazy"></div>
+      <div class="parc-grid">
+        <div>
+          <p class="kicker"><%= t('home.parc_kicker') %></p>
+          <h2 class="display h-l" id="t-parc"><%= t('home.parc_titulo') %></h2>
+        </div>
+        <div>
+          <dl class="facts">
+            <div><dt>R$ 0</dt><dd><strong><%= t('home.fato1_forte') %></strong><%= t('home.fato1_txt') %></dd></div>
+            <div><dt><%= comissao %>%</dt><dd><strong><%= t('home.fato2_forte') %></strong><%= t('home.fato2_txt') %></dd></div>
+            <div><dt><%= t('home.fato3_dt') %></dt><dd><strong><%= t('home.fato3_forte') %></strong><%= t('home.fato3_txt') %></dd></div>
+          </dl>
+          <div class="parc-cta"><a class="btn btn-primary btn-lg" href="/parceiros"><%= t('home.seja_parceiro') %> <i data-lucide="arrow-right" class="arrow"></i></a></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROVA SOCIAL · reservada para dados reais -->
+  <section class="prova is-deep" aria-labelledby="t-prova">
+    <div class="wrap">
+      <div class="prova-box">
+        <h2 class="sr-only" id="t-prova"><%= t('home.prova_titulo') %></h2>
+        <p><i data-lucide="info"></i> <%= t('home.prova_txt') %></p>
+        <ul class="prova-nums">
+          <li><strong>&minus;</strong><span><%= t('home.num_exp') %></span></li>
+          <li><strong>&minus;</strong><span><%= t('home.num_dest') %></span></li>
+          <li><strong>&minus;</strong><span><%= t('home.num_res') %></span></li>
+          <li><strong>&minus;</strong><span><%= t('home.num_aval') %></span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- FUNDO -->
+  <section class="fundo is-deep" id="fundo" data-depth="40" data-label="Fundo" aria-labelledby="t-fundo">
+    <canvas class="bubbles" id="bubbles" aria-hidden="true"></canvas>
+    <div class="wrap fundo-cta">
+      <p class="kicker"><%= t('home.fundo_kicker') %></p>
+      <h2 class="display h-xl" id="t-fundo"><%= t('home.fundo_titulo') %></h2>
+      <a class="btn btn-primary btn-lg" href="/reservar"><%= t('home.explorar') %> <i data-lucide="arrow-right" class="arrow"></i></a>
+    </div>
+  </section>
+
+</main>
+
+<%- include('../partials/footer') %>
+<script src="/vendor/gsap.min.js" defer></script>
+<script src="/vendor/ScrollTrigger.min.js" defer></script>
+<script src="/vendor/lenis.min.js" defer></script>
+<script src="/js/home.js" defer></script>
+</body>
+</html>

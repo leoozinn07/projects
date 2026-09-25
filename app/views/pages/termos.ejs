@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="<%= locals.htmlLang || 'pt-BR' %>">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <% seo.titulo = t('legal.termos_titulo_seo'); seo.descricao = t('legal.termos_descricao_seo'); %>
+  <title><%= seo.titulo %></title>
+  <%- include('../partials/seo') %>
+  <script src="/js/theme.js"></script>
+  <link rel="stylesheet" href="/css/legal.css">
+</head>
+<body>
+
+<%- include('../partials/header') %>
+
+<main id="main-content" class="legal">
+  <div class="container legal-grid">
+    <%- include('../legal/termos.' + (['pt','en','es'].includes(locals.lang) ? locals.lang : 'pt') + '.ejs', { versao, atualizadoEm, t }) %>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>
+</body>
+</html>

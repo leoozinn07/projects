@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="<%= locals.htmlLang || 'pt-BR' %>">
+<head>
+  <meta name="csrf-token" content="<%= csrfToken %>">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#050d1a" />
+  <title><%= t('reservas.seo_titulo') %></title>
+  <link rel="stylesheet" href="/css/reservas.css" />
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+
+<%- include('../partials/header') %>
+
+<main id="main-content" class="booking-main">
+  <div class="container">
+    <header class="page-head">
+      <h1 class="display h-l"><%= t('reservas.titulo') %></h1>
+      <p class="lead"><%= t('reservas.lead') %></p>
+    </header>
+
+    <% if (notice) { %>
+      <p class="form-alert form-alert-success" role="status"><%= tm(notice) %></p>
+    <% } %>
+
+    <% if (!bookings.length) { %>
+      <div class="empty-state">
+        <p class="h-m"><%= t('reservas.vazio_titulo') %></p>
+        <p class="booking-sub"><%= t('reservas.vazio_texto') %></p>
+        <a class="btn-primary" href="/reservar"><%= t('reservas.explorar') %></a>
+      </div>
+    <% } else { %>
+      <ul class="booking-list">
+        <% bookings.forEach(function (b) { %>
+          <li class="booking-item">
+            <header>
+              <div>
+                <h2><%= b.service_title %></h2>
+                <p class="meta">
+                  <%= b.service_location || t('home.brasil') %> ·
+                  <%= fmt.dataHora(b.starts_at) %>
+                  · <%= t('reservas.pessoas_qtd', { n: b.quantity }) %>
+                </p>
+              </div>
+              <span class="status-badge status-<%= b.status %>"><%= t('status.reserva.' + b.status) %></span>
+            </header>
+
+            <p class="meta">
+              <%= t('reservas.total_linha', { valor: (b.amount_cents / 100).toFixed(2).replace('.', ',') }) %>
+            </p>
+
+            <div class="booking-actions">
+              <% if (b.status === 'PENDING') { %>
+                <a class="btn-primary" href="/reservas/<%= b.id %>/checkout"><%= t('reservas.pagar_agora') %></a>
+              <% } %>
+              <% if (b.status === 'CONFIRMED' || b.status === 'REFUNDED') { %>
+                <a class="btn-ghost" href="/reservas/<%= b.id %>/comprovante"><%= t('reservas.comprovante_link') %></a>
+              <% } %>
+              <% if (b.status === 'CONFIRMED' && new Date(b.starts_at) < new Date()) { %>
+                <% if (b.review_id) { %>
+                  <a class="btn-ghost" href="/reservar/<%= b.service_slug %>#avaliacoes"><%= t('reservas.ver_avaliacao') %></a>
+                  <button type="button" class="btn-ghost" data-fotos="<%= b.review_id %>" aria-expanded="false"><%= t('reservas.fotos_avaliacao') %></button>
+                <% } else { %>
+                  <a class="btn-primary" href="/avaliacao/<%= b.id %>"><%= t('reservas.avaliar_experiencia') %></a>
+                <% } %>
+              <% } %>
+              <% if (b.status === 'PENDING' || b.status === 'CONFIRMED') { %>
+                <form action="/reservas/<%= b.id %>/cancelar" method="POST">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <button type="submit" class="btn-secondary">
+                    <%= b.status === 'CONFIRMED' ? t('reservas.cancelar_estornar') : t('reservas.cancelar') %>
+                  </button>
+                </form>
+              <% } %>
+            </div>
+          </li>
+        <% }); %>
+      </ul>
+    <% } %>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>
+<script src="/js/escape.js" defer></script>
+<script src="/js/minhas-fotos.js" defer></script>
+</body>
+</html>

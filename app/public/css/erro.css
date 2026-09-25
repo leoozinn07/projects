@@ -1,0 +1,52 @@
+/* AquaTrip — Páginas de erro */
+
+.error-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: var(--sp-7) var(--sp-4);
+  text-align: center;
+}
+.error-card { max-width: 420px; }
+.error-code {
+  display: block;
+  font-size: clamp(3rem, 14vw, 4.5rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--border-strong);
+  margin-bottom: var(--sp-3);
+}
+.error-card h1 { font-size: var(--text-xl); margin-bottom: var(--sp-2); }
+.error-card p { color: var(--ink-soft); margin-bottom: var(--sp-5); }
+.error-actions { display: flex; flex-direction: column; gap: var(--sp-2); }
+@media (min-width: 560px) { .error-actions { flex-direction: row; justify-content: center; } }
+
+.error-stack {
+  margin-top: var(--sp-5);
+  padding: var(--sp-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-align: left;
+}
+.error-stack summary { cursor: pointer; font-size: var(--text-sm); color: var(--ink-soft); }
+.error-stack pre {
+  margin-top: var(--sp-2);
+  font-family: ui-monospace, monospace;
+  font-size: var(--text-xs);
+  color: var(--danger);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Código de correlação: liga o relato do usuário ao log do servidor */
+.error-ref { font-size: var(--text-sm); color: var(--ink-faint); margin-top: calc(var(--sp-3) * -1); }
+.error-ref code {
+  padding: 2px 6px;
+  background: var(--surface-sunk);
+  border-radius: var(--radius-sm);
+  font-family: ui-monospace, monospace;
+  color: var(--ink-soft);
+  user-select: all;
+}

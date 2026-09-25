@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>Caixa de e-mails (dev) | AquaTrip</title>
+  <link rel="stylesheet" href="/css/reservas.css">
+  <link rel="stylesheet" href="/css/recuperacao.css">
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+
+<%- include('../partials/header') %>
+
+<main id="main-content" class="booking-main">
+  <div class="container">
+    <h1>Caixa de e-mails (desenvolvimento)</h1>
+    <p class="sim-banner">
+      <span><strong>Nenhum e-mail foi enviado de verdade</strong>
+      Sem SMTP configurado, as mensagens são gravadas em disco. Esta tela
+      existe só fora de produção, para testar o fluxo de recuperação.</span>
+    </p>
+
+    <% if (!emails.length) { %>
+      <p class="booking-sub">Nenhum e-mail gerado ainda.</p>
+    <% } else { %>
+      <ul class="devmail-list">
+        <% emails.forEach(function (e, i) { %>
+          <li class="devmail-item">
+            <details <%= i === 0 ? 'open' : '' %>>
+              <summary><%= e.nome %></summary>
+              <pre><%= e.conteudo %></pre>
+            </details>
+          </li>
+        <% }); %>
+      </ul>
+    <% } %>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>
+</body>
+</html>

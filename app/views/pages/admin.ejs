@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta name="csrf-token" content="<%= csrfToken %>">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel admin | AquaTrip</title>
+  <link rel="stylesheet" href="/css/fonts.css">
+  <link rel="stylesheet" href="/css/design-system.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <script src="/vendor/lucide.min.js"></script>
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+
+  <section class="admin-wrap">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" aria-label="Menu lateral">
+      <header class="sidebar-header">
+        <section class="logo-mark">
+          <span class="logo-icon" aria-hidden="true"><i data-lucide="droplet"></i></span>
+          <section>
+            <strong class="logo-text">Aqua Trip</strong>
+            <small class="logo-sub">Admin Panel</small>
+          </section>
+        </section>
+      </header>
+
+      <nav class="sidebar-nav" aria-label="Navegação principal">
+        <p class="nav-label">Visão Geral</p>
+        <button type="button" class="nav-item active" data-section="dashboard" aria-current="page">
+          <i data-lucide="layout-dashboard" aria-hidden="true"></i> Dashboard
+        </button>
+
+        <p class="nav-label">Gerenciar</p>
+        <button type="button" class="nav-item" data-section="usuarios">
+          <i data-lucide="users" aria-hidden="true"></i> Usuários
+        </button>
+        <button type="button" class="nav-item" data-section="pacotes">
+          <i data-lucide="package" aria-hidden="true"></i> Pacotes
+        </button>
+        <button type="button" class="nav-item" data-section="faturamento">
+          <i data-lucide="receipt" aria-hidden="true"></i> Faturamento
+        </button>
+        <button type="button" class="nav-item" data-section="atendimento">
+          <i data-lucide="inbox" aria-hidden="true"></i> Atendimento
+          <span class="nav-badge" id="badge-atendimento" hidden></span>
+        </button>
+        <button type="button" class="nav-item" data-section="parceiros">
+          <i data-lucide="store" aria-hidden="true"></i> Parceiros
+          <span class="nav-badge" id="badge-parceiros" hidden></span>
+        </button>
+      </nav>
+    </aside>
+
+    <!-- MAIN -->
+    <section class="main">
+
+      <!-- TOPBAR -->
+      <header class="topbar" role="banner">
+        <h1 class="page-title" id="page-title">Dashboard</h1>
+        <section class="topbar-right">
+          <span class="avatar" role="img" aria-label="Administrador">AD</span>
+        </section>
+      </header>
+
+      <main class="content" id="main-content">
+
+        <!-- DASHBOARD -->
+        <section class="section active" id="section-dashboard" aria-label="Dashboard">
+
+          <section class="metrics" aria-live="polite">
+            <article class="metric-card">
+              <p class="metric-label"><i data-lucide="users" aria-hidden="true"></i> Usuários</p>
+              <strong class="metric-value" data-m="usuarios">–</strong>
+              <p class="metric-delta" data-m="usuarios_30d_txt">&nbsp;</p>
+            </article>
+            <article class="metric-card">
+              <p class="metric-label"><i data-lucide="package" aria-hidden="true"></i> Experiências ativas</p>
+              <strong class="metric-value" data-m="experiencias_ativas">–</strong>
+              <p class="metric-delta">&nbsp;</p>
+            </article>
+            <article class="metric-card">
+              <p class="metric-label"><i data-lucide="banknote" aria-hidden="true"></i> Receita (30 dias)</p>
+              <strong class="metric-value" data-m="receita_30d">–</strong>
+              <p class="metric-delta" data-m="taxa_txt">&nbsp;</p>
+            </article>
+            <article class="metric-card">
+              <p class="metric-label"><i data-lucide="shopping-cart" aria-hidden="true"></i> Reservas confirmadas</p>
+              <strong class="metric-value" data-m="reservas_confirmadas">–</strong>
+              <p class="metric-delta" data-m="pendentes_txt">&nbsp;</p>
+            </article>
+          </section>
+
+          <!-- Integridade: só aparece quando há algo errado -->
+          <article class="card integrity-alert" id="integrity-alert" hidden role="alert">
+            <header class="card-header">
+              <h2 class="card-title">Inconsistências no banco</h2>
+            </header>
+            <p class="integrity-text">
+              Há registros em estado impossível, por exemplo, pagamento aprovado com
+              reserva não confirmada (cliente que pagou e não tem a reserva). Rode
+              <code>npm run pagamentos:reconciliar</code> para revisar e corrigir.
+            </p>
+            <ul class="integrity-list" id="integrity-list"></ul>
+          </article>
+
+          <article class="card">
+            <header class="card-header">
+              <h2 class="card-title">Receita aprovada nos últimos 6 meses</h2>
+            </header>
+            <section class="chart-bar-wrap" id="chart-receita" aria-label="Receita aprovada por mês">
+            </section>
+          </article>
+
+          <article class="card">
+            <header class="card-header">
+              <h2 class="card-title">Últimas transações</h2>
+            </header>
+            <section class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Cliente</th>
+                    <th scope="col">Experiência</th>
+                    <th scope="col">Data</th>
+                    <th scope="col">Valor</th>
+                    <th scope="col">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="ultimas-tbody"><tr><td colspan="5">Carregando...</td></tr></tbody>
+              </table>
+            </section>
+          </article>
+        </section>
+
+        <!-- USUÁRIOS -->
+        <section class="section" id="section-usuarios" aria-label="Lista de usuários">
+          <header class="section-header">
+            <h2 class="section-title">Lista de usuários</h2>
+            <button type="button" class="btn btn-primary btn-sm"><i data-lucide="plus" aria-hidden="true"></i> Novo usuário</button>
+          </header>
+
+          <search class="search-bar">
+            <label for="user-search" class="sr-only">Buscar usuário</label>
+            <i data-lucide="search" class="search-icon" aria-hidden="true"></i>
+            <input type="search" id="user-search" placeholder="Buscar por nome ou e-mail..." autocomplete="off">
+            <label for="user-status" class="sr-only">Situação</label>
+            <select id="user-status">
+              <option value="">Todas as situações</option>
+              <option value="ativo">Ativos</option>
+              <option value="suspenso">Suspensos (com prazo)</option>
+              <option value="banido">Suspensos sem prazo</option>
+            </select>
+          </search>
+
+          <article class="card">
+            <section class="table-wrap">
+              <table id="user-table" aria-label="Tabela de usuários">
+                <thead>
+                  <tr>
+                    <th scope="col">Nome</th>
+                    <th scope="col">E-mail</th>
+                    <th scope="col">Cadastro</th>
+                    <th scope="col">Reservas</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="user-tbody"></tbody>
+              </table>
+            </section>
+          </article>
+        </section>
+
+        <!-- PACOTES -->
+        <section class="section" id="section-pacotes" aria-label="Experiências">
+          <header class="section-header">
+            <h2 class="section-title">Pacotes de viagem</h2>
+            <button type="button" class="btn btn-primary btn-sm" id="btn-novo-pacote">
+              <i data-lucide="plus" aria-hidden="true"></i> Nova experiência
+            </button>
+          </header>
+
+          <article class="card card-overflow">
+            <search class="toolbar-filtros" aria-label="Filtrar experiências">
+              <label for="pkg-busca" class="sr-only">Buscar experiência</label>
+              <input type="search" id="pkg-busca" placeholder="Buscar por nome ou local..." autocomplete="off">
+              <label for="pkg-categoria-filtro" class="sr-only">Categoria</label>
+              <select id="pkg-categoria-filtro">
+                <option value="">Todas as categorias</option>
+                <option value="praia">Praia</option>
+                <option value="mergulho">Mergulho</option>
+                <option value="caiaque">Caiaque</option>
+                <option value="pesca">Pesca</option>
+                <option value="expedicao">Expedição</option>
+                <option value="aquario">Aquário</option>
+              </select>
+              <label for="pkg-status-filtro" class="sr-only">Situação</label>
+              <select id="pkg-status-filtro">
+                <option value="">Ativas e inativas</option>
+                <option value="ativa">Só ativas</option>
+                <option value="inativa">Só inativas</option>
+                <option value="sem-horario">Sem horários futuros</option>
+                <option value="sem-foto">Sem foto</option>
+              </select>
+              <span class="td-mono" id="pkg-contagem" aria-live="polite"></span>
+            </search>
+            <ul class="pkg-grid" id="pkg-grid" aria-label="Lista de experiências"></ul>
+          </article>
+        </section>
+
+        <!-- FATURAMENTO -->
+        <section class="section" id="section-faturamento" aria-label="Faturamento">
+
+          <section class="metrics metrics-3">
+            <article class="metric-card">
+              <p class="metric-label"><i data-lucide="trending-up" aria-hidden="true"></i> Receita aprovada (total)</p>
+              <strong class="metric-value" data-m="receita_bruta">–</strong>
+              <p class="metric-delta" data-m="taxa_total_txt">&nbsp;</p>
+            </article>
+            <article class="metric-card">
+              <p class="metric-label"><i data-lucide="undo-2" aria-hidden="true"></i> Estornado</p>
+              <strong class="metric-value" data-m="estornado">–</strong>
+              <p class="metric-delta">&nbsp;</p>
+            </article>
+            <article class="metric-card">
+              <p class="metric-label"><i data-lucide="credit-card" aria-hidden="true"></i> Ticket médio</p>
+              <strong class="metric-value" data-m="ticket_medio">–</strong>
+              <p class="metric-delta">&nbsp;</p>
+            </article>
+          </section>
+
+          <dl class="bill-resumo" aria-label="Totais do filtro atual" aria-live="polite">
+            <div><dt>Recebido</dt><dd id="bill-recebido">–</dd></div>
+            <div><dt>Pendente</dt><dd id="bill-pendente">–</dd></div>
+            <div><dt>Estornado</dt><dd id="bill-estornado">–</dd></div>
+            <div><dt>Taxa da plataforma</dt><dd id="bill-taxa">–</dd></div>
+          </dl>
+
+          <article class="card">
+            <header class="card-header">
+              <h2 class="card-title">Histórico de transações</h2>
+              <section class="card-header-actions">
+                <label for="filter-status" class="sr-only">Filtrar por status</label>
+                <select id="filter-status">
+                  <option value="">Todos os status</option>
+                  <option value="APPROVED">Aprovados</option>
+                  <option value="PENDING">Pendentes</option>
+                  <option value="REFUNDED">Estornados</option>
+                  <option value="REJECTED">Recusados</option>
+                </select>
+                <label for="filter-dias" class="sr-only">Período</label>
+                <select id="filter-dias">
+                  <option value="">Todo o período</option>
+                  <option value="7">Últimos 7 dias</option>
+                  <option value="30">Últimos 30 dias</option>
+                  <option value="90">Últimos 90 dias</option>
+                </select>
+                <label for="filter-busca" class="sr-only">Buscar cliente ou experiência</label>
+                <input type="search" id="filter-busca" placeholder="Cliente ou experiência..." autocomplete="off">
+                <button type="button" class="btn btn-sm" id="btn-exportar"><i data-lucide="download" aria-hidden="true"></i> Exportar CSV</button>
+              </section>
+            </header>
+            <section class="table-wrap">
+              <table aria-label="Transações">
+                <thead>
+                  <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">Cliente</th>
+                    <th scope="col">Experiência</th>
+                    <th scope="col">Data</th>
+                    <th scope="col">Método</th>
+                    <th scope="col">Valor</th>
+                    <th scope="col">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="billing-tbody"></tbody>
+              </table>
+            </section>
+          </article>
+
+          <article class="card">
+            <header class="card-header">
+              <h2 class="card-title">Receita aprovada por mês</h2>
+            </header>
+            <section class="chart-bar-wrap" id="chart-receita-fat" aria-label="Receita aprovada por mês"></section>
+          </article>
+        </section>
+
+
+        <!-- ATENDIMENTO -->
+        <section class="section" id="section-atendimento" aria-label="Atendimento">
+
+          <article class="card">
+            <header class="card-header">
+              <h2 class="card-title">Solicitações de privacidade (LGPD)</h2>
+              <span class="td-mono" id="lgpd-resumo"></span>
+            </header>
+            <p class="form-hint">
+              Prazo de resposta: 15 dias corridos. Recusa precisa ser fundamentada. A resposta
+              escrita aqui é enviada por e-mail ao titular e fica visível na Central de Privacidade dele.
+            </p>
+            <ul class="req-list" id="lgpd-lista"></ul>
+          </article>
+
+          <article class="card">
+            <header class="card-header">
+              <h2 class="card-title">Fotos aguardando revisão</h2>
+              <span class="td-mono" id="fotos-resumo"></span>
+            </header>
+            <p class="form-hint">
+              Aprove só o que mostra a experiência. Recuse fotos com rosto de outras pessoas ou de
+              crianças, documentos, placas, conteúdo impróprio ou imagem de terceiros. O autor recebe
+              o motivo por e-mail; a foto recusada é apagada.
+            </p>
+            <ul class="mod-grid" id="fotos-fila"></ul>
+          </article>
+
+          <article class="card">
+            <header class="card-header">
+              <h2 class="card-title">Avaliações recentes</h2>
+            </header>
+            <p class="form-hint">
+              Oculte só por violação (ofensa, dado pessoal de terceiros, conteúdo fora do tema), nunca por
+              ser negativa: esconder crítica é publicidade enganosa pelo CDC. O motivo e a nota ficam na auditoria.
+            </p>
+            <ul class="req-list" id="avaliacoes-lista"></ul>
+          </article>
+
+          <article class="card">
+            <header class="card-header">
+              <h2 class="card-title">Mensagens de contato</h2>
+              <span class="td-mono" id="contato-resumo"></span>
+            </header>
+            <ul class="req-list" id="contato-lista"></ul>
+          </article>
+        </section>
+
+        <!-- PARCEIROS (marketplace) -->
+        <section class="section" id="section-parceiros" aria-label="Parceiros">
+          <search class="toolbar-filtros" aria-label="Filtrar parceiros">
+            <label for="parc-status" class="sr-only">Situação</label>
+            <select id="parc-status">
+              <option value="">Todas as situações</option>
+              <option value="PENDING">Aguardando análise</option>
+              <option value="APPROVED">Aprovados</option>
+              <option value="SUSPENDED">Suspensos</option>
+              <option value="REJECTED">Recusados</option>
+            </select>
+          </search>
+          <p class="form-hint">
+            Confira o documento na Receita Federal antes de aprovar. CNPJ emitido a partir de
+            julho/2026 pode ter letras. O CPF completo aparece só aqui; nas demais telas fica mascarado.
+          </p>
+          <ul class="req-list" id="parc-lista"></ul>
+
+          <article class="card">
+            <header class="card-header">
+              <h2 class="card-title">Experiências aguardando revisão</h2>
+              <span class="td-mono" id="rev-resumo"></span>
+            </header>
+            <p class="form-hint">
+              Confira se é experiência aquática, se as informações batem com o que será entregue e se o texto
+              não traz telefone ou site para fechar fora da plataforma. Aprovada, ela vai à vitrine quando o
+              parceiro tiver o Mercado Pago conectado.
+            </p>
+            <ul class="req-list" id="rev-lista"></ul>
+          </article>
+        </section>
+      </main>
+    </section>
+  </section>
+
+
+  <!-- MODAL SUSPENSÃO -->
+  <dialog id="suspend-modal" aria-labelledby="suspend-title" aria-modal="true">
+    <form class="modal" id="suspend-form" method="dialog">
+      <header class="modal-header">
+        <h2 id="suspend-title">Suspender usuário</h2>
+      </header>
+      <p class="form-hint" id="suspend-quem"></p>
+      <section class="form-group">
+        <label for="suspend-dias">Duração</label>
+        <select id="suspend-dias">
+          <option value="1">1 dia</option>
+          <option value="7" selected>7 dias</option>
+          <option value="30">30 dias</option>
+          <option value="90">90 dias</option>
+          <option value="">Sem prazo (até reativar)</option>
+        </select>
+      </section>
+      <section class="form-group">
+        <label for="suspend-motivo">Motivo <small>(fica na auditoria)</small></label>
+        <textarea id="suspend-motivo" maxlength="300" required placeholder="Ex.: tentativas repetidas de fraude no pagamento"></textarea>
+      </section>
+      <p class="form-hint">As sessões abertas da pessoa são encerradas na hora.</p>
+      <p class="form-alert form-alert-error" id="suspend-erro" role="alert" hidden></p>
+      <footer class="modal-footer">
+        <button type="button" class="btn" id="suspend-cancelar">Cancelar</button>
+        <button type="submit" class="btn btn-danger" id="suspend-confirmar">Suspender</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- MODAL HORÁRIOS -->
+  <dialog id="slots-modal" aria-labelledby="slots-title" aria-modal="true">
+    <article class="modal modal--wide">
+      <header class="modal-header">
+        <h2 id="slots-title">Horários</h2>
+        <button type="button" class="btn-icon" id="btn-close-slots" aria-label="Fechar"><i data-lucide="x" aria-hidden="true"></i></button>
+      </header>
+
+      <form id="slots-form" class="slots-form" novalidate>
+        <fieldset>
+          <legend>Programar novos horários</legend>
+          <p class="form-hint">Horários no fuso de Brasília. Repetir uma programação não duplica horários já existentes.</p>
+
+          <div class="slots-row">
+            <section class="form-group">
+              <label for="sl-inicio">De</label>
+              <input type="date" id="sl-inicio" required>
+            </section>
+            <section class="form-group">
+              <label for="sl-fim">Até</label>
+              <input type="date" id="sl-fim" required>
+            </section>
+            <section class="form-group">
+              <label for="sl-cap">Vagas por horário</label>
+              <input type="number" id="sl-cap" min="1" max="500" value="10" required>
+            </section>
+          </div>
+
+          <fieldset class="slots-dias">
+            <legend>Dias da semana</legend>
+            <label><input type="checkbox" name="dia" value="1"> Seg</label>
+            <label><input type="checkbox" name="dia" value="2"> Ter</label>
+            <label><input type="checkbox" name="dia" value="3"> Qua</label>
+            <label><input type="checkbox" name="dia" value="4"> Qui</label>
+            <label><input type="checkbox" name="dia" value="5"> Sex</label>
+            <label><input type="checkbox" name="dia" value="6" checked> Sáb</label>
+            <label><input type="checkbox" name="dia" value="0" checked> Dom</label>
+          </fieldset>
+
+          <section class="form-group">
+            <label for="sl-horas">Horários de saída <small>(separe por vírgula)</small></label>
+            <input type="text" id="sl-horas" value="09:00, 14:00" placeholder="09:00, 14:00" required>
+          </section>
+
+          <p class="form-alert form-alert-error" id="slots-erro" role="alert" hidden></p>
+          <p class="slots-ok" id="slots-ok" role="status" hidden></p>
+          <button type="submit" class="btn btn-primary">Criar horários</button>
+        </fieldset>
+      </form>
+
+      <section class="slots-lista" aria-labelledby="slots-lista-t">
+        <h3 id="slots-lista-t">Próximos horários</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Data</th>
+                <th scope="col">Hora</th>
+                <th scope="col">Ocupação</th>
+                <th scope="col">Vagas</th>
+                <th scope="col">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="slots-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+    </article>
+  </dialog>
+
+  <!-- MODAL PACOTE -->
+  <dialog id="pkg-modal" aria-labelledby="modal-pkg-title" aria-modal="true">
+    <article class="modal">
+      <header class="modal-header">
+        <h2 class="modal-title" id="modal-pkg-title">Novo pacote</h2>
+        <button type="button" class="btn btn-sm" id="btn-close-modal" aria-label="Fechar modal">
+          <i data-lucide="x" aria-hidden="true"></i>
+        </button>
+      </header>
+      <section class="modal-body">
+        <form id="pkg-form" novalidate>
+          <section class="form-group">
+            <label for="pkg-nome">Nome do pacote</label>
+            <input type="text" id="pkg-nome" placeholder="Ex: Arraial do Cabo, 5 dias" required>
+          </section>
+          <section class="form-group">
+            <label for="pkg-preco">Preço (R$)</label>
+            <input type="text" id="pkg-preco" inputmode="decimal" placeholder="Ex: 1.890,00" required>
+          </section>
+          <section class="form-group">
+            <label for="pkg-destino">Destino</label>
+            <input type="text" id="pkg-destino" placeholder="Ex: Bonito, MS" required>
+          </section>
+          <section class="form-group">
+            <label for="pkg-categoria">Categoria</label>
+            <select id="pkg-categoria" required>
+              <option value="praia">Praia</option>
+              <option value="mergulho">Mergulho</option>
+              <option value="caiaque">Caiaque</option>
+              <option value="pesca">Pesca</option>
+              <option value="expedicao">Expedição</option>
+              <option value="aquario">Aquário</option>
+            </select>
+          </section>
+          <section class="form-group">
+            <label for="pkg-desc">Descrição</label>
+            <textarea id="pkg-desc" placeholder="Descreva o pacote, atividades incluídas..."></textarea>
+          </section>
+          <p class="form-hint">
+            Imagens entram numa próxima etapa: upload exige validação própria
+            (tipo real do arquivo, tamanho, armazenamento fora do servidor).
+          </p>
+          <input type="hidden" id="pkg-edit-id">
+          <p class="form-alert form-alert-error" id="pkg-erro" role="alert" hidden></p>
+        </form>
+      </section>
+      <footer class="modal-footer">
+        <button type="button" class="btn" id="btn-cancel-modal">Cancelar</button>
+        <button type="submit" form="pkg-form" class="btn btn-primary" id="btn-save-pkg">
+          <i data-lucide="check" aria-hidden="true"></i> Salvar pacote
+        </button>
+      </footer>
+    </article>
+  </dialog>
+
+  <!-- MODAL CONFIRMAÇÃO DELETE -->
+  <dialog id="confirm-modal" aria-labelledby="confirm-title" aria-modal="true">
+    <article class="confirm-box">
+      <i data-lucide="triangle-alert" class="confirm-icon" aria-hidden="true"></i>
+      <h2 class="confirm-text" id="confirm-title">Desativar esta experiência?</h2>
+      <p class="confirm-sub">Ela sai da vitrine e deixa de aceitar reservas. O histórico de reservas e pagamentos é preservado, e você pode reativar depois.</p>
+      <footer class="confirm-actions">
+        <button type="button" class="btn" id="btn-cancel-delete">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="btn-confirm-delete">
+          <i data-lucide="eye-off" aria-hidden="true"></i> Desativar
+        </button>
+      </footer>
+    </article>
+  </dialog>
+
+  <script src="/js/escape.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

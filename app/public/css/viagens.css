@@ -1,0 +1,31 @@
+/* ==============================================================
+   AquaTrip · Diário de viagens (/viagens)
+   ============================================================== */
+.at-header { display: grid; gap: 14px; justify-items: start; padding-block: clamp(12px, 3vw, 40px) 24px; }
+.at-subtitle { color: var(--ink-2); }
+.at-stats { display: flex; flex-wrap: wrap; gap: 12px 48px; padding-block: 20px 28px; border-block: 1px solid var(--line); margin-bottom: 32px; }
+.at-stat-val { font-size: clamp(2.4rem, 5vw, 3.4rem); font-weight: 640; letter-spacing: -0.05em; line-height: 1; font-variant-numeric: tabular-nums; }
+.at-stat-label { color: var(--ink-2); font-size: .9rem; }
+
+.at-empty { display: grid; gap: 10px; justify-items: start; padding: clamp(24px, 4vw, 44px); border: 1px dashed var(--line-strong); border-radius: var(--radius-xl); color: var(--ink-2); }
+.at-year-group { display: grid; gap: 16px; margin-bottom: 36px; }
+.at-year-label { font-family: var(--mono); font-size: .8rem; letter-spacing: .08em; color: var(--ink-2); }
+.at-cards { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+.at-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; display: grid; }
+.at-card-body { padding: 20px; display: grid; gap: 10px; }
+.at-card-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.at-card-city { font-size: 1.35rem; font-weight: 640; letter-spacing: -0.035em; line-height: 1.1; }
+.at-card-country, .at-card-date, .at-dur { color: var(--ink-2); font-size: .88rem; }
+.at-card-desc { color: var(--ink-2); font-size: .95rem; }
+.at-card-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.at-tag { padding: 4px 10px; border-radius: var(--radius-pill); background: var(--surface-2); font-size: .78rem; font-weight: 600; color: var(--ink-2); }
+.at-stars { display: inline-flex; gap: 2px; color: var(--line-strong); }
+.at-star--on { color: var(--accent); }
+.at-card-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 20px; border-top: 1px solid var(--line); }
+.at-del { background: none; border: 0; color: var(--danger); cursor: pointer; font-weight: 600; font-size: .88rem; min-height: 40px; }
+
+/* Formulário (bottom sheet) */
+.trip-form { gap: 16px; }
+.trip-form-row { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+.trip-rating { display: grid; gap: 8px; }
+.trip-privacy { font-size: .85rem; color: var(--ink-2); }

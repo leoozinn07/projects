@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="csrf-token" content="<%= csrfToken %>">
+  <title>Área do parceiro | AquaTrip</title>
+  <link rel="stylesheet" href="/css/reservas.css">
+  <link rel="stylesheet" href="/css/parceiro.css">
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+<%- include('../partials/header') %>
+<main id="main-content" class="booking-main">
+  <div class="container">
+    <h1>Área do parceiro</h1>
+
+    <% if (!parceiro) { %>
+      <p class="booking-sub">Preencha os dados do seu negócio. A equipe revisa e responde por e-mail em até 2 dias úteis.</p>
+      <form id="form-parceiro" class="parceiro-form" novalidate>
+        <div class="campo">
+          <label for="documento">CPF ou CNPJ</label>
+          <input id="documento" name="documento" required autocomplete="off" inputmode="text" maxlength="20"
+                 placeholder="000.000.000-00 ou 00.000.000/0000-00" aria-describedby="doc-dica">
+          <small id="doc-dica">CNPJs emitidos a partir de julho/2026 podem ter letras: digite como está no cartão CNPJ.</small>
+        </div>
+        <div class="campo">
+          <label for="nomeLegal">Nome completo ou razão social</label>
+          <input id="nomeLegal" name="nomeLegal" required maxlength="160" autocomplete="organization">
+        </div>
+        <div class="campo">
+          <label for="nomeExibicao">Nome que aparece para os clientes</label>
+          <input id="nomeExibicao" name="nomeExibicao" required maxlength="80" placeholder="Ex.: Passeios do Zé">
+        </div>
+        <div class="campo">
+          <label for="telefone">Telefone para a equipe falar com você</label>
+          <input id="telefone" name="telefone" required inputmode="tel" autocomplete="tel" maxlength="20">
+          <small>Não é exibido para clientes.</small>
+        </div>
+        <div class="campo-linha">
+          <div class="campo"><label for="cidade">Cidade</label><input id="cidade" name="cidade" required maxlength="80"></div>
+          <div class="campo campo-uf">
+            <label for="uf">UF</label>
+            <select id="uf" name="uf" required>
+              <option value="">Selecione</option>
+              <% ufs.forEach(function (u) { %><option value="<%= u %>"><%= u %></option><% }); %>
+            </select>
+          </div>
+        </div>
+        <div class="campo">
+          <label for="descricao">O que você oferece <small>(opcional)</small></label>
+          <textarea id="descricao" name="descricao" maxlength="1000" rows="4"></textarea>
+        </div>
+        <label class="aceite">
+          <input type="checkbox" id="aceite" required>
+          Li e aceito os <a href="/termos-de-uso" target="_blank" rel="noopener">termos</a> e a
+          <a href="/politica-de-privacidade#parceiros" target="_blank" rel="noopener">política de privacidade</a>
+          para parceiros, incluindo a comissão de <%= comissao %>% por venda.
+        </label>
+        <p class="form-alert form-alert-error" id="erro" role="alert" hidden></p>
+        <button type="submit" class="btn-primary">Enviar cadastro</button>
+      </form>
+
+    <% } else if (parceiro.status === 'PENDING') { %>
+      <section class="parceiro-status status-pendente" role="status">
+        <h2>Cadastro em análise</h2>
+        <p><strong><%= parceiro.display_name %></strong> · <%= parceiro.documento_exibicao %> · <%= parceiro.city %>/<%= parceiro.state %></p>
+        <p>Enviado em <%= fmt.data(parceiro.created_at) %>. Você recebe a resposta por e-mail em até 2 dias úteis.</p>
+      </section>
+
+    <% } else if (parceiro.status === 'APPROVED') { %>
+      <section class="parceiro-status status-aprovado">
+        <h2><%= parceiro.display_name %></h2>
+        <p>Cadastro aprovado · comissão de <%= Number(parceiro.commission_pct) %>% por venda</p>
+        <% if (typeof mpMsg !== 'undefined' && mpMsg) { %><p class="parceiro-ok" role="status"><%= mpMsg %></p><% } %>
+        <% if (typeof mpErro !== 'undefined' && mpErro) { %><p class="form-alert form-alert-error" role="alert"><%= mpErro %></p><% } %>
+        <% if (!parceiro.mp_connected_at) { %>
+          <div class="parceiro-aviso">
+            <p><strong>Conecte sua conta do Mercado Pago para começar a vender.</strong> O dinheiro de cada venda
+              cai direto na sua conta; a comissão do AquaTrip (<%= Number(parceiro.commission_pct) %>%) é descontada na hora.
+              Suas experiências aprovadas só aparecem na vitrine depois da conexão.</p>
+            <a class="btn-primary" href="/parceiro/mercadopago/conectar">Conectar Mercado Pago</a>
+          </div>
+        <% } else { %>
+          <div class="parceiro-mp">
+            <p>Mercado Pago <strong>conectado</strong> desde <%= fmt.data(parceiro.mp_connected_at) %>.</p>
+            <button type="button" class="btn-ghost" id="mp-desconectar">Desconectar</button>
+          </div>
+        <% } %>
+      </section>
+
+      <section class="px" aria-labelledby="px-titulo">
+        <header class="px-head">
+          <h2 id="px-titulo">Minhas experiências</h2>
+          <button type="button" class="btn-primary" id="px-nova">Nova experiência</button>
+        </header>
+        <ul class="px-lista" id="px-lista" aria-live="polite"><li>Carregando...</li></ul>
+      </section>
+
+
+      <section class="px" aria-labelledby="ops-reservas-t">
+        <header class="px-head">
+          <h2 id="ops-reservas-t">Reservas</h2>
+          <select id="ops-quando" aria-label="Quais reservas">
+            <option value="proximas">Próximas</option>
+            <option value="passadas">Já realizadas</option>
+          </select>
+        </header>
+        <p class="px-meta">Confira o <strong>código do ingresso</strong> na chegada: é o mesmo que o cliente vê no celular.</p>
+        <div class="ops-tabela"><table>
+          <thead><tr><th scope="col">Data</th><th scope="col">Experiência</th><th scope="col">Cliente</th><th scope="col">Pessoas</th><th scope="col">Ingresso</th></tr></thead>
+          <tbody id="ops-reservas"></tbody>
+        </table></div>
+      </section>
+
+      <section class="px" aria-labelledby="ops-vendas-t">
+        <header class="px-head">
+          <h2 id="ops-vendas-t">Vendas e comissões</h2>
+          <div class="px-card-acoes">
+            <select id="ops-dias" aria-label="Período">
+              <option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="365">Último ano</option>
+            </select>
+            <button type="button" class="btn-ghost" id="ops-csv">Exportar CSV</button>
+          </div>
+        </header>
+        <dl class="ops-resumo">
+          <div><dt>Vendido</dt><dd id="ops-bruto">–</dd></div>
+          <div><dt>Comissão AquaTrip</dt><dd id="ops-comissao">–</dd></div>
+          <div><dt>Você recebeu</dt><dd id="ops-liquido">–</dd></div>
+          <div><dt>Estornado</dt><dd id="ops-estornado">–</dd></div>
+        </dl>
+        <div class="ops-tabela"><table>
+          <thead><tr><th scope="col">Data</th><th scope="col">Experiência</th><th scope="col">Valor</th><th scope="col">Comissão</th><th scope="col">Líquido</th><th scope="col">Situação</th></tr></thead>
+          <tbody id="ops-vendas"></tbody>
+        </table></div>
+        <p class="px-meta">Valores do simulador de pagamentos. A comissão de cada venda é a vigente no momento da compra.</p>
+      </section>
+
+      <dialog id="px-dialogo" aria-labelledby="px-dialogo-titulo">
+        <form id="px-form" class="parceiro-form" method="dialog" novalidate>
+          <h2 id="px-dialogo-titulo">Nova experiência</h2>
+          <p class="parceiro-aviso" id="px-aviso-revisao" hidden>
+            Esta experiência está publicada. Mudar título, descrição, local ou categoria faz ela
+            <strong>sair da vitrine até nova revisão</strong> (até 2 dias úteis). Preço muda na hora.
+          </p>
+          <div class="campo"><label for="px-titulo-in">Título</label><input id="px-titulo-in" maxlength="120" required></div>
+          <div class="campo-linha">
+            <div class="campo"><label for="px-local">Local (cidade, UF)</label><input id="px-local" maxlength="120" required></div>
+            <div class="campo"><label for="px-preco">Preço por pessoa (R$)</label><input id="px-preco" type="number" min="1" step="0.01" required></div>
+          </div>
+          <div class="campo">
+            <label for="px-categoria">Categoria</label>
+            <select id="px-categoria" required>
+              <option value="praia">Praia</option><option value="mergulho">Mergulho</option>
+              <option value="caiaque">Caiaque</option><option value="pesca">Pesca</option>
+              <option value="expedicao">Expedição</option><option value="aquario">Aquário</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label for="px-descricao">Descrição</label>
+            <textarea id="px-descricao" rows="6" maxlength="2000"
+              placeholder="O que está incluso, duração, ponto de encontro, o que levar, regras de segurança."></textarea>
+            <small>Mínimo de 40 caracteres para enviar à revisão. Não inclua telefone ou site: o contato acontece pela plataforma.</small>
+          </div>
+          <p class="form-alert form-alert-error" id="px-erro" role="alert" hidden></p>
+          <div class="px-acoes">
+            <button type="button" class="btn-ghost" id="px-cancelar">Cancelar</button>
+            <button type="submit" class="btn-primary" id="px-salvar">Salvar</button>
+          </div>
+        </form>
+      </dialog>
+
+    <% } else if (parceiro.status === 'REJECTED') { %>
+      <section class="parceiro-status status-recusado">
+        <h2>Cadastro não aprovado</h2>
+        <p>Motivo: <%= parceiro.motivo %>.</p>
+        <p>Se quiser, <a href="/contato">fale com a equipe</a> com mais informações.</p>
+      </section>
+
+    <% } else { %>
+      <section class="parceiro-status status-recusado">
+        <h2>Cadastro suspenso</h2>
+        <p>Motivo: <%= parceiro.motivo %>. Suas experiências estão fora da vitrine; reservas já confirmadas continuam válidas.</p>
+      </section>
+    <% } %>
+  </div>
+</main>
+<%- include('../partials/footer') %>
+<% if (!parceiro) { %><script src="/js/parceiro.js" defer></script><% } %>
+<% if (parceiro && parceiro.status === 'APPROVED') { %>
+<script src="/js/escape.js" defer></script>
+<script src="/js/parceiro-experiencias.js" defer></script>
+<script src="/js/parceiro-operacao.js" defer></script>
+<% } %>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="<%= locals.htmlLang || 'pt-BR' %>">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title><%= t('perfil.conta_seo_titulo') %></title>
+  <link rel="stylesheet" href="/css/perfil_editado.css">
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+<%- include('../partials/header') %>
+  <main id="main-content" class="conta">
+    <div class="container">
+      <header class="conta-head">
+        <figure class="conta-avatar" aria-hidden="true"><span><%= (conta.name || '?').trim().charAt(0).toUpperCase() %></span></figure>
+        <div class="conta-id">
+          <p class="kicker"><%= t('perfil.minha_conta') %></p>
+          <h1 class="display h-l"><%= conta.name %></h1>
+          <p class="conta-email">
+            <%= conta.email %>
+            <% if (!conta.email_verified_at) { %><span class="badge badge-warning"><%= t('perfil.nao_confirmado') %></span><% } %>
+          </p>
+          <p class="conta-desde"><%= t('perfil.conta_criada_em', { data: fmt.data(conta.created_at) }) %></p>
+        </div>
+        <a href="/perfil" class="btn-ghost" id="botaoEditar"><i data-lucide="pencil"></i> <%= t('perfil.editar_dados') %></a>
+      </header>
+
+      <ul class="conta-numeros">
+        <li><strong><%= conta.reservas %></strong><span><%= t(conta.reservas === 1 ? 'perfil.reserva_confirmada_um' : 'perfil.reserva_confirmada_outros') %></span></li>
+        <li><strong><%= conta.viagens %></strong><span><%= t(conta.viagens === 1 ? 'perfil.viagem_diario_um' : 'perfil.viagem_diario_outros') %></span></li>
+      </ul>
+
+      <nav class="conta-links" aria-label="<%= t('perfil.atalhos_aria') %>">
+        <a href="/minhas-reservas"><i data-lucide="calendar-check"></i><strong><%= t('reservas.titulo') %></strong><span><%= t('perfil.link_reservas_desc') %></span></a>
+        <a href="/ingressos"><i data-lucide="ticket"></i><strong><%= t('ingressos.titulo') %></strong><span><%= t('perfil.link_ingressos_desc') %></span></a>
+        <a href="/viagens"><i data-lucide="map"></i><strong><%= t('perfil.link_viagens') %></strong><span><%= t('perfil.link_viagens_desc') %></span></a>
+        <a href="/configuracoes/privacidade"><i data-lucide="shield-check"></i><strong><%= t('perfil.link_privacidade') %></strong><span><%= t('perfil.link_privacidade_desc') %></span></a>
+        <a href="/conta/2fa"><i data-lucide="key-round"></i><strong><%= t('auth.duas_etapas') %></strong><span><%= t('perfil.link_2fa_desc') %></span></a>
+      </nav>
+    </div>
+  </main>
+  <%- include('../partials/footer') %>
+</body>
+</html>

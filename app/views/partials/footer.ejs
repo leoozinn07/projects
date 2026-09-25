@@ -1,0 +1,44 @@
+<% var t = locals.t || ((typeof __aquatripI18n !== 'undefined' && __aquatripI18n.t) || function (k) { return k; }); %>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-about">
+        <img src="/img/logo-light.webp" alt="AquaTrip" width="120" height="62" loading="lazy">
+        <p><%= t('footer.sobre') %></p>
+      </div>
+      <nav aria-labelledby="ft-explorar">
+        <h2 id="ft-explorar"><%= t('footer.explorar') %></h2>
+        <ul>
+          <li><a href="/mergulho"><%= t('cats.mergulho') %></a></li>
+          <li><a href="/praias"><%= t('cats.praias') %></a></li>
+          <li><a href="/aquarios"><%= t('cats.aquarios') %></a></li>
+          <li><a href="/caiaque"><%= t('cats.caiaque') %></a></li>
+          <li><a href="/pesca"><%= t('cats.pesca') %></a></li>
+          <li><a href="/expedicoes"><%= t('cats.expedicoes') %></a></li>
+        </ul>
+      </nav>
+      <nav aria-labelledby="ft-aquatrip">
+        <h2 id="ft-aquatrip"><%= t('footer.aquatrip') %></h2>
+        <ul>
+          <li><a href="/parceiros"><%= t('footer.seja_parceiro') %></a></li>
+          <li><a href="/contato"><%= t('footer.contato') %></a></li>
+          <li><a href="/minhas-reservas"><%= t('footer.minhas_reservas') %></a></li>
+          <li><a href="/configuracoes"><%= t('footer.configuracoes') %></a></li>
+        </ul>
+      </nav>
+      <nav aria-labelledby="ft-legal">
+        <h2 id="ft-legal"><%= t('footer.legal') %></h2>
+        <ul>
+          <li><a href="/politica-de-privacidade"><%= t('footer.privacidade') %></a></li>
+          <li><a href="/termos-de-uso"><%= t('footer.termos') %></a></li>
+          <li><a href="/configuracoes/privacidade"><%= t('footer.central') %></a></li>
+        </ul>
+      </nav>
+    </div>
+    <p class="footer-word" aria-hidden="true">AquaTrip</p>
+  </div>
+  <div class="wrap footer-legal">
+    <span><%= t('footer.direitos') %></span>
+    <span><%= t('footer.simulador') %></span>
+  </div>
+</footer>

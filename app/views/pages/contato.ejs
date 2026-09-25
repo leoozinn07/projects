@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="<%= locals.htmlLang || 'pt-BR' %>">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="csrf-token" content="<%= csrfToken %>">
+  <meta name="theme-color" content="#eef6f8">
+  <% seo.titulo = t('contato.seo_titulo'); seo.descricao = t('contato.seo_desc') %>
+  <title><%= seo.titulo %></title>
+  <%- include('../partials/seo') %>
+  <link rel="stylesheet" href="/css/contato.css">
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+<%- include('../partials/header') %>
+<main id="main-content" class="contato">
+  <div class="container contato-grid">
+    <header class="contato-intro">
+      <a href="/" class="breadcrumb-link"><i data-lucide="arrow-left"></i> <%= t('contato.voltar') %></a>
+      <h1 class="display h-l"><%= t('contato.titulo') %></h1>
+      <p class="lead"><%= t('contato.lead') %></p>
+      <ul class="contato-facts">
+        <li><i data-lucide="mail"></i><span><%= t('contato.fato_email') %></span></li>
+        <li><i data-lucide="anchor"></i><span><%- t('contato.fato_parceiro_html') %></span></li>
+        <li><i data-lucide="shield-check"></i><span><%- t('contato.fato_privacidade_html') %></span></li>
+      </ul>
+    </header>
+    <section class="content contato-form panel" aria-labelledby="t-form">
+        <h2 class="sr-only" id="t-form"><%= t('contato.form_titulo') %></h2>
+        <div id="toast" class="toast" role="alert" aria-live="polite"></div>
+        <form id="form" novalidate>
+          <div class="hp-field" aria-hidden="true">
+            <label for="site"><%= t('contato.honeypot_label') %></label>
+            <input type="text" id="site" name="site" tabindex="-1" autocomplete="off">
+          </div>
+
+            <section>
+                <label for="nome"><%= t('contato.campo_nome') %></label>
+                <input
+                    type="text"
+                    id="nome"
+                    name="nome"
+                    placeholder="<%= t('contato.campo_nome_placeholder') %>"
+                    class="inputs"
+                    autocomplete="name"
+                    maxlength="100"
+                    aria-describedby="erro-nome"
+                >
+                <span id="erro-nome" class="span-required" role="alert"></span>
+            </section>
+
+            <section>
+                <label for="email"><%= t('contato.campo_email') %></label>
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    placeholder="<%= t('contato.campo_email_placeholder') %>"
+                    class="inputs"
+                    autocomplete="email"
+                    maxlength="254"
+                    aria-describedby="erro-email"
+                >
+                <span id="erro-email" class="span-required" role="alert"></span>
+            </section>
+
+            <section>
+                <label for="empresa"><%= t('contato.campo_empresa') %></label>
+                <input
+                    type="text"
+                    id="empresa"
+                    name="empresa"
+                    placeholder="<%= t('contato.campo_empresa_placeholder') %>"
+                    class="inputs"
+                    autocomplete="organization"
+                    maxlength="150"
+                    aria-describedby="erro-empresa"
+                >
+                <span id="erro-empresa" class="span-required" role="alert"></span>
+            </section>
+
+            <section>
+                <label for="regiao"><%= t('contato.campo_regiao') %></label>
+                <input
+                    type="text"
+                    id="regiao"
+                    name="regiao"
+                    placeholder="<%= t('contato.campo_regiao_placeholder') %>"
+                    class="inputs"
+                    maxlength="100"
+                    aria-describedby="erro-regiao"
+                >
+                <span id="erro-regiao" class="span-required" role="alert"></span>
+            </section>
+
+            <section>
+                <label for="descricao"><%= t('contato.campo_mensagem') %></label>
+                <textarea
+                    class="inputs"
+                    id="descricao"
+                    name="descricao"
+                    cols="25"
+                    rows="10"
+                    placeholder="<%= t('contato.campo_mensagem_placeholder') %>"
+                    maxlength="1000"
+                    aria-describedby="erro-descricao contador-descricao"
+                ></textarea>
+                <div class="textarea-footer">
+                    <span id="erro-descricao" class="span-required" role="alert"></span>
+                    <span id="contador-descricao" class="contador">0 / 1000</span>
+                </div>
+            </section>
+
+            <button type="submit" id="btn-enviar" class="btn-primary btn-lg"><%= t('contato.enviar') %></button>
+        </form>
+    </section>
+  </div>
+</main>
+
+    <%- include('../partials/footer') %>
+
+    <script src="/js/contato.js"></script>
+</body>
+</html>

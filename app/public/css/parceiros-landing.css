@@ -1,0 +1,35 @@
+/* ==============================================================
+   AquaTrip · Landing de parceiros (/parceiros)
+   ============================================================== */
+.pl .crumbs { padding-top: clamp(12px, 2vw, 24px); }
+.pl-hero { display: grid; gap: 26px; padding-block: clamp(28px, 5vw, 72px) clamp(40px, 6vw, 80px); }
+.pl-hero h1 { font-size: clamp(2.8rem, 8.4vw, 8.2rem); font-weight: 660; letter-spacing: -0.06em; line-height: .88; max-width: 12ch; }
+.pl-hero .lead { margin: 0; }
+.pl-cta { display: flex; gap: 10px; flex-wrap: wrap; }
+.pl-steps { list-style: none; display: grid; gap: 28px; }
+@media (min-width: 900px) { .pl-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.pl-steps li { border-top: 2px solid var(--ink); padding-top: 18px; display: grid; gap: 8px; align-content: start; }
+.pl-steps .mono { font-size: .8rem; color: var(--ink-2); }
+.pl-steps strong { font-size: 1.45rem; letter-spacing: -0.03em; font-weight: 620; }
+.pl-steps p { color: var(--ink-2); }
+
+.calc {
+  margin-block: clamp(56px, 7vw, 100px) 0; border-radius: var(--radius-xl); padding: clamp(24px, 4vw, 56px);
+  background: var(--d5); display: grid; gap: 36px;
+}
+@media (min-width: 900px) { .calc { grid-template-columns: 1fr 1fr; align-items: center; } }
+.calc-in { display: grid; gap: 14px; }
+.calc-in label { margin: 18px 0 0; color: var(--ink-2); font-weight: 500; }
+.calc-price { font-size: clamp(2.8rem, 6vw, 5.2rem); font-weight: 650; letter-spacing: -0.05em; line-height: 1; font-variant-numeric: tabular-nums; }
+.calc input[type="range"] { width: 100%; accent-color: var(--bio); }
+.calc-split { display: grid; gap: 16px; }
+.calc-bar { display: flex; height: 14px; border-radius: var(--radius-pill); overflow: hidden; gap: 3px; }
+.calc-bar i { display: block; background: var(--bio); border-radius: var(--radius-pill); }
+.calc-bar i + i { background: rgba(228, 243, 247, .3); }
+.calc-rows { display: grid; gap: 10px; }
+.calc-rows div { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--deep-line); }
+.calc-rows dt { color: var(--ink-2); }
+.calc-rows dd { font-family: var(--mono); font-weight: 500; }
+.calc-rows div:first-child dd { color: var(--bio); font-size: 1.35rem; }
+.calc-note { font-size: .85rem; color: var(--ink-2); }
+.pl-note { margin-top: 32px; }

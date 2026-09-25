@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="<%= htmlLang %>">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#eef6f8">
+  <% seo.titulo = t('config.titulo_seo'); seo.descricao = t('config.desc_seo'); %>
+  <title><%= seo.titulo %></title>
+  <%- include('../partials/seo') %>
+  <link rel="stylesheet" href="/css/configuracoes.css">
+  <script src="/js/theme.js"></script>
+</head>
+<body>
+<%- include('../partials/header') %>
+
+<main id="main-content" class="config">
+  <div class="container config-wrap">
+    <header class="page-head">
+      <h1 class="display h-l"><%= t('config.titulo') %></h1>
+      <p class="lead"><%= t('config.lead') %></p>
+      <% if (salvo) { %><p class="form-alert form-alert-success" role="status"><%= t('config.salvo') %></p><% } %>
+    </header>
+
+    <section class="config-sec" aria-labelledby="c-idioma">
+      <div class="config-sec-head">
+        <h2 id="c-idioma"><%= t('config.idioma') %></h2>
+        <p><%= t('config.idioma_txt') %></p>
+      </div>
+      <form action="/configuracoes/idioma" method="POST" class="lang-form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="redirect" value="/configuracoes">
+        <fieldset class="lang-options">
+          <legend class="sr-only"><%= t('config.idioma') %></legend>
+          <% idiomas.forEach(function (l) { %>
+            <label class="lang-option" lang="<%= l.codigo %>">
+              <input type="radio" name="idioma" value="<%= l.codigo %>"<%= l.codigo === lang ? ' checked' : '' %>>
+              <span class="lang-code"><%= l.codigo.toUpperCase() %></span>
+              <span class="lang-name"><%= l.nome %></span>
+            </label>
+          <% }); %>
+        </fieldset>
+        <button type="submit" class="btn-primary"><%= t('config.salvar_idioma') %></button>
+      </form>
+    </section>
+
+    <section class="config-sec" aria-labelledby="c-tema">
+      <div class="config-sec-head">
+        <h2 id="c-tema"><%= t('config.tema') %></h2>
+        <p><%= t('config.tema_txt') %></p>
+      </div>
+      <fieldset class="seg seg--lg">
+        <legend class="sr-only"><%= t('config.tema') %></legend>
+        <button type="button" data-theme-set="system" aria-pressed="false"><i data-lucide="monitor-smartphone"></i> <%= t('nav.tema_sistema') %></button>
+        <button type="button" data-theme-set="light" aria-pressed="false"><i data-lucide="sun"></i> <%= t('nav.tema_claro') %></button>
+        <button type="button" data-theme-set="dark" aria-pressed="false"><i data-lucide="moon"></i> <%= t('nav.tema_escuro') %></button>
+      </fieldset>
+    </section>
+
+    <section class="config-sec" aria-labelledby="c-conta">
+      <div class="config-sec-head">
+        <h2 id="c-conta"><%= t('config.conta') %></h2>
+      </div>
+      <% if (user) { %>
+        <ul class="config-links">
+          <li><a href="/perfil"><i data-lucide="user-round"></i><span><strong><%= t('config.perfil') %></strong><small><%= t('config.perfil_txt') %></small></span></a></li>
+          <li><a href="/configuracoes/privacidade"><i data-lucide="shield-check"></i><span><strong><%= t('config.privacidade') %></strong><small><%= t('config.privacidade_txt') %></small></span></a></li>
+          <li><a href="/conta/2fa"><i data-lucide="key-round"></i><span><strong><%= t('config.doisfa') %></strong><small><%= t('config.doisfa_txt') %></small></span></a></li>
+        </ul>
+      <% } else { %>
+        <p class="config-note"><%- t('config.entrar_txt_html') %></p>
+      <% } %>
+    </section>
+
+    <section class="config-sec" aria-labelledby="c-legal">
+      <div class="config-sec-head">
+        <h2 id="c-legal"><%= t('config.legal') %></h2>
+      </div>
+      <ul class="config-links">
+        <li><a href="/termos-de-uso"><i data-lucide="file-text"></i><span><strong><%= t('footer.termos') %></strong><small><%= t('config.termos_txt', { versao: versaoTermos }) %></small></span></a></li>
+        <li><a href="/politica-de-privacidade"><i data-lucide="lock"></i><span><strong><%= t('footer.privacidade') %></strong><small><%= t('config.termos_txt', { versao: versaoTermos }) %></small></span></a></li>
+      </ul>
+    </section>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>
+</body>
+</html>
