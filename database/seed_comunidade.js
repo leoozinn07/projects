@@ -160,6 +160,9 @@ const VIAGENS = [
     local: "Mata de São João, BA",
     descricao: "Saída de barco para observação de baleias-jubarte durante a temporada, com operadora local.",
     info: "Encontro no píer da vila. Levar casaco leve e remédio para enjoo, se costuma precisar.",
+    fotos: ["database/fotos-exemplo/praiadoforte-1.jpg", "database/fotos-exemplo/praiadoforte-2.jpg",
+      "database/fotos-exemplo/praiadoforte-3.jpg"],
+    alt: "Baleia-jubarte saltando fora da água",
   },
 ];
 
