@@ -336,3 +336,53 @@ describe("assistente virtual", () => {
     }
   });
 });
+
+describe("integridade e LGPD", () => {
+  it("participação gratuita não aparece como 'confirmada sem pagamento' no painel", async () => {
+    const dono = await novo();
+    const vai = await novo();
+    const admin = await novo({ role: "ADMIN" });
+    const { body } = await criar(dono);
+    const slot = (await db.query("SELECT id FROM service_slots WHERE service_id = ?", [body.id])).rows[0];
+    await vai.agent.post("/reservar").type("form").send({ slotId: slot.id, quantity: 1, serviceSlug: body.slug, _csrf: vai.csrf });
+    const painel = await admin.agent.get("/api/admin/painel");
+    expect(painel.body.inconsistencias).toHaveLength(0);
+    expect(painel.body.plataforma.participantes).toBe(1);
+  });
+
+  it("exportação inclui os dados sociais; anonimização os remove e tira a experiência do ar", async () => {
+    const dataRightsService = require("../app/services/dataRightsService");
+    const supportRepository = require("../app/repositories/supportRepository");
+    const dono = await novo();
+    const fa = await novo();
+    const { body } = await criar(dono);
+    await api(fa, "post", `/api/experiencias/${body.id}/comentarios`, { texto: "Vou junto, combinado!" });
+    await api(fa, "post", `/api/experiencias/${body.id}/curtir`, { curtir: true });
+    await api(fa, "post", `/api/usuarios/${dono.user.id}/seguir`, { seguir: true });
+    await api(dono, "post", "/api/perfil/bio", { bio: "Mergulho aos domingos." });
+
+    const exp = await dataRightsService.exportUserData(fa.user.id);
+    expect(exp.comunidade.comentarios[0].texto).toBe("Vou junto, combinado!");
+    expect(exp.comunidade.curtidas).toHaveLength(1);
+    expect(exp.comunidade.seguindo[0].nome).not.toContain("@");
+    const expDono = await dataRightsService.exportUserData(dono.user.id);
+    expect(expDono.comunidade.experiencias_criadas).toHaveLength(1);
+    expect(expDono.perfil.bio).toBe("Mergulho aos domingos.");
+
+    await supportRepository.anonymizeUser(dono.user.id, { hashInutilizavel: "x" });
+    const u = (await db.query("SELECT bio FROM users WHERE id = ?", [dono.user.id])).rows[0];
+    expect(u.bio).toBeNull();
+    expect((await db.query("SELECT COUNT(*) AS n FROM user_follows")).rows[0].n).toBe(0);
+    expect((await request(app).get(`/reservar/${body.slug}`)).status).toBe(404);
+  });
+
+  it("não anonimiza quem organiza experiência com participantes futuros", async () => {
+    const supportRepository = require("../app/repositories/supportRepository");
+    const dono = await novo();
+    const vai = await novo();
+    const { body } = await criar(dono);
+    const slot = (await db.query("SELECT id FROM service_slots WHERE service_id = ?", [body.id])).rows[0];
+    await vai.agent.post("/reservar").type("form").send({ slotId: slot.id, quantity: 1, serviceSlug: body.slug, _csrf: vai.csrf });
+    expect(Number(await supportRepository.countLiveBookings(dono.user.id))).toBe(1);
+  });
+});

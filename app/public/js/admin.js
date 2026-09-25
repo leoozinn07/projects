@@ -1090,6 +1090,8 @@
   /* ============================================================
      PERFIL COMPLETO DO USUÁRIO (LGPD: acesso auditado no servidor)
      ============================================================ */
+  // Horários de experiência são do fuso de operação, não do navegador de quem modera.
+  const FUSO_OP = "America/Sao_Paulo";
   const STATUS_MOD = { ACTIVE: ["badge-success", "Ativa"], SUSPENDED: ["badge-warning", "Suspensa"], BANNED: ["badge-danger", "Banida"] };
   const STATUS_USR = { ACTIVE: ["badge-success", "Ativo"], SUSPENDED: ["badge-warning", "Suspenso"], BANNED: ["badge-danger", "Banido"] };
 
@@ -1112,8 +1114,8 @@
           ${linha("Situação", badge(STATUS_USR, u.status) + (u.suspended_reason ? " " + esc(u.suspended_reason) : ""))}
           ${linha("Papel", esc(u.role))}
           ${linha("Cadastro", esc(data(u.created_at)))}
-          ${linha("Último login", esc(u.last_login_at ? new Date(u.last_login_at).toLocaleString("pt-BR") : "-"))}
-          ${linha("Presença", u.online ? '<span class="live-dot"></span> Online agora' : esc(u.last_seen_at ? "Visto em " + new Date(u.last_seen_at).toLocaleString("pt-BR") : "-"))}
+          ${linha("Último login", esc(u.last_login_at ? new Date(u.last_login_at).toLocaleString("pt-BR", { timeZone: FUSO_OP }) : "-"))}
+          ${linha("Presença", u.online ? '<span class="live-dot"></span> Online agora' : esc(u.last_seen_at ? "Visto em " + new Date(u.last_seen_at).toLocaleString("pt-BR", { timeZone: FUSO_OP }) : "-"))}
           ${linha("2FA", u.mfa ? "Ativo" : "Inativo")}
           ${linha("Termos aceitos", esc(u.terms_version ? `v${u.terms_version} em ${data(u.terms_accepted_at)}` : "-"))}
           ${linha("Parceiro", u.parceiro_status ? `${esc(u.parceiro_nome)} (${esc(u.parceiro_status)}) · ${esc(u.city || "")}/${esc(u.state || "")} · tel. ${esc(u.phone || "-")}` : "Não")}
@@ -1155,7 +1157,7 @@
           </div>
           <p class="req-meta">
             Criador: <button type="button" class="link-btn" data-perfil-com="${esc(e.criador_id)}">${esc(e.criador_nome)}</button> (${esc(e.criador_email)})${e.criador_status !== "ACTIVE" ? " · conta " + esc(e.criador_status) : ""}
-            · ${esc(e.location || "")} · ${esc(e.starts_at ? new Date(e.starts_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "-")}
+            · ${esc(e.location || "")} · ${esc(e.starts_at ? new Date(e.starts_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: FUSO_OP }) : "-")}
           </p>
           <p class="req-meta">
             Valor: <strong>${e.price_cents ? esc(brl(e.price_cents)) : "Gratuita"}</strong> · Vagas: ${esc(e.capacity ?? "-")} · Participantes: ${esc(e.participantes)} · Interessados: ${esc(e.interessados)}

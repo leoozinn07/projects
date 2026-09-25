@@ -335,6 +335,8 @@ async function inconsistencies() {
      FROM bookings b
      JOIN users u ON u.id = b.user_id
      WHERE b.status = 'CONFIRMED'
+       -- Participação gratuita (R$ 0) é confirmada sem pagamento, por definição.
+       AND b.amount_cents > 0
        AND NOT EXISTS (SELECT 1 FROM payments p
                        WHERE p.booking_id = b.id AND p.status = 'APPROVED')
      -- MySQL não tem NULLS LAST: (desde IS NULL) empurra os nulos pro fim.

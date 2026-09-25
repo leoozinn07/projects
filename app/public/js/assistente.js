@@ -66,7 +66,8 @@
 
   function linkificar(p) {
     const texto = p.textContent;
-    const re = /(^|\s)(\/[a-z0-9_\-/?=%.]+[a-z0-9_\-/])/gi;
+    // Só caminhos internos: "//dominio" (relativo ao protocolo) levaria para fora.
+    const re = /(^|\s)(\/(?!\/)[a-z0-9_\-/?=%.]*[a-z0-9_\-])/gi;
     if (!re.test(texto)) return;
     re.lastIndex = 0;
     p.textContent = "";

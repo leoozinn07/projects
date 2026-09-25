@@ -806,3 +806,40 @@ dialog .modal--wide { width: min(760px, 94vw); max-height: 88vh; overflow-y: aut
   .metrics-3 { grid-template-columns: 1fr; }
   .search-bar { flex-wrap: wrap; }
 }
+#section-comunidade .search-bar { flex-wrap: wrap; }
+#com-busca { flex: 1 1 260px; min-width: 0; }
+#com-status { flex: 0 0 auto; width: auto; }
+
+/* ---------- Celular e tablet: o menu lateral vira barra no topo ----------
+   Antes o painel não tinha nenhuma regra responsiva: no celular o menu
+   ocupava metade da tela e cortava o conteúdo. */
+@media (max-width: 900px) {
+  .admin-wrap { flex-direction: column; }
+  .main { overflow: visible; min-width: 0; }
+  .sidebar { width: 100%; position: sticky; top: 0; z-index: 20; }
+  .sidebar-header { padding: .75rem 1rem; border-bottom: 0; }
+  .sidebar-nav {
+    display: flex; gap: 4px; padding: 0 .75rem .6rem; overflow-x: auto; scrollbar-width: none;
+    -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity;
+  }
+  .sidebar-nav::-webkit-scrollbar { display: none; }
+  .nav-label { display: none; }
+  .nav-item {
+    width: auto; flex: 0 0 auto; min-height: 40px; padding: 0 .9rem; border-left: 0;
+    border-radius: 999px; white-space: nowrap; scroll-snap-align: start;
+  }
+  .nav-item.active { border-left-color: transparent; }
+  .topbar { padding: 0 1rem; height: 52px; }
+  .content { padding: 1rem; overflow: visible; }
+  .metrics:not(.adm-metrics) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .adm-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metric-card { padding: .85rem 1rem; min-width: 0; }
+  .metric-value { font-size: 1.35rem; overflow-wrap: anywhere; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .req-head { flex-wrap: wrap; }
+  .req-actions .btn { min-height: 40px; }
+  .adm-check { white-space: normal; }
+}
+@media (max-width: 420px) {
+  .metrics-3 { grid-template-columns: 1fr; }
+}

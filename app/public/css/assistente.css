@@ -114,3 +114,5 @@
 }
 /* Impressão: o assistente não vai para o papel. */
 @media print { .aq-bot { display: none; } }
+/* Aberto, o assistente fica acima do dock, do cabeçalho e das folhas. */
+.aq-bot.is-open { z-index: 280; }

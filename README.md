@@ -113,7 +113,23 @@ julho/2026), conectar o Mercado Pago pelo simulador de consentimento, cadastrar
 experiências e horários, enviar para revisão, ver quem reservou (com o código
 do ingresso para conferir na chegada) e acompanhar vendas, comissões e líquido.
 
-**Como admin:** painel com métricas; aprovar parceiros e experiências; moderar
+**Na comunidade (qualquer conta):** criar a própria viagem em `/criar_experiencia`
+(gratuita publica na hora; paga exige cadastro de parceiro com Mercado Pago
+conectado, porque o dinheiro vai direto para quem organiza), curtir, comentar,
+seguir, marcar interesse, denunciar, participar (gratuita confirma na hora) e
+acompanhar tudo no perfil social `/meu-perfil`. Reclamações, sugestões e
+avaliação do AquaTrip em `/feedback`.
+
+**Assistente virtual:** botão "Ajuda" em todas as páginas. Responde só sobre o
+AquaTrip, a partir de `app/lib/chatbot/conhecimento.md`, e consulta apenas o
+catálogo público. Precisa de `ANTHROPIC_API_KEY` no `.env` (sem ela, aparece
+como indisponível).
+
+**Como admin:** painel com métricas (inclui usuários online, parceiros,
+participantes, reclamações e avaliações); moderação da comunidade (suspender,
+banir, reativar, denúncias e comentários); banimento de usuários e perfil
+completo com CPF/CNPJ (acesso registrado na auditoria); reclamações com
+resposta e status; aprovar parceiros e experiências; moderar
 fotos e avaliações; atender solicitações LGPD e mensagens de contato; suspender
 usuários; faturamento com exportação CSV; trilha de auditoria.
 

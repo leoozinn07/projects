@@ -162,12 +162,14 @@
       fotosNovas.push(f);
       const li = document.createElement("li");
       li.className = "cx-thumb";
-      const url = URL.createObjectURL(f);
-      li.innerHTML = `<img src="${url}" alt=""><span class="cx-badge cx-badge-nova">${esc(t("cx_nova", null, "Nova"))}</span>` +
+      li.innerHTML = `<img alt=""><span class="cx-badge cx-badge-nova">${esc(t("cx_nova", null, "Nova"))}</span>` +
         `<button type="button" class="icon-btn cx-thumb-del" aria-label="${esc(t("cx_remover", null, "Remover foto"))}"><i data-lucide="x"></i></button>`;
+      // data: e não blob: — a CSP do site (img-src) não libera blob:.
+      const leitor = new FileReader();
+      leitor.onload = () => { li.querySelector("img").src = leitor.result; atualizarPrevia(); };
+      leitor.readAsDataURL(f);
       li.querySelector("button").addEventListener("click", () => {
         fotosNovas = fotosNovas.filter((x) => x !== f);
-        URL.revokeObjectURL(url);
         li.remove();
         atualizarPrevia();
       });
@@ -199,7 +201,7 @@
     $("pvPreco").textContent = preco > 0 ? (window.AQ ? window.AQ.brl(preco) : `R$ ${preco}`) : t("cx_gratuita", null, "Gratuita");
     $("pvVagas").textContent = d.capacity ? t("cx_pv_vagas", { n: d.capacity }, `${d.capacity} vagas`) : "--";
     $("pvData").textContent = d.date ? new Date(d.date + "T12:00:00").toLocaleDateString(window.AQ ? window.AQ.intl : "pt-BR", { day: "2-digit", month: "short" }) + (d.time ? " · " + d.time : "") : "--";
-    const primeira = lista.querySelector(".cx-thumb img");
+    const primeira = lista.querySelector(".cx-thumb img[src]");
     $("pvImg").src = primeira ? primeira.src : (CAPAS[d.category] || "/img/praia.webp");
   }
   form.addEventListener("input", atualizarPrevia);
