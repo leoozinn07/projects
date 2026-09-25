@@ -20,7 +20,7 @@ Um lugar só para experiências *na água* pelo Brasil, com datas e vagas reais,
 ## Operating Context
 - **É um simulador.** Pagamentos (PIX/cartão), a conexão com o Mercado Pago e os e-mails funcionam de ponta a ponta, mas simulados. Nenhum dinheiro real se move.
 - Jornada do viajante: descobrir (busca e 6 categorias) → escolher data/horário com vaga → reservar (vaga segura por 15 min) → pagar → comprovante → avaliação com fotos.
-- Jornada do parceiro: `/parceiros` (landing) → conta → cadastro (CPF/CNPJ, revisão em até 2 dias úteis) → publicar experiências (revisão antes de ir ao ar) → conectar o Mercado Pago → operar reservas e vendas em `/parceiro`.
+- Jornada do parceiro: `/parceiros` (landing) → conta → cadastro (CPF/CNPJ, área liberada na hora) → publicar experiências (no ar na hora; moderação depois, por denúncias) → conectar o Mercado Pago → operar reservas e vendas em `/parceiro`.
 - Admin único em `/admin` (moderação, auditoria, atendimento).
 
 ## Capabilities and Constraints

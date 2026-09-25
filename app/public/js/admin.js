@@ -39,7 +39,7 @@
   }
 
   /* ---------- Navegação entre seções ---------- */
-  const TITULOS = { dashboard: "Dashboard", usuarios: "Usuários", pacotes: "Experiências", faturamento: "Faturamento", atendimento: "Atendimento", parceiros: "Parceiros", comunidade: "Moderação da comunidade", reclamacoes: "Reclamações e avaliações" };
+  const TITULOS = { dashboard: "Dashboard", usuarios: "Usuários", pacotes: "Experiências", faturamento: "Faturamento", atendimento: "Atendimento", parceiros: "Parceiros", comunidade: "Moderação de experiências", reclamacoes: "Reclamações e avaliações" };
   const carregadas = new Set();
 
   document.querySelectorAll(".nav-item").forEach((item) => {
@@ -969,6 +969,10 @@
             <select aria-label="Recusar por" data-parc-motivo="${esc(p.id)}" data-acao="recusar">
               <option value="">Recusar por...</option>${opcoes(parcMotivos.recusa)}</select>` : ""}
           ${p.status === "APPROVED" ? `
+            <label class="parc-comissao">Comissão
+              <input type="number" min="0" max="50" step="0.5" value="${esc(Number(p.commission_pct))}" data-comissao="${esc(p.id)}"> %
+            </label>
+            <button type="button" class="btn btn-sm" data-parc="${esc(p.id)}" data-acao="comissao">Salvar comissão</button>
             <select aria-label="Suspender por" data-parc-motivo="${esc(p.id)}" data-acao="suspender">
               <option value="">Suspender por...</option>${opcoes(parcMotivos.suspensao)}</select>` : ""}
           ${p.status === "SUSPENDED" ? `<button type="button" class="btn btn-sm" data-parc="${esc(p.id)}" data-acao="reativar">Reativar</button>` : ""}
@@ -1153,10 +1157,10 @@
         <li class="req ${e.denuncias_abertas ? "req--late" : ""}">
           <div class="req-head">
             <strong><a href="/reservar/${encodeURIComponent(e.slug)}" target="_blank" rel="noopener">${esc(e.title)}</a></strong>
-            <span>${badge(STATUS_MOD, e.moderation_status)} ${e.active ? "" : '<span class="badge badge-info">Pausada</span>'}</span>
+            <span>${e.origem === "parceiro" ? '<span class="badge badge-info">Parceiro</span>' : '<span class="badge badge-info">Comunidade</span>'} ${badge(STATUS_MOD, e.moderation_status)} ${e.active ? "" : '<span class="badge badge-info">Pausada</span>'}</span>
           </div>
           <p class="req-meta">
-            Criador: <button type="button" class="link-btn" data-perfil-com="${esc(e.criador_id)}">${esc(e.criador_nome)}</button> (${esc(e.criador_email)})${e.criador_status !== "ACTIVE" ? " · conta " + esc(e.criador_status) : ""}
+            ${e.origem === "parceiro" ? `Parceiro: <strong>${esc(e.parceiro_nome || "")}</strong> · ` : ""}Criador: <button type="button" class="link-btn" data-perfil-com="${esc(e.criador_id)}">${esc(e.criador_nome)}</button> (${esc(e.criador_email)})${e.criador_status !== "ACTIVE" ? " · conta " + esc(e.criador_status) : ""}
             · ${esc(e.location || "")} · ${esc(e.starts_at ? new Date(e.starts_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: FUSO_OP }) : "-")}
           </p>
           <p class="req-meta">

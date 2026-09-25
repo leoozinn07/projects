@@ -18,8 +18,8 @@ dinheiro do parceiro).
 usuário — a mesma pessoa pode ser cliente e parceira, e os dados de parceiro só
 existem para quem é.
 
-**Fluxo:** `/parceiros` (apresentação pública) → conta → `/parceiro` (candidatura)
-→ admin aprova ou recusa em **Painel → Parceiros** → e-mail com a decisão.
+**Fluxo:** `/parceiros` (apresentação pública) → conta → `/parceiro` (cadastro)
+→ área do parceiro liberada na hora → e-mail de boas-vindas com os próximos passos.
 
 **Documento:**
 - **CNPJ alfanumérico aceito** — em produção desde 31/07/2026 (IN RFB 2.229/2024).
@@ -32,8 +32,15 @@ existem para quem é.
 - Documento já usado recebe resposta **genérica** — "CPF já cadastrado" revelaria
   que a pessoa é parceira.
 
-**Decisões do admin:** aprovar (com comissão, 0–50%), recusar ou suspender com
-motivo de **lista fechada**, reativar. Transições só a partir do estado esperado.
+**Aprovação no cadastro (set/2026):** por decisão do dono do produto, o
+cadastro nasce aprovado e a área do parceiro abre na hora (migration 020
+aprovou quem estava aguardando). Continuam valendo: CPF/CNPJ com dígito
+verificador, documento único e aceite dos termos.
+
+**Decisões do admin (depois do cadastro):** suspender com motivo de **lista
+fechada**, reativar e ajustar a comissão (0–50%; vale para as próximas vendas).
+Aprovar/recusar só existem para cadastros antigos ainda pendentes. Transições só
+a partir do estado esperado.
 
 **Suspensão tira da vitrine de verdade.** Uma regra única (`app/lib/visibilidade.js`)
 é usada por catálogo, vitrine, página da experiência, sitemap **e pela criação da
@@ -57,8 +64,13 @@ com uma aplicação do tipo marketplace criada no painel do Mercado Pago.
 
 ## Fase 2
 
-**Ciclo:** rascunho → enviada → aprovada ou recusada (com motivo de lista fechada)
-→ corrigida e reenviada. Admin revisa em **Painel → Parceiros**.
+**Publicação imediata (set/2026):** a revisão prévia acabou por decisão do dono
+do produto. A experiência vai ao ar ao ser criada (descrição com no mínimo 40
+caracteres) e o controle passou a ser depois: denúncias dos usuários e moderação
+em **Painel → Comunidade → Moderação** (suspender, banir, reativar), a mesma das
+experiências da comunidade. Rascunhos e recusadas de antes da mudança são
+publicados pelo botão "Publicar"; as que estavam na fila foram publicadas pela
+migration 019.
 
 **Proteção do modelo de negócio:** experiência de parceiro só vai à vitrine
 (e só aceita reserva) quando o parceiro tem o **Mercado Pago conectado**. Sem
@@ -66,12 +78,10 @@ isso, o pagamento cairia na conta do AquaTrip — o modelo "recebe e repassa" qu
 foi recusado. A regra está em `app/lib/visibilidade.js`, usada também pela
 criação da reserva.
 
-**Edição de experiência publicada:**
-- título, descrição, local ou categoria → volta para revisão e sai da vitrine
-  (texto é onde mora o risco de conteúdo proibido ou "isca e troca");
-- preço e horários → mudam na hora (o valor de cada reserva já feita fica
-  congelado nela);
-- pausar/retomar vendas → sem revisão.
+**Edição de experiência publicada:** tudo muda na hora, sem sair do ar (o
+valor de cada reserva já feita fica congelado nela). Experiência suspensa ou
+banida pela moderação não pode ser editada. Pausar/retomar vendas continua
+disponível.
 
 **Capa:** foto nova fica pendente na fila de moderação (a mesma das fotos de
 avaliação) sem derrubar a capa atual; aprovada, substitui e a antiga é apagada.

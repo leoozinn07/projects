@@ -110,7 +110,7 @@ exportar ou pedir exclusão dos dados (LGPD).
 
 **Como parceiro:** candidatar-se (aceita CNPJ alfanumérico, em vigor desde
 julho/2026), conectar o Mercado Pago pelo simulador de consentimento, cadastrar
-experiências e horários, enviar para revisão, ver quem reservou (com o código
+experiências e horários (publicadas na hora, moderadas depois), ver quem reservou (com o código
 do ingresso para conferir na chegada) e acompanhar vendas, comissões e líquido.
 
 **Na comunidade (qualquer conta):** criar a própria viagem em `/criar_experiencia`

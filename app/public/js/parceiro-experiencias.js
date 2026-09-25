@@ -1,6 +1,6 @@
 /* ==============================================================
    AquaTrip — Área do parceiro: experiências
-   Listar, criar, editar, enviar para revisão, pausar, horários
+   Listar, criar (publica na hora), editar, pausar, horários
    (programação simples) e foto de capa.
    ============================================================== */
 (function () {
@@ -11,7 +11,7 @@
   const brl = (c) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   const SIT = {
     DRAFT: ["px-st-rascunho", "Rascunho"], PENDING: ["px-st-revisao", "Em revisão"],
-    APPROVED: ["px-st-aprovada", "Aprovada"], REJECTED: ["px-st-recusada", "Precisa de ajustes"],
+    APPROVED: ["px-st-aprovada", "Publicada"], REJECTED: ["px-st-recusada", "Não publicada"],
   };
   let lista = [];
   let editando = null;
@@ -28,8 +28,9 @@
   }
 
   function card(x) {
-    const [cls, rot] = SIT[x.review_status] || ["", x.review_status];
-    const podeEnviar = x.review_status === "DRAFT" || x.review_status === "REJECTED";
+    const moderada = x.moderation_status && x.moderation_status !== "ACTIVE";
+    const [cls, rot] = moderada ? ["px-st-recusada", "Suspensa pela moderação"] : (SIT[x.review_status] || ["", x.review_status]);
+    const podeEnviar = !moderada && (x.review_status === "DRAFT" || x.review_status === "REJECTED");
     return `<li class="px-card">
       <div class="px-card-topo">
         <strong>${esc(x.title)}</strong>
@@ -37,15 +38,16 @@
       </div>
       <p class="px-meta">${esc(x.location || "")} · ${esc(brl(x.price_cents))} · ${esc(x.horarios_futuros)} horário(s) futuro(s)
         ${x.active ? "" : " · <strong>pausada</strong>"}</p>
-      ${x.motivo ? `<p class="px-motivo">Motivo: ${esc(x.motivo)}</p>` : ""}
+      ${moderada && x.moderation_reason ? `<p class="px-motivo">Motivo: ${esc(x.moderation_reason)}</p>` : ""}
+      ${!moderada && x.motivo ? `<p class="px-motivo">Motivo: ${esc(x.motivo)}</p>` : ""}
       ${x.pending_cover_key ? '<p class="px-meta">Nova foto de capa em revisão.</p>' : ""}
       <div class="px-card-acoes">
-        ${x.review_status !== "PENDING" ? `<button type="button" class="btn-ghost" data-editar="${esc(x.id)}">Editar</button>` : ""}
-        ${podeEnviar ? `<button type="button" class="btn-primary" data-enviar="${esc(x.id)}">Enviar para revisão</button>` : ""}
+        ${!moderada ? `<button type="button" class="btn-ghost" data-editar="${esc(x.id)}">Editar</button>` : ""}
+        ${podeEnviar ? `<button type="button" class="btn-primary" data-enviar="${esc(x.id)}">Publicar</button>` : ""}
         <button type="button" class="btn-ghost" data-horarios="${esc(x.id)}">Horários</button>
         <label class="btn-ghost px-arquivo">${x.cover_key ? "Trocar foto" : "Enviar foto"}
           <input type="file" accept="image/jpeg,image/png,image/webp" data-capa="${esc(x.id)}" hidden></label>
-        ${x.review_status === "APPROVED" ? `<button type="button" class="btn-ghost" data-ativa="${esc(x.id)}" data-valor="${x.active ? "0" : "1"}">${x.active ? "Pausar vendas" : "Retomar vendas"}</button>` : ""}
+        ${x.review_status === "APPROVED" && !moderada ? `<button type="button" class="btn-ghost" data-ativa="${esc(x.id)}" data-valor="${x.active ? "0" : "1"}">${x.active ? "Pausar vendas" : "Retomar vendas"}</button>` : ""}
       </div>
       <div class="px-horarios" id="h-${esc(x.id)}" hidden></div>
     </li>`;
@@ -82,13 +84,9 @@
     };
     $("px-salvar").disabled = true;
     try {
-      const r = editando
-        ? await api("PUT", `/api/parceiro/experiencias/${encodeURIComponent(editando.id)}`, corpo)
-        : await api("POST", "/api/parceiro/experiencias", corpo);
+      if (editando) await api("PUT", `/api/parceiro/experiencias/${encodeURIComponent(editando.id)}`, corpo);
+      else await api("POST", "/api/parceiro/experiencias", corpo);
       $("px-dialogo").close();
-      if (r.experiencia && r.experiencia.voltouParaRevisao) {
-        window.alert("Alterações salvas. A experiência saiu da vitrine e voltou para revisão.");
-      }
       carregar();
     } catch (e) {
       $("px-erro").textContent = e.message;

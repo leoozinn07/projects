@@ -442,9 +442,10 @@ async function userDetail(userId) {
   return { ...rows[0], experiencias };
 }
 
-/** Experiências criadas por usuários, com o que a moderação precisa ver. */
+/** Experiências da comunidade e de parceiros (ambas publicam na hora e
+    são moderadas depois), com o que a moderação precisa ver. */
 async function listCommunityServices({ busca = null, status = null, comDenuncia = false } = {}) {
-  const cond = ["s.creator_user_id IS NOT NULL"];
+  const cond = ["(s.creator_user_id IS NOT NULL OR s.partner_id IS NOT NULL)"];
   const params = [FUSO];
   if (busca) {
     cond.push("(s.title LIKE ? OR s.location LIKE ? OR u.name LIKE ? OR u.email LIKE ?)");
@@ -454,6 +455,8 @@ async function listCommunityServices({ busca = null, status = null, comDenuncia 
   if (comDenuncia) cond.push("EXISTS (SELECT 1 FROM experience_reports r WHERE r.service_id = s.id AND r.status = 'OPEN')");
   const { rows } = await db.query(
     `SELECT s.id, s.slug, s.title, s.location, s.category, s.price_cents, s.active,
+            CASE WHEN s.creator_user_id IS NOT NULL THEN 'comunidade' ELSE 'parceiro' END AS origem,
+            pa.display_name AS parceiro_nome,
             s.moderation_status, s.moderation_reason, s.moderated_at, s.created_at,
             u.id AS criador_id, u.name AS criador_nome, u.email AS criador_email, u.status AS criador_status,
             sl.starts_at, CONVERT_TZ(sl.starts_at, 'UTC', ?) AS starts_local, sl.capacity,
@@ -464,8 +467,12 @@ async function listCommunityServices({ busca = null, status = null, comDenuncia 
             (SELECT COUNT(*) FROM experience_reports r WHERE r.service_id = s.id AND r.status = 'OPEN') AS denuncias_abertas,
             (SELECT COUNT(*) FROM experience_reports r WHERE r.service_id = s.id) AS denuncias_total
      FROM services s
-     JOIN users u ON u.id = s.creator_user_id
-     LEFT JOIN service_slots sl ON sl.service_id = s.id
+     LEFT JOIN partners pa ON pa.id = s.partner_id
+     JOIN users u ON u.id = COALESCE(s.creator_user_id, pa.user_id)
+     -- Parceiro tem vários horários: a moderação vê o próximo (ou o último).
+     LEFT JOIN service_slots sl ON sl.id = (
+       SELECT x.id FROM service_slots x WHERE x.service_id = s.id
+       ORDER BY (x.starts_at < NOW()), CASE WHEN x.starts_at >= NOW() THEN x.starts_at END, x.starts_at DESC LIMIT 1)
      WHERE ${cond.join(" AND ")}
      ORDER BY denuncias_abertas DESC, s.created_at DESC
      LIMIT 300`,

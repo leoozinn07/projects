@@ -42,8 +42,13 @@ const decidir = (agent, csrf, id, corpo) =>
 async function parceiroAprovado() {
   const c = await candidato();
   const { agent, csrf } = await comoAdmin();
-  await decidir(agent, csrf, c.res.body.parceiro.id, { acao: "aprovar" });
   return { ...c, adminAgent: agent, adminCsrf: csrf, partnerId: c.res.body.parceiro.id };
+}
+/* Cadastro antigo ainda pendente (anterior à aprovação no cadastro). */
+async function candidatoPendenteAntigo(email) {
+  const c = await candidato(email);
+  await db.query("UPDATE partners SET status = 'PENDING', decided_at = NULL WHERE id = $1", [c.res.body.parceiro.id]);
+  return c;
 }
 
 describe("Documentos", () => {
@@ -86,12 +91,20 @@ describe("Páginas", () => {
 });
 
 describe("Candidatura", () => {
-  it("cria cadastro pendente com CPF", async () => {
-    const { res } = await candidato();
+  it("cadastro com CPF já nasce ativo e a pessoa recebe as boas-vindas", async () => {
+    const { res, agent, csrf } = await candidato();
     expect(res.status).toBe(201);
-    expect(res.body.parceiro.status).toBe("PENDING");
+    expect(res.body.parceiro.status).toBe("APPROVED");
     const { rows } = await db.query("SELECT person_type, document FROM partners");
     expect(rows[0]).toEqual({ person_type: "PF", document: "52998224725" });
+    const mails = fs.readdirSync(mailService.MAIL_DIR).filter((f) => f.includes("parceiro_cadastrado"));
+    expect(mails).toHaveLength(1);
+    // Já pode cadastrar experiência, sem esperar o admin.
+    const r = await agent.post("/api/parceiro/experiencias").set("X-CSRF-Token", csrf).send({
+      titulo: "Passeio de barco em Ilhabela", local: "Ilhabela, SP", categoria: "praia", preco: 90,
+      descricao: "Saída às 9h do píer, três praias, parada para mergulho livre e retorno às 13h.",
+    });
+    expect(r.status).toBe(201);
   });
 
   it("aceita CNPJ alfanumérico, em minúsculas e com máscara", async () => {
@@ -129,10 +142,10 @@ describe("Candidatura", () => {
     expect(rows[0].m).not.toContain("52998224725");
   });
 
-  it("a área do parceiro mostra a situação com CPF mascarado", async () => {
+  it("a área do parceiro abre na hora, com CPF mascarado", async () => {
     const { agent } = await candidato();
     const html = (await agent.get("/parceiro")).text;
-    expect(html).toContain("Cadastro em análise");
+    expect(html).toContain("Cadastro ativo");
     expect(html).toContain("***.982.247-**");
     expect(html).not.toContain("529.982.247-25");
   });
@@ -149,18 +162,19 @@ describe("Decisões do admin", () => {
     expect(user).toBeTruthy();
   });
 
-  it("aprova com comissão ajustada e avisa por e-mail", async () => {
+  it("ajusta a comissão de parceiro ativo e avisa por e-mail", async () => {
     const { res } = await candidato();
     const { agent, csrf } = await comoAdmin();
-    const r = await decidir(agent, csrf, res.body.parceiro.id, { acao: "aprovar", comissao: 12 });
+    expect((await decidir(agent, csrf, res.body.parceiro.id, { acao: "comissao" })).body.codigo).toBe("INVALID_COMMISSION");
+    const r = await decidir(agent, csrf, res.body.parceiro.id, { acao: "comissao", comissao: 12 });
     expect(r.body.parceiro).toMatchObject({ status: "APPROVED" });
     expect(Number(r.body.parceiro.commission_pct)).toBe(12);
-    const mails = fs.readdirSync(mailService.MAIL_DIR).filter((f) => f.includes("parceiro_aprovar"));
+    const mails = fs.readdirSync(mailService.MAIL_DIR).filter((f) => f.includes("parceiro_comissao"));
     expect(mails).toHaveLength(1);
   });
 
-  it("recusa e suspensão exigem motivo da lista; transição inválida é 409", async () => {
-    const { res } = await candidato();
+  it("cadastro antigo pendente: recusa e suspensão exigem motivo da lista; transição inválida é 409", async () => {
+    const { res } = await candidatoPendenteAntigo();
     const id = res.body.parceiro.id;
     const { agent, csrf } = await comoAdmin();
     expect((await decidir(agent, csrf, id, { acao: "recusar", motivo: "nao gostei" })).body.codigo).toBe("INVALID_REASON");
@@ -221,8 +235,8 @@ describe("LGPD", () => {
     expect(r.body.codigo).toBe("ACTIVE_PARTNER");
   });
 
-  it("candidatura pendente é apagada na anonimização", async () => {
-    const { user } = await candidato();
+  it("candidatura antiga pendente é apagada na anonimização", async () => {
+    const { user } = await candidatoPendenteAntigo();
     const p = await dataRightsService.createRequest({ userId: user.id, kind: "DELETION", req: null });
     const { agent, csrf } = await comoAdmin();
     const r = await agent.post(`/api/admin/solicitacoes/${p.id}`).set("X-CSRF-Token", csrf)
