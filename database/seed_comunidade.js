@@ -151,6 +151,8 @@ const VIAGENS = [
     local: "Ipojuca, PE",
     descricao: "Passeio de jangada até as piscinas naturais na maré baixa, com snorkel.",
     info: "Encontro na praia central, em frente às jangadas.",
+    fotos: ["database/fotos-exemplo/porto-1.jpg", "database/fotos-exemplo/porto-2.jpg"],
+    alt: "Vista aérea das piscinas naturais e das jangadas em Porto de Galinhas",
   },
   {
     chave: "praiadoforte", criador: "larissa", categoria: "expedicao", dias: -40, hora: "08:30", vagas: 8,
