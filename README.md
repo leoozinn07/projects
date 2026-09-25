@@ -80,8 +80,9 @@ viagens em destinos brasileiros reais, participações, curtidas, comentários,
 seguidores e avaliações para testar a Comunidade "cheia". Tudo aparece com o
 selo **Exemplo** e o aviso de que não é real; fica fora do catálogo, do
 sitemap, do assistente e das métricas do admin, com `noindex` para
-buscadores. As contas não têm senha utilizável, as fotos são só as fotos
-reais que já estão no projeto e nenhuma mostra pessoas. O comando recusa rodar
+buscadores. As contas não têm senha utilizável e as fotos são reais, do
+próprio destino (`app/public/img` e `database/fotos-exemplo`), sem pessoas
+reconhecíveis. O comando recusa rodar
 em produção. Para apagar tudo: `npm run db:seed:comunidade:limpar`.
 
 Rode todos os comandos **dentro da pasta do projeto** (onde está o `package.json`).

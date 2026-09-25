@@ -13,9 +13,11 @@
      contagens, do sitemap, do assistente e das métricas do admin, e
      com "noindex" para buscadores.
    - Contas de exemplo não têm senha utilizável: ninguém entra nelas.
-   - Fotos: só as fotos reais que já estão no projeto (app/public/img).
-     Sem foto real do destino, a viagem usa a ilustração da categoria.
-     Nenhuma foto de pessoa: os perfis usam a inicial do nome.
+   - Fotos: só fotos reais do próprio destino — as que já estão no site
+     (app/public/img) e as enviadas pelo dono do projeto
+     (database/fotos-exemplo). Sem foto real, a viagem usa a ilustração
+     da categoria. Sem pessoas reconhecíveis (recortadas quando preciso);
+     os perfis usam a inicial do nome.
    - Recusa rodar em produção.
 
    Uso:
@@ -31,7 +33,9 @@ const db = require("../app/lib/db");
 const mediaService = require("../app/services/mediaService");
 
 const DOMINIO = "exemplo.aquatrip";
-const IMG = path.join(__dirname, "..", "app", "public", "img");
+// Fotos: caminho relativo à raiz do projeto. Só fotos reais do destino —
+// as do site (app/public/img) e as enviadas pelo dono (database/fotos-exemplo).
+const RAIZ = path.join(__dirname, "..");
 
 function exigirForaDeProducao() {
   if (process.env.NODE_ENV === "production") {
@@ -64,7 +68,7 @@ const VIAGENS = [
       "A ideia é fazer o batismo ou mergulho credenciado com uma operadora local e aproveitar as praias entre um mergulho e outro.",
     info: "Cada pessoa compra a própria passagem e paga a taxa de preservação da ilha. " +
       "Ponto de encontro no porto de Santo Antônio. Levar protetor solar biodegradável e documento com foto.",
-    fotos: ["fernandonoronha.jpg"],
+    fotos: ["app/public/img/fernandonoronha.jpg"],
     alt: "Morro Dois Irmãos visto da praia, em Fernando de Noronha",
   },
   {
@@ -75,7 +79,7 @@ const VIAGENS = [
       "Se outras famílias quiserem ir junto, a gente combina o horário e divide as dicas.",
     info: "Encontro na entrada do aquário, na Ponta da Praia. Cada família compra o próprio ingresso na bilheteria. " +
       "Depois, almoço na orla (opcional).",
-    fotos: ["aquarium_santos.jpg"],
+    fotos: ["app/public/img/aquarium_santos.jpg"],
     alt: "Aquário Municipal de Santos",
   },
   {
@@ -103,6 +107,8 @@ const VIAGENS = [
     descricao: "Três dias em Barreirinhas com passeio de 4x4 pelas dunas e lagoas, e um dia de barco pelo Rio Preguiças.",
     info: "Hospedagem e passeios contratados por cada pessoa. Saída cedo por causa do calor nas dunas. " +
       "Levar chapéu, protetor solar e garrafa de água.",
+    fotos: ["database/fotos-exemplo/lencois-1.jpg", "database/fotos-exemplo/lencois-2.jpg", "database/fotos-exemplo/lencois-3.jpg"],
+    alt: "Lagoa de água azul entre as dunas dos Lençóis Maranhenses",
   },
   {
     chave: "barcelos", criador: "pedro", categoria: "pesca", dias: 60, hora: "05:30", vagas: 4,
@@ -316,7 +322,7 @@ async function semear() {
     );
 
     for (const [pos, arquivo] of (v.fotos || []).entries()) {
-      const buffer = fs.readFileSync(path.join(IMG, arquivo));
+      const buffer = fs.readFileSync(path.join(RAIZ, arquivo));
       const media = await mediaService.salvarImagem({ buffer, usuarioId: ids[v.criador], purpose: "EXPERIENCE", status: "APPROVED" });
       await db.query(`INSERT INTO service_photos (service_id, media_id, position) VALUES (?, ?, ?)`, [id, media.id, pos + 1]);
       if (pos === 0) await db.query(`UPDATE services SET cover_media_id = ? WHERE id = ?`, [media.id, id]);
