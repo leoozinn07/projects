@@ -141,6 +141,8 @@ const VIAGENS = [
     descricao: "Passeio às galés de Maragogi na maré baixa, com snorkel entre os recifes.",
     info: "O passeio de barco é comprado com operadora credenciada, que confirma o horário conforme a tábua de maré. " +
       "Não pise nos corais.",
+    fotos: ["database/fotos-exemplo/maragogi-1.jpg", "database/fotos-exemplo/maragogi-2.jpg"],
+    alt: "Piscinas naturais de água cristalina sobre os recifes de Maragogi",
   },
   // Já aconteceram: servem para mostrar participantes e avaliações.
   {

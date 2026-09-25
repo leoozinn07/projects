@@ -117,7 +117,7 @@ describe("seed de demonstração da Comunidade", () => {
     );
     const r = await seed.limpar();
     expect(r.contas).toBe(8);
-    expect(r.fotos).toBe(12);
+    expect(r.fotos).toBe(14);
     const { rows } = await db.query(
       `SELECT (SELECT COUNT(*) FROM users WHERE is_demo) AS u,
               (SELECT COUNT(*) FROM services WHERE creator_user_id IS NOT NULL) AS s,
