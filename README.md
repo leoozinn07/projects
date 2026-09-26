@@ -9,7 +9,7 @@ experiências e recebem com a comissão do AquaTrip descontada na hora.
 > ponta, mas **simulados**: nenhum dinheiro real é movimentado e nenhum
 > e-mail sai do servidor.
 
-Node.js 22 · Express · EJS · MySQL 8.0 · 481 testes automatizados
+Node.js 22 · Express · EJS · MySQL 8.0 · 574 testes automatizados
 
 Design: veja [docs/design.md](docs/design.md) (tokens, tipografia, movimento e fotos provisórias).
 
@@ -134,10 +134,13 @@ seguir, marcar interesse, denunciar, participar (gratuita confirma na hora) e
 acompanhar tudo no perfil social `/meu-perfil`. Reclamações, sugestões e
 avaliação do AquaTrip em `/feedback`.
 
-**Assistente virtual:** botão "Ajuda" em todas as páginas. Responde só sobre o
-AquaTrip, a partir de `app/lib/chatbot/conhecimento.md`, e consulta apenas o
-catálogo público. Precisa de `ANTHROPIC_API_KEY` no `.env` (sem ela, aparece
-como indisponível).
+**Central de ajuda:** botão "Ajuda" em todas as páginas, **sem IA e sem custo**
+(nenhuma chave de API). A pessoa digita a dúvida e o site mostra a resposta
+pronta mais parecida, em português, inglês ou espanhol, com sugestões de
+assuntos relacionados; perguntas sobre destinos e tipos de passeio ("mergulho
+em Noronha") trazem experiências do catálogo público. As respostas ficam em
+`app/lib/assistente/faq.js`: quando algo mudar no site, atualize lá. Limitação:
+não "conversa" (não entende continuação como "e para crianças?").
 
 **Como admin:** painel com métricas (inclui usuários online, parceiros,
 participantes, reclamações e avaliações); moderação da comunidade (suspender,
@@ -163,7 +166,7 @@ npm run db:migrate:test
 npm test
 ```
 
-481 testes em 33 suítes, rodando contra um MySQL 8.0 real. As proteções de
+574 testes em 34 suítes, rodando contra um MySQL 8.0 real. As proteções de
 segurança e de dinheiro foram validadas também por **teste de mutação**: a
 proteção é removida de propósito e o teste correspondente precisa falhar.
 
