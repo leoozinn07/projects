@@ -204,18 +204,18 @@
   "assistente": {
     "abrir": "Abrir assistente AquaTrip",
     "fab": "Ajuda",
-    "titulo": "Assistente AquaTrip",
+    "titulo": "Ajuda AquaTrip",
     "sub": "Dúvidas sobre o site, reservas e comunidade",
     "limpar": "Nova conversa",
     "fechar": "Fechar",
-    "boas_vindas": "Oi! Sou o assistente do AquaTrip. Posso explicar como reservar, criar sua própria experiência, pagamentos, perfil, privacidade e mais. Em que posso ajudar?",
+    "boas_vindas": "Oi! Sou a central de ajuda do AquaTrip. Pergunte sobre reservas, pagamento, criar sua experiência, comunidade, perfil ou privacidade. Também procuro experiências: tente \"mergulho em Noronha\".",
     "sug1": "Como crio uma experiência?",
     "sug2": "Como funciona o pagamento?",
     "sug3": "Posso cancelar uma reserva?",
     "campo": "Sua pergunta",
     "placeholder": "Pergunte sobre o AquaTrip...",
     "enviar": "Enviar",
-    "aviso": "Respostas geradas por IA. Não envie senhas, cartão ou documentos."
+    "aviso": "Respostas prontas da central de ajuda. Não envie senhas, cartão ou documentos."
   },
   "client": {
     "form_mostrar_senha": "Mostrar senha",

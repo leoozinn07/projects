@@ -1,10 +1,11 @@
 /* ==============================================================
-   AquaTrip — Assistente virtual (janela flutuante)
+   AquaTrip — Central de ajuda (janela flutuante, sem IA)
    ==============================================================
-   O navegador só manda o texto da pergunta. O histórico da conversa
-   vive na sessão do servidor (GET /api/assistente devolve o que já
-   foi conversado, então recarregar a página não perde o contexto).
-   Respostas da IA entram como textContent: nunca como HTML.
+   O navegador só manda o texto da pergunta; o servidor devolve a
+   resposta pronta mais parecida, experiências do catálogo quando a
+   pergunta fala delas e sugestões de assuntos. O histórico vive na
+   sessão do servidor (recarregar a página não perde a conversa).
+   Tudo entra como textContent: nunca como HTML.
    ============================================================== */
 (function () {
   "use strict";
@@ -85,6 +86,44 @@
     p.append(texto.slice(ultimo));
   }
 
+  /** Experiências encontradas no catálogo, como links. */
+  function listaExperiencias(li, lista) {
+    if (!Array.isArray(lista) || !lista.length) return;
+    const ul = document.createElement("ul");
+    ul.className = "aq-exp";
+    lista.forEach((e) => {
+      const item = document.createElement("li");
+      const a = document.createElement("a");
+      // Só links internos do próprio catálogo.
+      a.href = /^\/reservar\/[a-z0-9-]+$/.test(e.link) ? e.link : "/reservar";
+      const titulo = document.createElement("strong");
+      titulo.textContent = e.titulo;
+      const meta = document.createElement("span");
+      meta.textContent = [e.local, e.preco, e.data].filter(Boolean).join(" · ");
+      a.append(titulo, meta);
+      item.appendChild(a);
+      ul.appendChild(item);
+    });
+    li.appendChild(ul);
+    rolar();
+  }
+
+  /** Botões com assuntos relacionados: clicar pergunta. */
+  function sugestoes(lista) {
+    if (!Array.isArray(lista) || !lista.length) return;
+    const li = document.createElement("li");
+    li.className = "aq-msg-sugs";
+    lista.forEach((texto) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "aq-sug";
+      b.textContent = texto;
+      li.appendChild(b);
+    });
+    log.appendChild(li);
+    rolar();
+  }
+
   function digitando() {
     const li = document.createElement("li");
     li.className = "aq-msg aq-msg-bot aq-typing";
@@ -101,7 +140,10 @@
       const r = await fetch("/api/assistente", { headers: { Accept: "application/json" } });
       const j = await r.json();
       if (!j.disponivel) indisponivel();
-      (j.historico || []).forEach((m) => bolha(m.role === "user" ? "user" : "bot", m.content));
+      (j.historico || []).forEach((m) => {
+        const li = bolha(m.role === "user" ? "user" : "bot", m.content);
+        listaExperiencias(li, m.experiencias);
+      });
       if ((j.historico || []).length) sugs.hidden = true;
     } catch {
       /* sem conexão: a pessoa ainda pode tentar enviar */
@@ -138,7 +180,9 @@
         bolha("bot", j.error || t("bot_erro", null, "Não consegui responder agora. Tente de novo."), "aq-msg-erro");
         return;
       }
-      bolha("bot", j.resposta);
+      const li = bolha("bot", j.resposta);
+      listaExperiencias(li, j.experiencias);
+      sugestoes(j.sugestoes);
     } catch {
       indicador.remove();
       bolha("bot", t("bot_sem_rede", null, "Sem conexão. Verifique a internet e tente de novo."), "aq-msg-erro");
@@ -161,12 +205,14 @@
   }
   campo.addEventListener("input", ajustar);
   sugs.addEventListener("click", (e) => { const b = e.target.closest(".aq-sug"); if (b) perguntar(b.textContent); });
+  // Sugestões que chegam junto das respostas.
+  log.addEventListener("click", (e) => { const b = e.target.closest(".aq-msg-sugs .aq-sug"); if (b) perguntar(b.textContent); });
 
   $("aqBotClear").addEventListener("click", async () => {
     try {
       await fetch("/api/assistente/limpar", { method: "POST", headers: { "X-CSRF-Token": CSRF } });
     } catch { /* limpa a tela mesmo assim */ }
-    [...log.querySelectorAll(".aq-msg")].slice(1).forEach((li) => li.remove());
+    [...log.querySelectorAll(".aq-msg, .aq-msg-sugs")].slice(1).forEach((li) => li.remove());
     sugs.hidden = false;
   });
 })();

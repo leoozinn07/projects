@@ -114,8 +114,8 @@ const socialLimiter = rateLimit({
 });
 
 /**
- * Assistente virtual: cada mensagem custa uma chamada paga à API de IA.
- * Freio curto por minuto aqui; a cota diária fica no chatbotService.
+ * Central de ajuda (botão "Ajuda"): respostas prontas, sem custo por
+ * mensagem. O freio por minuto só evita abuso (robôs martelando a rota).
  */
 const chatLimiter = rateLimit({
   windowMs: 60 * 1000,

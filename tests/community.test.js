@@ -5,11 +5,9 @@
 const crypto = require("crypto");
 const request = require("supertest");
 const { app, db, resetDatabase, createUser, loginAs } = require("./helpers");
-const chatbotService = require("../app/services/chatbotService");
 
 beforeEach(async () => {
   await resetDatabase();
-  chatbotService._definirCliente(null);
 });
 
 let seq = 0;
@@ -267,14 +265,19 @@ describe("moderação administrativa", () => {
   });
 });
 
-describe("assistente virtual", () => {
+describe("central de ajuda (sem IA)", () => {
   const chat = (p, mensagem) => api(p, "post", "/api/assistente/mensagem", { mensagem });
 
-  it("sem chave configurada responde indisponível (503)", async () => {
+  it("está sempre disponível e responde com a resposta pronta certa", async () => {
     const u = await novo();
-    const r = await chat(u, "Como crio uma experiência?");
-    expect(r.status).toBe(503);
-    expect(r.body.codigo).toBe("UNAVAILABLE");
+    const st = await u.agent.get("/api/assistente");
+    expect(st.body.disponivel).toBe(true);
+    const r = await chat(u, "Como faço pra criar uma experiência?");
+    expect(r.status).toBe(200);
+    expect(r.body.resposta).toContain("/criar_experiencia");
+    expect(r.body.sugestoes.length).toBeGreaterThan(0);
+    const pix = await chat(u, "como pago com pix");
+    expect(pix.body.resposta).toContain("Já realizei o pagamento");
   });
 
   it("exige CSRF", async () => {
@@ -282,58 +285,51 @@ describe("assistente virtual", () => {
     expect(r.status).toBe(403);
   });
 
-  it("guarda o histórico no servidor, usa a ferramenta do catálogo e filtra a saída", async () => {
-    const dono = await novo();
-    await criar(dono);
-    const chamadas = [];
-    chatbotService._definirCliente({
-      beta: { messages: { create: async (params) => {
-        chamadas.push(JSON.parse(JSON.stringify(params)));
-        const n = chamadas.length;
-        if (n === 1) {
-          return { stop_reason: "tool_use", usage: { input_tokens: 10, output_tokens: 5 },
-            content: [{ type: "tool_use", id: "t1", name: "buscar_experiencias", input: { termo: "Santos" } }] };
-        }
-        return { stop_reason: "end_turn", usage: { input_tokens: 10, output_tokens: 5 },
-          content: [{ type: "text", text: `Resposta ${n}. Contato: fulano@exemplo.com sk-ant-abcdefghijk123` }] };
-      } } },
-    });
+  it("fora do assunto: diz que não encontrou e sugere temas (não inventa)", async () => {
     const u = await novo();
-    const r1 = await chat(u, "Tem algo em Santos?");
-    expect(r1.status).toBe(200);
-    expect(r1.body.resposta).not.toContain("fulano@exemplo.com");
-    expect(r1.body.resposta).not.toContain("sk-ant-");
-    // O resultado da ferramenta foi para o modelo com dados públicos reais.
-    const resultado = chamadas[1].messages.at(-1).content[0];
-    expect(resultado.type).toBe("tool_result");
-    expect(resultado.content).toContain("Fim de semana em Santos");
-    expect(resultado.content).not.toContain(dono.user.email);
-    // Prompt de sistema fixo, com cache e base de conhecimento.
-    expect(chamadas[0].system[0].cache_control).toEqual({ type: "ephemeral" });
-    expect(chamadas[0].system[0].text).toContain("Base de conhecimento do AquaTrip");
-
-    await chat(u, "E outras pessoas podem participar?");
-    const ultima = chamadas.at(-1).messages;
-    // Contexto da conversa veio da SESSÃO, não do navegador.
-    expect(ultima.map((m) => m.role)).toEqual(["user", "assistant", "user"]);
-    expect(ultima[0].content).toBe("Tem algo em Santos?");
-    const uso = await db.query("SELECT COUNT(*) AS n FROM chat_usage WHERE outcome = 'ok'");
-    expect(uso.rows[0].n).toBe(2);
+    const r = await chat(u, "qual a capital da França?");
+    expect(r.body.resposta).toContain("Não encontrei uma resposta pronta");
+    expect(r.body.experiencias).toEqual([]);
+    expect(r.body.sugestoes).toContain("Como faço uma reserva?");
   });
 
-  it("respeita a cota diária", async () => {
-    process.env.CHATBOT_DAILY_LIMIT_USER = "1";
-    try {
-      chatbotService._definirCliente({ beta: { messages: { create: async () => ({
-        stop_reason: "end_turn", usage: {}, content: [{ type: "text", text: "ok" }] }) } } });
-      const u = await novo();
-      expect((await chat(u, "primeira")).status).toBe(200);
-      const r = await chat(u, "segunda");
-      expect(r.status).toBe(429);
-      expect(r.body.codigo).toBe("DAILY_LIMIT");
-    } finally {
-      delete process.env.CHATBOT_DAILY_LIMIT_USER;
-    }
+  it("busca no catálogo público quando a pergunta é sobre experiências", async () => {
+    const dono = await novo();
+    await criar(dono);
+    const u = await novo();
+    const r = await chat(u, "tem passeio em Santos?");
+    expect(r.body.resposta).toContain("Encontrei estas experiências");
+    expect(r.body.experiencias[0]).toMatchObject({ titulo: "Fim de semana em Santos", preco: "gratuita", link: "/reservar/fim-de-semana-em-santos" });
+    // Só dado público: nada de e-mail de quem organiza.
+    expect(JSON.stringify(r.body)).not.toContain(dono.user.email);
+    const nada = await chat(u, "aquário em Manaus");
+    expect(nada.body.resposta).toContain("Não encontrei experiências");
+  });
+
+  it("responde no idioma do site", async () => {
+    const u = await novo();
+    await u.agent.post("/configuracoes/idioma").type("form").send({ idioma: "en", redirect: "/", _csrf: u.csrf });
+    const en = await chat(u, "how do I cancel my booking");
+    expect(en.status).toBe(200);
+    expect(en.body.resposta).toContain("Yes, at /minhas-reservas.");
+  });
+
+  it("guarda o histórico na sessão e mascara cartão/CPF digitados por engano", async () => {
+    const u = await novo();
+    await chat(u, "oi");
+    const r = await chat(u, "meu cartão é 4111 1111 1111 1111, pode pagar?");
+    expect(r.body.resposta).toContain("não envie número de cartão");
+    const h = (await u.agent.get("/api/assistente")).body.historico;
+    expect(h.map((m) => m.role)).toEqual(["user", "assistant", "user", "assistant"]);
+    expect(JSON.stringify(h)).not.toContain("4111");
+    await api(u, "post", "/api/assistente/limpar", {});
+    expect((await u.agent.get("/api/assistente")).body.historico).toEqual([]);
+  });
+
+  it("recusa mensagem vazia ou longa demais", async () => {
+    const u = await novo();
+    expect((await chat(u, "   ")).status).toBe(422);
+    expect((await chat(u, "a".repeat(801))).status).toBe(422);
   });
 });
 
