@@ -71,7 +71,7 @@ describe("Início do pagamento", () => {
     await agent
       .post(`/reservas/${booking.id}/pagar`)
       .type("form")
-      .send({ method: "CREDIT_CARD", cardLastFour: "4242", installments: 3, _csrf: csrf });
+      .send({ method: "CREDIT_CARD", cardLastFour: "4242", cardLength: 16, cardExpMonth: 12, cardExpYear: 2030, installments: 3, _csrf: csrf });
 
     const { rows: p } = await db.query("SELECT * FROM payments WHERE booking_id = $1", [booking.id]);
     expect(p[0].status).toBe("APPROVED");
@@ -92,7 +92,7 @@ describe("Início do pagamento", () => {
     await agent
       .post(`/reservas/${booking.id}/pagar`)
       .type("form")
-      .send({ method: "CREDIT_CARD", cardLastFour: "0000", _csrf: csrf });
+      .send({ method: "CREDIT_CARD", cardLastFour: "0000", cardLength: 16, cardExpMonth: 12, cardExpYear: 2030, _csrf: csrf });
 
     const { rows: p } = await db.query("SELECT status FROM payments WHERE booking_id = $1", [
       booking.id,
@@ -111,7 +111,9 @@ describe("Início do pagamento", () => {
     await agent.post(`/reservas/${booking.id}/pagar`).type("form").send({
       method: "CREDIT_CARD",
       cardLastFour: "4242",
-      card_number: "4111111111111111", // tentativa de injetar PAN
+      cardLength: 16, cardExpMonth: 12, cardExpYear: 2030,
+      cardNumber: "4111111111111111", // tentativa de injetar PAN
+      card_number: "4111111111111111",
       cvv: "123",
       _csrf: csrf,
     });
@@ -162,7 +164,7 @@ describe("Proteção contra cobrança duplicada", () => {
     await agent
       .post(`/reservas/${booking.id}/pagar`)
       .type("form")
-      .send({ method: "CREDIT_CARD", cardLastFour: "4242", _csrf: csrf });
+      .send({ method: "CREDIT_CARD", cardLastFour: "4242", cardLength: 16, cardExpMonth: 12, cardExpYear: 2030, _csrf: csrf });
 
     csrf = await freshCsrf(agent, `/reservas/${booking.id}/checkout`);
     const res = await agent
@@ -345,7 +347,7 @@ describe("Cancelamento e estorno", () => {
     await agent
       .post(`/reservas/${booking.id}/pagar`)
       .type("form")
-      .send({ method: "CREDIT_CARD", cardLastFour: "4242", _csrf: csrf });
+      .send({ method: "CREDIT_CARD", cardLastFour: "4242", cardLength: 16, cardExpMonth: 12, cardExpYear: 2030, _csrf: csrf });
 
     csrf = await freshCsrf(agent);
     await agent.post(`/reservas/${booking.id}/cancelar`).type("form").send({ _csrf: csrf });
@@ -374,10 +376,10 @@ describe("Comprovante", () => {
     await agent
       .post(`/reservas/${booking.id}/pagar`)
       .type("form")
-      .send({ method: "CREDIT_CARD", cardLastFour: "4242", _csrf: csrf });
+      .send({ method: "CREDIT_CARD", cardLastFour: "4242", cardLength: 16, cardExpMonth: 12, cardExpYear: 2030, _csrf: csrf });
 
     const depois = await agent.get(`/reservas/${booking.id}/comprovante`);
     expect(depois.status).toBe(200);
-    expect(depois.text).toContain("Comprovante de reserva");
+    expect(depois.text).toContain("Comprovante de teste");
   });
 });

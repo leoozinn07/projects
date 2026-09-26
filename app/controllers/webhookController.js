@@ -19,7 +19,8 @@ const mockProvider = require("../lib/payments/mockProvider");
 const auditService = require("../services/auditService");
 const { AuditAction } = auditService;
 
-async function handlePaymentWebhook(req, res) {
+/** Processa um evento de pagamento e devolve { status, body } da resposta. */
+async function processarWebhook(req) {
   const provider = getPaymentProvider();
 
   let parsed;
@@ -31,7 +32,7 @@ async function handlePaymentWebhook(req, res) {
     });
   } catch (err) {
     (req.log || log).error({ err }, "erro ao interpretar payload");
-    return res.status(400).json({ error: "invalid payload" });
+    return { status: 400, body: { error: "invalid payload" } };
   }
 
   if (!parsed.valid) {
@@ -41,10 +42,10 @@ async function handlePaymentWebhook(req, res) {
       req,
       metadata: { provider: provider.name, motivo: "assinatura_invalida" },
     });
-    return res.status(401).json({ error: "invalid signature" });
+    return { status: 401, body: { error: "invalid signature" } };
   }
   if (!parsed.eventId || !parsed.providerPaymentId) {
-    return res.status(400).json({ error: "missing event id or payment id" });
+    return { status: 400, body: { error: "missing event id or payment id" } };
   }
 
   // Idempotência: se o insert não retorna linha, já processamos antes.
@@ -56,7 +57,7 @@ async function handlePaymentWebhook(req, res) {
   });
 
   if (!recorded) {
-    return res.status(200).json({ received: true, duplicate: true });
+    return { status: 200, body: { received: true, duplicate: true } };
   }
 
   try {
@@ -88,12 +89,17 @@ async function handlePaymentWebhook(req, res) {
         status,
       },
     });
-    return res.status(200).json({ received: true });
+    return { status: 200, body: { received: true } };
   } catch (err) {
     (req.log || log).error({ err }, "erro ao processar evento");
     // 500 faz o gateway reenviar — e a idempotência já nos protege.
-    return res.status(500).json({ error: "processing failed" });
+    return { status: 500, body: { error: "processing failed" } };
   }
+}
+
+async function handlePaymentWebhook(req, res) {
+  const r = await processarWebhook(req);
+  return res.status(r.status).json(r.body);
 }
 
 /* --------------------------------------------------------------
@@ -131,4 +137,47 @@ async function simulatePaymentStatus(req, res) {
   }
 }
 
-module.exports = { handlePaymentWebhook, simulatePaymentStatus };
+/* --------------------------------------------------------------
+   PIX DE TESTE: "Já realizei o pagamento"
+   Checkout de demonstração: não existe banco do outro lado. O botão
+   aprova o PIX SIMULADO do próprio dono da reserva, pelo mesmo caminho
+   do webhook (assinatura, idempotência, confirmação da reserva). Só
+   existe com o provider simulado e fora de produção.
+   -------------------------------------------------------------- */
+async function confirmarPixDeTeste(req, res, next) {
+  if (process.env.NODE_ENV === "production" || !bookingService.isSimulated()) {
+    return res.status(404).render("pages/erro", { statusCode: 404, title: "Página não encontrada", message: "", stack: null });
+  }
+  const voltar = (msg) => res.redirect(`/reservas/${req.params.id}/checkout?error=${encodeURIComponent(msg)}`);
+  try {
+    const booking = await bookingService.getBookingForUser(req.params.id, req.session.user);
+    if (booking.user_id !== req.session.user.id) throw new bookingService.BookingError("Reserva não encontrada.", "NOT_FOUND");
+    if (booking.status === "CONFIRMED") return res.redirect(`/reservas/${booking.id}/comprovante`);
+    if (booking.status !== "PENDING") return voltar("Esta reserva não está aguardando pagamento.");
+
+    const payment = await paymentRepository.findLatestByBooking(booking.id);
+    if (!payment || payment.method !== "PIX" || payment.status !== "PENDING" || payment.provider !== mockProvider.name) {
+      return voltar("Gere o QR Code PIX antes de confirmar o pagamento.");
+    }
+
+    const { body, signature } = mockProvider.simulateStatusChange(payment.provider_payment_id, "APPROVED");
+    req.headers["x-aquatrip-signature"] = signature;
+    req.rawBody = JSON.stringify(body);
+    req.body = body;
+    const r = await processarWebhook(req);
+    if (r.status !== 200) return voltar("Não foi possível confirmar o pagamento de teste. Tente novamente.");
+
+    const atualizada = await bookingService.getBookingForUser(booking.id, req.session.user);
+    if (atualizada.status !== "CONFIRMED") {
+      return voltar("O prazo da reserva terminou antes da confirmação. Escolha o horário de novo.");
+    }
+    return res.redirect(`/reservas/${booking.id}/comprovante`);
+  } catch (err) {
+    if (err instanceof bookingService.BookingError) {
+      return res.status(404).render("pages/erro", { statusCode: 404, title: "Reserva não encontrada", message: err.message, stack: null });
+    }
+    return next(err);
+  }
+}
+
+module.exports = { handlePaymentWebhook, simulatePaymentStatus, confirmarPixDeTeste };

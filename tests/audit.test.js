@@ -170,7 +170,7 @@ describe("Auditoria de reservas e pagamentos", () => {
     await agent
       .post(`/reservas/${bookingId}/pagar`)
       .type("form")
-      .send({ method: "CREDIT_CARD", cardLastFour: "4242", _csrf: csrf });
+      .send({ method: "CREDIT_CARD", cardLastFour: "4242", cardLength: 16, cardExpMonth: 12, cardExpYear: 2030, _csrf: csrf });
 
     const criada = await eventos(AuditAction.BOOKING_CREATED);
     expect(criada).toHaveLength(1);
@@ -201,7 +201,7 @@ describe("Auditoria de reservas e pagamentos", () => {
     await agent
       .post(`/reservas/${bookingId}/pagar`)
       .type("form")
-      .send({ method: "CREDIT_CARD", cardLastFour: "4242", _csrf: csrf });
+      .send({ method: "CREDIT_CARD", cardLastFour: "4242", cardLength: 16, cardExpMonth: 12, cardExpYear: 2030, _csrf: csrf });
 
     csrf = await freshCsrf(agent);
     await agent.post(`/reservas/${bookingId}/cancelar`).type("form").send({ _csrf: csrf });

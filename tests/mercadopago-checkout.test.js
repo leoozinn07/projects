@@ -212,11 +212,11 @@ describe("Checkout com Mercado Pago", () => {
 describe("Simulador (sem credenciais)", () => {
   it("depois de uma recusa, a mesma reserva pode ser paga", async () => {
     const { booking, agent } = await cenario();
-    await pagar(agent, booking, { method: "CREDIT_CARD", cardLastFour: "0000" });
+    await pagar(agent, booking, { method: "CREDIT_CARD", cardLastFour: "0000", cardLength: 16, cardExpMonth: 12, cardExpYear: 2030 });
     const pagina = await agent.get(`/reservas/${booking.id}/checkout`);
     expect(pagina.text).toContain("limite ou saldo suficiente");
 
-    await pagar(agent, booking, { method: "CREDIT_CARD", cardLastFour: "4242" });
+    await pagar(agent, booking, { method: "CREDIT_CARD", cardLastFour: "4242", cardLength: 16, cardExpMonth: 12, cardExpYear: 2030 });
     const { rows } = await db.query("SELECT status FROM payments WHERE booking_id = $1 ORDER BY created_at", [booking.id]);
     expect(rows.map((r) => r.status)).toEqual(["REJECTED", "APPROVED"]);
   });

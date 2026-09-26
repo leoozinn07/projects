@@ -70,7 +70,10 @@ Quando algo mudar no sistema, atualize este arquivo.
 - O AquaTrip não recebe nem armazena número de cartão ou código de segurança.
 - Em experiências de parceiros, o pagamento vai direto para o parceiro pelo Mercado Pago, com a comissão do AquaTrip descontada na hora.
 - Após a aprovação há comprovante e ingresso com código para apresentar na chegada.
-- Hoje tudo é SIMULADO: nenhum valor real é cobrado.
+- Hoje tudo é SIMULADO (checkout de teste): nenhum valor real é cobrado e nenhum cartão real deve ser usado.
+- PIX de teste: ao escolher PIX e clicar em "Gerar QR Code PIX", aparece um QR Code de teste (não pode ser pago em banco nenhum). Depois é só clicar em "Já realizei o pagamento" para ver o comprovante de teste.
+- Cartão de teste (crédito ou débito): pede número completo, validade (MM/AA) e CVV. Débito tem 16 dígitos; crédito de 13 a 19. O número completo e o CVV são conferidos só no navegador e não são enviados ao servidor. Cartões de teste: 4111 1111 1111 1111 aprova, 4000 0000 0002 0000 recusa, 4000 0000 0001 0001 fica em análise.
+- O comprovante mostra "Comprovante de teste" e avisa que nenhum dinheiro foi movimentado.
 
 ## Cancelamento e estorno
 - Reserva pendente (ainda não paga): pode ser cancelada a qualquer momento, sem cobrança.

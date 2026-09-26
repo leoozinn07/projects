@@ -5,7 +5,6 @@
     "checkout_brick_erro": "The card form had a problem. Reload the page or pay with PIX.",
     "checkout_copiado": "Code copied!",
     "checkout_selecionado": "Selected. Use Ctrl+C",
-    "checkout_qr_simulado": "QR Code unavailable in simulated mode. Use the copy-paste code below.",
     "checkout_enviando": "Sending...",
     "checkout_erro_tentar": "Error. Try again",
     "ing_todos": "All",
@@ -49,7 +48,18 @@
     "avaliacao_fotos_recusadas": "Some photos weren't accepted: ",
     "avaliacao_falha_envio": "upload failed",
     "avaliacao_so_primeiras": "Only the first {n} will be uploaded.",
-    "avaliacao_maior_5mb": "{nome}: larger than 5 MB, won't be uploaded."
+    "avaliacao_maior_5mb": "{nome}: larger than 5 MB, won't be uploaded.",
+    "checkout_err_numero_vazio": "Enter the card number.",
+    "checkout_err_numero_debito": "The debit card must have 16 digits.",
+    "checkout_err_numero_credito": "The credit card must have 13 to 19 digits.",
+    "checkout_err_numero_invalido": "Invalid card number. Check the digits.",
+    "checkout_err_validade_vazia": "Enter the expiry date (MM/YY).",
+    "checkout_err_validade_formato": "Use the MM/YY format, with a month from 01 to 12.",
+    "checkout_err_validade_vencida": "This card has expired.",
+    "checkout_err_validade_longe": "Expiry date too far ahead. Check the date.",
+    "checkout_err_cvv_vazio": "Enter the CVV.",
+    "checkout_err_cvv_formato": "The CVV must have {n} digits.",
+    "checkout_err_revise": "Review the highlighted fields to continue."
   },
   "status": {
     "reserva": {
@@ -96,8 +106,6 @@
     "debito_hint": "Full amount only",
     "cartao_indisponivel": "Card payment is currently unavailable for this experience. Use PIX.",
     "pci_nota": "For your security, the card number never touches AquaTrip's server: it's sent straight to the payment provider, and we only get back a token and the last 4 digits.",
-    "ultimos4": "Last 4 digits (simulation)",
-    "sim_hint_html": "Use <strong>0000</strong> to simulate a rejection, <strong>0001</strong> for pending review, or any other value for immediate approval.",
     "brick_carregando": "Loading the secure Mercado Pago form…",
     "parcelas": "Installments",
     "parcela_opcao": "{n}x of {valor}",
@@ -122,7 +130,21 @@
     "local_label": "Location",
     "data_label": "Date",
     "situacao_label": "Status",
-    "garantida_ate": "Spot guaranteed until"
+    "garantida_ate": "Spot guaranteed until",
+    "pix_info": "When you continue, we generate a test PIX QR code. Nothing is charged.",
+    "pci_nota_teste": "Test checkout: use only the test cards below, never a real card. The full number and CVV are checked only in your browser and are not sent to the server; we keep only the last 4 digits for the receipt.",
+    "numero_cartao": "Card number",
+    "validade": "Expiry (MM/YY)",
+    "cvv": "CVV",
+    "cvv_help": "3 digits on the back (4 on the front for American Express).",
+    "cartoes_teste_html": "Test cards: <code>4111 1111 1111 1111</code> approves, <code>4000 0000 0002 0000</code> declines, <code>4000 0000 0001 0001</code> stays under review. 17-digit credit: <code>5555 0000 0000 41234</code>. Expiry: any future date. CVV: any 3 digits.",
+    "gerar_pix_btn": "Generate PIX QR code",
+    "qr_teste_alt": "Test PIX QR code that cannot be paid",
+    "qr_teste_legenda": "Test QR code: it cannot be paid at any bank.",
+    "teste_tag": "Test",
+    "pix_passos": "In a real payment you would scan the QR code in your bank app. This is a simulation: confirm below to finish.",
+    "ja_paguei_btn": "I've already paid",
+    "outros_cenarios": "Other test scenarios"
   },
   "comprovante": {
     "seo_titulo": "Receipt | AquaTrip",
@@ -130,8 +152,10 @@
     "metodo_label": "Method",
     "pago_em_label": "Paid on",
     "total_pago_label": "Total paid",
-    "sim_titulo": "Simulated payment",
-    "sim_texto": "No real charge was processed."
+    "titulo_teste": "Test receipt",
+    "teste_banner_titulo": "Test (simulated) transaction.",
+    "teste_banner_texto": "No money was moved. This receipt is for demonstration only and is not proof of a real payment.",
+    "total_teste_label": "Total (simulated)"
   },
   "reservas": {
     "seo_titulo": "My bookings | AquaTrip",
@@ -261,6 +285,16 @@
     "o pagamento foi recusado pela análise de segurança. Tente outro cartão ou o PIX.": "the payment was rejected by the security review. Try another card or PIX.",
     "o cartão não pôde ser processado. Tente outro cartão.": "the card couldn't be processed. Try another card.",
     "estamos processando o pagamento. Em até 2 dias úteis você recebe a confirmação.": "we're processing the payment. You'll get confirmation within 2 business days.",
-    "o pagamento está em análise. Em até 2 dias úteis você recebe a confirmação.": "the payment is under review. You'll get confirmation within 2 business days."
+    "o pagamento está em análise. Em até 2 dias úteis você recebe a confirmação.": "the payment is under review. You'll get confirmation within 2 business days.",
+    "Preencha número, validade e CVV do cartão.": "Fill in the card number, expiry date and CVV.",
+    "O cartão de débito precisa ter 16 dígitos.": "The debit card must have 16 digits.",
+    "O cartão de crédito precisa ter de 13 a 19 dígitos.": "The credit card must have 13 to 19 digits.",
+    "Informe a validade do cartão no formato MM/AA.": "Enter the card expiry date as MM/YY.",
+    "Este cartão está vencido.": "This card has expired.",
+    "Validade muito distante. Confira a data.": "Expiry date too far ahead. Check the date.",
+    "Esta reserva não está aguardando pagamento.": "This booking is not awaiting payment.",
+    "Gere o QR Code PIX antes de confirmar o pagamento.": "Generate the PIX QR code before confirming the payment.",
+    "Não foi possível confirmar o pagamento de teste. Tente novamente.": "The test payment could not be confirmed. Try again.",
+    "O prazo da reserva terminou antes da confirmação. Escolha o horário de novo.": "The booking hold expired before confirmation. Choose the time slot again."
   }
 }

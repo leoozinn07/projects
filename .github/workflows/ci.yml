@@ -40,13 +40,10 @@ jobs:
           node-version: "22"
           cache: npm
 
-      # As tabelas de fuso horário não vêm carregadas na imagem oficial
-      # do MySQL — sem elas, CONVERT_TZ(..., 'America/Sao_Paulo') devolve
-      # NULL e os testes de fuso horário falham silenciosamente.
-      - name: Carregar tabelas de fuso horário no MySQL
-        run: |
-          docker exec $(docker ps -q -f ancestor=mysql:8.0) sh -c \
-            "mysql_tzinfo_to_sql /usr/share/zoneinfo | mysql -uroot -proot_dev_pw mysql"
+      # De propósito, SEM carregar as tabelas de fuso horário do MySQL:
+      # é assim que ele vem no Windows. O app converte fusos no Node
+      # (app/lib/fuso.js); se alguém voltar a depender de CONVERT_TZ com
+      # nome de fuso, os testes de data quebram aqui.
 
       - name: Instalar dependências
         run: npm ci

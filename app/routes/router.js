@@ -52,6 +52,10 @@ router.post('/reservar', requireAuth, writeLimiter, csrfProtect, bookingControll
 
 router.get('/reservas/:id/checkout', requireAuth, cspMercadoPago, bookingController.showCheckout);
 router.post('/reservas/:id/pagar', requireAuth, writeLimiter, csrfProtect, bookingController.startPayment);
+// PIX de teste: "Já realizei o pagamento" (só com o provider simulado, fora de produção).
+if (process.env.NODE_ENV !== 'production') {
+  router.post('/reservas/:id/pix/confirmar-teste', requireAuth, writeLimiter, csrfProtect, webhookController.confirmarPixDeTeste);
+}
 router.get('/reservas/:id/status', requireAuth, bookingController.paymentStatus);
 router.get('/reservas/:id/comprovante', requireAuth, bookingController.showReceipt);
 router.post('/reservas/:id/cancelar', requireAuth, writeLimiter, csrfProtect, bookingController.cancelBooking);

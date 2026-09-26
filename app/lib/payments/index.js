@@ -5,8 +5,11 @@
    O resto do código chama `getPaymentProvider()` e não sabe (nem
    precisa saber) se por trás está Mercado Pago, mock ou outro.
 
-   PAYMENT_PROVIDER = 'mercadopago' | 'mock' | (vazio = auto)
-     auto: usa mercadopago se MP_ACCESS_TOKEN existir; senão mock.
+   PAYMENT_PROVIDER = 'mercadopago' | 'mock' | (vazio = mock)
+     O padrão é SEMPRE o simulador: este projeto é um checkout de
+     teste. Antes, só ter MP_ACCESS_TOKEN no .env já trocava para o
+     gateway real (modo "auto"). Agora o gateway real só entra com a
+     decisão explícita PAYMENT_PROVIDER=mercadopago.
    ============================================================== */
 const mockProvider = require("./mockProvider");
 const log = require("../logger").forModule("pagamentos");
@@ -14,8 +17,7 @@ const mercadoPagoProvider = require("./mercadoPagoProvider");
 
 function resolveProviderName() {
   const explicit = (process.env.PAYMENT_PROVIDER || "").trim().toLowerCase();
-  if (explicit) return explicit;
-  return process.env.MP_ACCESS_TOKEN ? "mercadopago" : "mock";
+  return explicit || "mock";
 }
 
 function getPaymentProvider() {

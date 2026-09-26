@@ -96,6 +96,7 @@ async function main() {
               (SELECT count(*) FROM services) AS experiencias,
               (SELECT count(*) FROM partners) AS parceiros`);
     if (!d[0].usuarios) aviso("nenhum usuário — rode: npm run db:seed");
+    await conferirAdmin(c);
     if (!d[0].experiencias) aviso("nenhuma experiência — rode: npm run db:seed:services");
     if (!d[0].parceiros) aviso("nenhum parceiro de demonstração — rode: npm run db:seed:demo");
     if (d[0].usuarios && d[0].experiencias && d[0].parceiros) {
@@ -107,6 +108,22 @@ async function main() {
   } finally {
     await c.end();
   }
+}
+
+/** O admin do banco usa a senha do .env? (causa nº 1 de "senha certa não entra") */
+async function conferirAdmin(c) {
+  const email = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
+  const senha = process.env.ADMIN_PASSWORD || "";
+  if (!email || !senha) return;
+  const [u] = await c.query(
+    `SELECT role, password_hash, locked_until > UTC_TIMESTAMP() AS bloqueado FROM users WHERE email = ?`, [email]);
+  if (!u[0]) return aviso(`admin ${email} ainda não existe — rode: npm run db:seed`);
+  if (u[0].role !== "ADMIN") return aviso(`${email} existe como conta comum, não admin — use outro ADMIN_EMAIL no .env`);
+  if (!(await require("argon2").verify(u[0].password_hash, senha))) {
+    return aviso(`a senha do admin no banco é diferente do ADMIN_PASSWORD do .env — rode: npm run db:seed`);
+  }
+  if (Number(u[0].bloqueado)) return aviso("admin bloqueado por tentativas erradas — espere 15 minutos ou rode: npm run db:seed");
+  ok(`admin ${email} pronto (senha igual à do .env)`);
 }
 
 main().catch((e) => { console.error("\nErro inesperado no diagnóstico:", e.message, "\n"); process.exitCode = 1; });

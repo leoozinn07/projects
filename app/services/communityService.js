@@ -29,7 +29,7 @@ const { visivel } = require("../lib/visibilidade");
 const { CATEGORIAS } = require("../lib/categorias");
 const { AuditAction } = auditService;
 
-const FUSO = process.env.OPERATION_TIMEZONE || "America/Sao_Paulo";
+const fuso = require("../lib/fuso");
 const MAX_FOTOS = 6;
 
 class CommunityError extends Error {
@@ -44,12 +44,11 @@ class CommunityError extends Error {
 
 /* ---------- Apoio ---------- */
 
-/** Converte data+hora digitadas no fuso de operação para UTC (via banco). */
+/** Converte data+hora digitadas no fuso de operação para UTC (lib/fuso). */
 async function paraUtc(data, hora) {
-  const { rows } = await db.query(`SELECT CONVERT_TZ(?, ?, 'UTC') AS utc`, [`${data} ${hora}:00`, FUSO]);
-  const utc = rows[0] && rows[0].utc;
+  const utc = fuso.paraUtc(data, hora);
   if (!utc) throw new CommunityError("Data ou horário inválido.", "INVALID_DATE", 422, "data");
-  return new Date(utc);
+  return utc;
 }
 
 function validarQuando(startsAt) {
@@ -384,12 +383,11 @@ async function minhas(userId) {
 async function paraEditar(userId, serviceId) {
   const sv = await minha(userId, serviceId);
   const { rows: slots } = await db.query(
-    `SELECT id, capacity,
-            DATE_FORMAT(CONVERT_TZ(starts_at, 'UTC', ?), '%Y-%m-%d') AS data,
-            DATE_FORMAT(CONVERT_TZ(starts_at, 'UTC', ?), '%H:%i') AS hora
-     FROM service_slots WHERE service_id = ? ORDER BY starts_at LIMIT 1`,
-    [FUSO, FUSO, serviceId]
+    `SELECT id, capacity, starts_at FROM service_slots WHERE service_id = ? ORDER BY starts_at LIMIT 1`,
+    [serviceId]
   );
+  // Data e hora no fuso de operação, no formato dos campos do formulário.
+  if (slots[0]) Object.assign(slots[0], fuso.localDe(slots[0].starts_at));
   const { rows: fotos } = await db.query(
     `SELECT m.id, m.storage_key, m.status, m.rejection_reason, sp.position
      FROM service_photos sp JOIN media m ON m.id = sp.media_id
